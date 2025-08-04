@@ -33,6 +33,7 @@ interface Conversation {
   status: string
   assigned_to: string
   contact: {
+    id: number
     name: string
     phone: string
   }
@@ -102,7 +103,7 @@ export default function ConversationsPage() {
       
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter)
       if (assignedToFilter && assignedToFilter !== 'all') params.append('assigned_to', assignedToFilter)
-      if (searchTerm) params.append('search', searchTerm)
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm)
       
       logMigrationEvent('Conversations fetch', { userId: user?.id, page: pageNum, limit: pagination.limit })
       const data = await authenticatedFetch(getApiUrl(`conversations?${params.toString()}`))
@@ -422,16 +423,24 @@ export default function ConversationsPage() {
           {/* Search */}
           <form onSubmit={(e) => { e.preventDefault(); setDebouncedSearchTerm(searchTerm); }} className="flex-1 max-w-sm">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar por nombre o teléfono..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar por nombre o teléfono..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button 
+                type="submit"
+                variant="outline"
+                className="whitespace-nowrap"
+              >
+                Search
+              </Button>
             </div>
-            <Button type="submit" variant="outline" className="mt-2">Search</Button>
           </form>
 
           {/* Status Filter */}
