@@ -501,7 +501,7 @@ export default function ContactDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {conversations.map((conversation) => (
+                  {Array.isArray(conversations) && conversations.map((conversation) => (
                     <div
                       key={conversation.id}
                       onClick={() => handleConversationClick(conversation)}

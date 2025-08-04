@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import {
   Sheet,
@@ -27,6 +28,7 @@ interface Conversation {
   status: string
   assigned_to: string
   contact: {
+    id: number
     name: string
     phone: string
   }
@@ -43,6 +45,14 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const authenticatedFetch = useAuthenticatedFetch()
+  const router = useRouter()
+
+  const handleContactNameClick = () => {
+    if (conversation?.contact?.name) {
+      // Buscar el contact_id en las conversaciones para navegar al contacto
+      router.push(`/contacts/${conversation.contact.id || conversation.id}`)
+    }
+  }
 
   useEffect(() => {
     if (conversation && open) {
@@ -231,7 +241,10 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
             <SheetHeader className="space-y-3 px-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1 pr-8">
-                  <SheetTitle className="text-lg font-semibold mb-2">
+                  <SheetTitle 
+                    className="text-lg font-semibold mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+                    onClick={handleContactNameClick}
+                  >
                     {conversation.contact?.name || 'Sin nombre'}
                   </SheetTitle>
                   <div className="flex gap-2">

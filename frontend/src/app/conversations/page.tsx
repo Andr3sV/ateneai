@@ -65,6 +65,16 @@ export default function ConversationsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [assignedToFilter, setAssignedToFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState<string>('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('')
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   useEffect(() => {
     if (user) {
@@ -78,7 +88,7 @@ export default function ConversationsPage() {
       setPagination(prev => ({ ...prev, page: 1 }))
       fetchConversations(1)
     }
-  }, [statusFilter, assignedToFilter, searchTerm, user])
+  }, [statusFilter, assignedToFilter, debouncedSearchTerm, user])
 
   const fetchConversations = async (pageNum = 1) => {
     try {
@@ -410,7 +420,7 @@ export default function ConversationsPage() {
       <div className="bg-white rounded-lg border shadow-sm p-4">
         <div className="flex gap-4 items-end">
           {/* Search */}
-          <form onSubmit={(e) => { e.preventDefault(); setSearchTerm(searchTerm); }} className="flex-1 max-w-sm">
+          <form onSubmit={(e) => { e.preventDefault(); setDebouncedSearchTerm(searchTerm); }} className="flex-1 max-w-sm">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
