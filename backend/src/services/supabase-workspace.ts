@@ -246,18 +246,21 @@ export const db = {
     }
 
     if (filters.search) {
-      // Join with contacts to search by name or phone
-      countQuery = supabase
-        .from(TABLES.CONVERSATIONS)
-        .select('id', { count: 'exact', head: true })
-        .eq('workspace_id', workspaceId);
-      
-      if (filters.status) {
-        countQuery = countQuery.eq('status', filters.status);
-      }
-      
-      if (filters.assigned_to) {
-        countQuery = countQuery.eq('assigned_to', filters.assigned_to);
+      // For count query, we need to search by contact name or phone using a subquery approach
+      const { data: contactIds, error: contactError } = await supabase
+        .from(TABLES.CONTACTS)
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+
+      if (contactError) throw contactError;
+
+      if (contactIds && contactIds.length > 0) {
+        const ids = contactIds.map(c => c.id);
+        countQuery = countQuery.in('contact_id', ids);
+      } else {
+        // If no contacts found, return empty result
+        countQuery = countQuery.eq('id', -1); // This will return no results
       }
     }
     
@@ -291,8 +294,22 @@ export const db = {
     }
 
     if (filters.search) {
-      // This is a simple search - for more complex search we'd need to join with contacts
-      // For now, we'll handle search in the frontend filtering
+      // Search by contact name or phone using a subquery approach
+      const { data: contactIds, error: contactError } = await supabase
+        .from(TABLES.CONTACTS)
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+
+      if (contactError) throw contactError;
+
+      if (contactIds && contactIds.length > 0) {
+        const ids = contactIds.map(c => c.id);
+        query = query.in('contact_id', ids);
+      } else {
+        // If no contacts found, return empty result
+        query = query.eq('id', -1); // This will return no results
+      }
     }
     
     // Fix: Use either range() OR limit(), not both
