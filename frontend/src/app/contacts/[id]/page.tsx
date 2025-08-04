@@ -166,11 +166,15 @@ export default function ContactDetailPage() {
     try {
       logMigrationEvent('Contact conversations fetch', { contactId })
       const data = await authenticatedFetch(getApiUrl(`contacts/${contactId}/conversations`))
+      console.log('📡 Contact conversations API response:', data)
       if (data.success) {
+        console.log('✅ Conversations data:', data.data)
         setConversations(data.data || [])
+      } else {
+        console.error('❌ API returned success: false:', data)
       }
     } catch (error) {
-      console.error('Error fetching conversations:', error)
+      console.error('❌ Error fetching conversations:', error)
     } finally {
       setConversationsLoading(false)
     }
@@ -180,6 +184,11 @@ export default function ContactDetailPage() {
     fetchContact()
     fetchConversations()
   }, [fetchContact, fetchConversations])
+
+  // Debug: Log conversations state changes
+  useEffect(() => {
+    console.log('🔄 Conversations state updated:', conversations)
+  }, [conversations])
 
   // Handle edit
   const handleEdit = () => {
