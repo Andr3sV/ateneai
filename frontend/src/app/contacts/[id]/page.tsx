@@ -169,7 +169,10 @@ export default function ContactDetailPage() {
       console.log('📡 Contact conversations API response:', data)
       if (data.success) {
         console.log('✅ Conversations data:', data.data)
-        setConversations(data.data || [])
+        // Fix: Extract the actual array from data.data.data
+        const conversationsArray = data.data?.data || data.data || []
+        console.log('✅ Conversations array to set:', conversationsArray)
+        setConversations(conversationsArray)
       } else {
         console.error('❌ API returned success: false:', data)
       }
