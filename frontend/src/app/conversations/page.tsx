@@ -410,7 +410,7 @@ export default function ConversationsPage() {
       <div className="bg-white rounded-lg border shadow-sm p-4">
         <div className="flex gap-4 items-end">
           {/* Search */}
-          <div className="flex-1 max-w-sm">
+          <form onSubmit={(e) => { e.preventDefault(); setSearchTerm(searchTerm); }} className="flex-1 max-w-sm">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -421,7 +421,8 @@ export default function ConversationsPage() {
                 className="pl-10"
               />
             </div>
-          </div>
+            <Button type="submit" variant="outline" className="mt-2">Search</Button>
+          </form>
 
           {/* Status Filter */}
           <div className="flex flex-col gap-2">

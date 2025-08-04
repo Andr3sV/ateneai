@@ -96,10 +96,23 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
   }
 
   const getAssignedBadge = (assignedTo: string) => {
-    if (assignedTo === 'human') {
-      return <Badge variant="destructive">Escalada</Badge>
+    const getAssignedColor = (assignedTo: string) => {
+      if (assignedTo === 'human') {
+        return 'bg-red-100 text-red-800 hover:bg-red-200'
+      }
+      return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
     }
-    return <Badge variant="default">IA</Badge>
+
+    const getAssignedDisplay = (assignedTo: string) => {
+      if (assignedTo === 'human') return 'Human'
+      return 'IA'
+    }
+    
+    return (
+      <Badge className={getAssignedColor(assignedTo)}>
+        {getAssignedDisplay(assignedTo)}
+      </Badge>
+    )
   }
 
   const formatTime = (timestamp: string) => {
