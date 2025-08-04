@@ -223,7 +223,17 @@ export default function ConversationsPage() {
   // Helper para calcular tiempo de espera
   const calculateWaitingTime = (lastMessageDate: string) => {
     try {
-      return formatDistanceToNow(new Date(lastMessageDate), { 
+      const now = new Date()
+      const lastMessage = new Date(lastMessageDate)
+      const diffInMinutes = Math.floor((now.getTime() - lastMessage.getTime()) / (1000 * 60))
+      
+      // Si es menos de 60 minutos, mostrar en minutos
+      if (diffInMinutes < 60) {
+        return `${diffInMinutes} min`
+      }
+      
+      // Si es más de 60 minutos, usar formatDistanceToNow
+      return formatDistanceToNow(lastMessage, { 
         addSuffix: true, 
         locale: es 
       })

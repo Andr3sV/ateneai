@@ -215,7 +215,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
       <SheetContent className="w-[45vw] min-w-[400px] max-w-[800px]">
         {conversation && (
           <>
-            <SheetHeader className="space-y-3 px-2">
+            <SheetHeader className="space-y-3 px-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1 pr-8">
                   <SheetTitle className="text-lg font-semibold mb-2">
@@ -252,7 +252,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
 
             {/* Chat Messages */}
             <div className="flex flex-col h-[calc(100vh-200px)] mt-6">
-              <div className="flex-1 overflow-y-auto space-y-4 px-2 pb-6">
+              <div className="flex-1 overflow-y-auto space-y-4 px-4 pb-6">
                 {loading ? (
                   <div className="space-y-4">
                     {[...Array(5)].map((_, i) => (
