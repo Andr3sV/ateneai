@@ -83,13 +83,21 @@ export default function ConversationsPage() {
     }
   }, [user])
 
-  // Refrescar cuando cambien los filtros
+  // Refrescar cuando cambien los filtros (sin debouncedSearchTerm)
   useEffect(() => {
     if (user) {
       setPagination(prev => ({ ...prev, page: 1 }))
       fetchConversations(1)
     }
-  }, [statusFilter, assignedToFilter, debouncedSearchTerm, user])
+  }, [statusFilter, assignedToFilter, user])
+
+  // Refrescar cuando cambie el debouncedSearchTerm (solo para búsqueda automática)
+  useEffect(() => {
+    if (user && debouncedSearchTerm !== searchTerm) {
+      setPagination(prev => ({ ...prev, page: 1 }))
+      fetchConversations(1)
+    }
+  }, [debouncedSearchTerm, user])
 
   const fetchConversations = async (pageNum = 1) => {
     try {
@@ -229,6 +237,13 @@ export default function ConversationsPage() {
   const handleConversationClick = (conversation: Conversation) => {
     setSelectedConversation(conversation)
     setChatModalOpen(true)
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setDebouncedSearchTerm(searchTerm)
+    setPagination(prev => ({ ...prev, page: 1 }))
+    fetchConversations(1)
   }
 
   // Helper para calcular tiempo de espera
@@ -421,7 +436,7 @@ export default function ConversationsPage() {
       <div className="bg-white rounded-lg border shadow-sm p-4">
         <div className="flex gap-4 items-end">
           {/* Search */}
-          <form onSubmit={(e) => { e.preventDefault(); setDebouncedSearchTerm(searchTerm); }} className="flex-1 max-w-sm">
+          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-sm">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
