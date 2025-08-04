@@ -1,0 +1,57 @@
+[
+  {
+    "id": 2,
+    "name": "Rumba BCN",
+    "alias": "Rumba",
+    "email": null,
+    "clerk_user_id": null,
+    "google_workspace_domain": null,
+    "settings": {},
+    "created_at": "2025-07-30T21:24:13.619128",
+    "updated_at": "2025-07-30T21:24:13.619128"
+  },
+  {
+    "id": 3,
+    "name": "Rumba Dubai",
+    "alias": "Rumba",
+    "email": null,
+    "clerk_user_id": null,
+    "google_workspace_domain": null,
+    "settings": {},
+    "created_at": "2025-07-30T21:24:13.619128",
+    "updated_at": "2025-07-30T21:24:13.619128"
+  },
+  {
+    "id": 5,
+    "name": "Ateneai test env",
+    "alias": null,
+    "email": "ateneaintelligence.test.env@gmail.com",
+    "clerk_user_id": "user_30e6hLcjTsxwSP4XMRRRgNlld4D",
+    "google_workspace_domain": null,
+    "settings": {},
+    "created_at": "2025-07-31T15:30:13.833872",
+    "updated_at": "2025-07-31T15:30:13.833872"
+  },
+  {
+    "id": 6,
+    "name": "Prime Players",
+    "alias": null,
+    "email": "primeplayersapp@gmail.com",
+    "clerk_user_id": "user_30gAKZwf8FgRm7LCdNFhkGE2vR2",
+    "google_workspace_domain": null,
+    "settings": {},
+    "created_at": "2025-08-01T08:59:40.232675",
+    "updated_at": "2025-08-01T08:59:40.232675"
+  },
+  {
+    "id": 1,
+    "name": "Atenea",
+    "alias": "Atenea",
+    "email": "ateneaintelligence@gmail.com",
+    "clerk_user_id": "user_30dp5nX2Jp9TxyvNLWs4hcf0WsJ",
+    "google_workspace_domain": null,
+    "settings": {},
+    "created_at": "2025-07-30T21:24:13.619128",
+    "updated_at": "2025-08-01T21:34:28.314855"
+  }
+]
