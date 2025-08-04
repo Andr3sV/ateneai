@@ -197,7 +197,7 @@ router.get('/facebook', (req, res) => {
 /**
  * POST /webhooks/facebook - Recibir webhooks de Facebook Messenger
  */
-router.post('/facebook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/facebook', express.raw({ type: 'application/json' }), async (req, res): Promise<void> => {
   try {
     const signature = req.get('X-Hub-Signature-256');
     const payload = req.body.toString();
@@ -205,7 +205,7 @@ router.post('/facebook', express.raw({ type: 'application/json' }), async (req, 
     // Verificar signature
     if (!signature || !verifyWebhookSignature(payload, signature, process.env.FACEBOOK_APP_SECRET!)) {
       console.error('❌ Invalid Facebook webhook signature');
-      return res.status(403).send('Forbidden');
+      res.status(403).send('Forbidden');
     }
 
     const body = JSON.parse(payload);
@@ -325,7 +325,7 @@ router.get('/instagram', (req, res) => {
 /**
  * POST /webhooks/instagram - Recibir webhooks de Instagram
  */
-router.post('/instagram', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/instagram', express.raw({ type: 'application/json' }), async (req, res): Promise<void> => {
   try {
     const signature = req.get('X-Hub-Signature-256');
     const payload = req.body.toString();
@@ -333,7 +333,7 @@ router.post('/instagram', express.raw({ type: 'application/json' }), async (req,
     // Verificar signature
     if (!signature || !verifyWebhookSignature(payload, signature, process.env.FACEBOOK_APP_SECRET!)) {
       console.error('❌ Invalid Instagram webhook signature');
-      return res.status(403).send('Forbidden');
+      res.status(403).send('Forbidden');
     }
 
     const body = JSON.parse(payload);

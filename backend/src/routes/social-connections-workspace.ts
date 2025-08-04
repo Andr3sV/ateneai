@@ -20,10 +20,10 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
     }
 
     const connections = await socialConnectionsService.getConnections(
-      req.workspaceContext.workspaceId
+      req.workspaceContext?.workspaceId || 0
     );
     
-    console.log(`📱 Found ${connections.length} social connections for workspace ${req.workspaceContext.workspaceId}`);
+    console.log(`📱 Found ${connections.length} social connections for workspace ${req.workspaceContext?.workspaceId || 0}`);
     
     res.json({ 
       success: true, 
@@ -64,11 +64,11 @@ router.get('/:platform/auth-url', requireWorkspaceContext, async (req, res): Pro
 
     const authUrl = await socialConnectionsService.generateAuthUrl(
       platform as 'facebook' | 'instagram',
-      req.workspaceContext.workspaceId,
-      req.workspaceContext.userId
+      req.workspaceContext?.workspaceId || 0,
+      req.workspaceContext?.userId || 0
     );
     
-    console.log(`🔐 Generated OAuth URL for ${platform} - workspace ${req.workspaceContext.workspaceId}`);
+    console.log(`🔐 Generated OAuth URL for ${platform} - workspace ${req.workspaceContext?.workspaceId || 0}`);
     
     res.json({ 
       success: true, 
@@ -115,7 +115,7 @@ router.get('/:platform/callback', requireWorkspaceContext, async (req, res): Pro
     }
 
     // Verificar state para prevenir CSRF
-    const expectedState = `${req.workspaceContext.workspaceId}_${req.workspaceContext.userId}_${platform}`;
+    const expectedState = `${req.workspaceContext?.workspaceId || 0}_${req.workspaceContext?.userId || 0}_${platform}`;
     if (state !== expectedState) {
       res.status(400).json({
         success: false,
@@ -127,11 +127,11 @@ router.get('/:platform/callback', requireWorkspaceContext, async (req, res): Pro
     const connection = await socialConnectionsService.handleOAuthCallback(
       platform as 'facebook' | 'instagram',
       code as string,
-      req.workspaceContext.workspaceId,
-      req.workspaceContext.userId
+      req.workspaceContext?.workspaceId || 0,
+      req.workspaceContext?.userId || 0
     );
     
-    console.log(`✅ OAuth successful for ${platform} - workspace ${req.workspaceContext.workspaceId}`);
+    console.log(`✅ OAuth successful for ${platform} - workspace ${req.workspaceContext?.workspaceId || 0}`);
     
     // Redirect al frontend con éxito
     res.redirect(`${process.env.FRONTEND_URL}/social-connections?success=${platform}&connected=true`);
@@ -167,10 +167,10 @@ router.delete('/:platform/disconnect', requireWorkspaceContext, async (req, res)
 
     await socialConnectionsService.disconnectPlatform(
       platform as 'facebook' | 'instagram',
-      req.workspaceContext.workspaceId
+      req.workspaceContext?.workspaceId || 0
     );
     
-    console.log(`🔌 Disconnected ${platform} for workspace ${req.workspaceContext.workspaceId}`);
+    console.log(`🔌 Disconnected ${platform} for workspace ${req.workspaceContext?.workspaceId || 0}`);
     
     res.json({ 
       success: true, 
@@ -211,10 +211,10 @@ router.post('/:platform/refresh-token', requireWorkspaceContext, async (req, res
 
     const updatedConnection = await socialConnectionsService.refreshAccessToken(
       platform as 'facebook' | 'instagram',
-      req.workspaceContext.workspaceId
+      req.workspaceContext?.workspaceId || 0
     );
     
-    console.log(`🔄 Refreshed ${platform} token for workspace ${req.workspaceContext.workspaceId}`);
+    console.log(`🔄 Refreshed ${platform} token for workspace ${req.workspaceContext?.workspaceId || 0}`);
     
     res.json({ 
       success: true, 
@@ -246,7 +246,7 @@ router.get('/events', requireWorkspaceContext, async (req, res): Promise<void> =
     const { platform, limit = 50, offset = 0 } = req.query;
     
     const events = await socialConnectionsService.getEventLogs(
-      req.workspaceContext.workspaceId,
+      req.workspaceContext?.workspaceId || 0,
       {
         platform: platform as string,
         limit: parseInt(limit as string),

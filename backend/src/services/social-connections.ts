@@ -202,8 +202,8 @@ class SocialConnectionsService {
 
       // 4. Cifrar tokens
       const encryptedAccessToken = this.encryptText(pageToken);
-      const encryptedRefreshToken = tokenResponse.refresh_token 
-        ? this.encryptText(tokenResponse.refresh_token) 
+      const encryptedRefreshToken = (tokenResponse as any).refresh_token 
+        ? this.encryptText((tokenResponse as any).refresh_token) 
         : null;
 
       // 5. Calcular fecha de expiración
@@ -274,9 +274,9 @@ class SocialConnectionsService {
     } catch (error) {
       // Registrar evento de error
       await this.logEvent(workspaceId, null, 'oauth_error', platform, {
-        error: error.message,
+        error: (error as any).message,
         code
-      }, error.message);
+      }, (error as any).message);
       
       throw error;
     }
@@ -301,11 +301,11 @@ class SocialConnectionsService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json() as any;
       throw new Error(`OAuth token exchange failed: ${errorData.error?.message || response.statusText}`);
     }
 
-    return await response.json();
+    return await response.json() as any;
   }
 
   /**
@@ -320,7 +320,7 @@ class SocialConnectionsService {
       throw new Error(`Failed to get user info: ${response.statusText}`);
     }
 
-    return await response.json();
+    return await response.json() as any;
   }
 
   /**
@@ -335,7 +335,7 @@ class SocialConnectionsService {
       throw new Error(`Failed to get user pages: ${response.statusText}`);
     }
 
-    return await response.json();
+    return await response.json() as any;
   }
 
   /**
@@ -395,7 +395,7 @@ class SocialConnectionsService {
         throw new Error(`Token refresh failed: ${response.statusText}`);
       }
 
-      const tokenData = await response.json();
+      const tokenData = await response.json() as any;
       
       // Cifrar nuevo token
       const newEncryptedToken = this.encryptText(tokenData.access_token);
@@ -429,8 +429,8 @@ class SocialConnectionsService {
     } catch (error) {
       // Registrar evento de error
       await this.logEvent(workspaceId, null, 'token_refresh_error', platform, {
-        error: error.message
-      }, error.message);
+        error: (error as any).message
+      }, (error as any).message);
       
       throw error;
     }
@@ -455,7 +455,7 @@ class SocialConnectionsService {
         );
         
         if (response.ok) {
-          const result = await response.json();
+          const result = await response.json() as any;
           subscriptionId = result.success ? 'facebook_page_subscription' : null;
         }
       }
