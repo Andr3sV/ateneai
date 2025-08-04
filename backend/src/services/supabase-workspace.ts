@@ -241,6 +241,10 @@ export const db = {
       countQuery = countQuery.eq('assigned_to', filters.assigned_to);
     }
 
+    if (filters.contact_id) {
+      countQuery = countQuery.eq('contact_id', filters.contact_id);
+    }
+
     if (filters.search) {
       // Join with contacts to search by name or phone
       countQuery = supabase
@@ -280,6 +284,10 @@ export const db = {
     
     if (filters.assigned_to) {
       query = query.eq('assigned_to', filters.assigned_to);
+    }
+
+    if (filters.contact_id) {
+      query = query.eq('contact_id', filters.contact_id);
     }
 
     if (filters.search) {
