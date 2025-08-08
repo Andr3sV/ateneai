@@ -2,7 +2,6 @@
 
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,7 +50,6 @@ interface Conversation {
 export default function ConversationsPage() {
   const { user } = useUser()
   const { getToken } = useAuth()
-  const searchParams = useSearchParams()
   const authenticatedFetch = useAuthenticatedFetch()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
@@ -116,21 +114,22 @@ export default function ConversationsPage() {
 
   // Auto-open ChatModal when URL has ?open=<id>
   useEffect(() => {
-    const openParam = searchParams.get('open')
+    // Read query param from the browser to avoid Suspense requirements
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const openParam = params.get('open')
     if (!openParam) return
     const id = parseInt(openParam)
     if (Number.isNaN(id)) return
 
-    // First try to find it in the current list
     const inList = conversations.find(c => c.id === id)
     if (inList) {
       setSelectedConversation(inList)
       setChatModalOpen(true)
       return
     }
-    // Fallback: fetch by id and open
     openConversationById(id)
-  }, [searchParams, conversations, openConversationById])
+  }, [conversations, openConversationById])
 
   const fetchConversations = async (pageNum = 1) => {
     try {
