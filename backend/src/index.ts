@@ -23,6 +23,7 @@ import contactsWorkspaceRoutes from './routes/contacts-workspace';
 import analyticsWorkspaceRoutes from './routes/analytics-workspace';
 import socialConnectionsWorkspaceRoutes from './routes/social-connections-workspace';
 import webhooksSocialRoutes from './routes/webhooks-social';
+import conversationsPublicRoutes from './routes/conversations-public';
 import agentsWorkspaceRoutes from './routes/agents-workspace';
 import { MIGRATION_CONFIG, logMigrationEvent } from './config/migration';
 
@@ -107,6 +108,9 @@ app.use('/api/v2/agents', agentsWorkspaceRoutes);
 
 // Social webhooks (sin autenticación, verificación interna)
 app.use('/api/webhooks', webhooksSocialRoutes);
+
+// Public routes (no auth) for automation tools like n8n
+app.use('/api/public/conversations', conversationsPublicRoutes);
 
 // Conditional routing based on migration config
 if (MIGRATION_CONFIG.ENABLE_WORKSPACE_ROUTES) {
