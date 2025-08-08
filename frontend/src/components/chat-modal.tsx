@@ -327,7 +327,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-full sm:w-[90vw] sm:max-w-[640px] md:w-[70vw] md:max-w-[800px] h-[100dvh] sm:h-auto sm:max-h-[85vh] sm:overflow-hidden p-0 sm:p-0 flex flex-col">
+      <SheetContent className="w-full max-w-full sm:w-[90vw] sm:max-w-[640px] md:w-[70vw] md:max-w-[800px] h-[100dvh] sm:h-[85vh] sm:max-h-[85vh] sm:my-6 sm:rounded-xl sm:overflow-hidden p-0 sm:p-0 flex flex-col">
         {conversation && (
           <>
             <SheetHeader className="space-y-3 px-4 py-3 sticky top-0 bg-white z-10 border-b">
