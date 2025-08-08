@@ -110,6 +110,7 @@ async function createOrUpdateConversation(
       contact_id: contactId,
       status: 'open',
       assigned_to: 'agent_1', // IA por defecto
+    channel_type: platform, // persist channel/source
       metadata: {
         platform,
         created_via: 'webhook',

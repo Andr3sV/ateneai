@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { db } from '../services/supabase-workspace';
+import { db, supabase, TABLES } from '../services/supabase-workspace';
 import { requireWorkspaceContext } from '../middleware/workspace';
+import { createClerkClient } from '@clerk/backend';
 
 const router = Router();
 
@@ -309,4 +310,185 @@ router.post('/:id/messages', requireWorkspaceContext, async (req, res): Promise<
   }
 });
 
+// Enviar mensaje a través del servicio externo y registrar en DB
+router.post('/:id/messages/send', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ 
+        success: false, 
+        error: 'No workspace context available' 
+      });
+      return;
+    }
+
+    const conversationId = parseInt(req.params.id);
+    if (isNaN(conversationId)) {
+      res.status(400).json({ success: false, error: 'Invalid conversation ID' });
+      return;
+    }
+
+    const { content, metadata } = req.body || {};
+    if (!content || typeof content !== 'string') {
+      res.status(400).json({ success: false, error: 'Missing content' });
+      return;
+    }
+
+    // Lookup conversation to get contact_id and channel_type (when present)
+    const conversation = await db.getConversation(conversationId, req.workspaceContext.workspaceId);
+    const contactId = conversation?.contact?.id || conversation?.contact_id;
+    const channelType = (conversation as any)?.channel_type || (conversation as any)?.metadata?.platform || null;
+
+    // Insert message as human (agent) in DB first
+    const inserted = await db.createMessage({
+      content,
+      role: 'assistant',
+      sender_type: 'human',
+      sent_by: req.workspaceContext.userId,
+      metadata: { origin: 'app', ...(metadata || {}) }
+    }, conversationId, req.workspaceContext.workspaceId);
+
+    // Forward to external messaging service (fire-and-forget style)
+    const externalUrl = process.env.EXTERNAL_MESSAGING_URL;
+    const externalToken = process.env.EXTERNAL_MESSAGING_TOKEN;
+    if (!externalUrl) {
+      console.warn('⚠️ EXTERNAL_MESSAGING_URL not configured; skipping external dispatch');
+    } else {
+      try {
+        await fetch(`${externalUrl.replace(/\/$/, '')}/send-message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(externalToken ? { 'Authorization': `Bearer ${externalToken}` } : {})
+          },
+          body: JSON.stringify({
+            workspace_id: req.workspaceContext.workspaceId,
+            conversation_id: conversationId,
+            contact_id: contactId,
+            message: content,
+            channel_type: channelType,
+            agent_id: req.workspaceContext.userId,
+          })
+        });
+      } catch (dispatchError) {
+        console.error('❌ External send failed:', dispatchError);
+        // We keep the inserted message; external service can retry via queue later if needed
+      }
+    }
+
+    res.json({ success: true, data: inserted });
+  } catch (error: any) {
+    console.error('❌ Error sending message via external service:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;
+
+// ==============================
+// SSE: Real-time message stream
+// ==============================
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY
+});
+
+router.get('/:id/stream', async (req, res): Promise<void> => {
+  try {
+    const conversationId = parseInt(req.params.id);
+    if (isNaN(conversationId)) {
+      res.status(400).json({ success: false, error: 'Invalid conversation ID' });
+      return;
+    }
+
+    // Support token as query param (since EventSource cannot set headers)
+    const token = (req.query.token as string) || '';
+    if (!token) {
+      res.status(401).json({ success: false, error: 'Missing token' });
+      return;
+    }
+
+    // Verify Clerk token to get user and workspace context (simulate request with Authorization header)
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    const headers = new Headers();
+    headers.set('Authorization', `Bearer ${token}`);
+    const fetchRequest = new Request(url, { method: 'GET', headers });
+
+    const authResult = await clerkClient.authenticateRequest(fetchRequest, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+      publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+    });
+    if (!authResult.isAuthenticated) {
+      res.status(401).json({ success: false, error: 'Authentication failed', reason: authResult.reason });
+      return;
+    }
+
+    const auth = authResult.toAuth();
+    const clerkUserId = 'userId' in auth ? auth.userId : null;
+    if (!clerkUserId) {
+      res.status(401).json({ success: false, error: 'User session required' });
+      return;
+    }
+
+    // Build workspace context
+    const { WorkspaceContext } = await import('../services/supabase-workspace');
+    const workspaceContext = await WorkspaceContext.fromClerkUserId(clerkUserId);
+
+    // SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    // Initial ping
+    res.write(`event: ping\n`);
+    res.write(`data: {"ok":true}\n\n`);
+
+    // Heartbeat
+    const heartbeat = setInterval(() => {
+      try {
+        res.write(`event: ping\n`);
+        res.write(`data: {"ts":${Date.now()}}\n\n`);
+      } catch {
+        // ignore
+      }
+    }, 25000);
+
+    // Subscribe to Supabase realtime for this conversation
+    const channel = supabase
+      .channel(`messages_convo_${workspaceContext.workspaceId}_${conversationId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: TABLES.MESSAGES,
+        filter: `workspace_id=eq.${workspaceContext.workspaceId}`
+      }, (payload) => {
+        // Filter by conversation ID
+        const record: any = (payload as any).new || (payload as any).old || {};
+        if (record.conversation_id !== conversationId) return;
+
+        const eventPayload = {
+          type: (payload as any).eventType,
+          record,
+        };
+        res.write(`event: message\n`);
+        res.write(`data: ${JSON.stringify(eventPayload)}\n\n`);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          res.write(`event: subscribed\n`);
+          res.write(`data: {"room":"messages","conversation_id":${conversationId}}\n\n`);
+        }
+      });
+
+    // Cleanup on close
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      try { supabase.removeChannel(channel); } catch {}
+      res.end();
+    });
+  } catch (error: any) {
+    console.error('❌ SSE stream error:', error);
+    try {
+      res.status(500).json({ success: false, error: error.message });
+    } catch {}
+  }
+});

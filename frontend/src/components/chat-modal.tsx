@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import {
@@ -44,8 +45,23 @@ interface ChatModalProps {
 export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const [eventSource, setEventSource] = useState<EventSource | null>(null)
   const authenticatedFetch = useAuthenticatedFetch()
   const router = useRouter()
+  const { getToken } = useAuth()
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null)
+
+  const scrollToBottom = (smooth: boolean) => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    try {
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+    } catch {
+      el.scrollTop = el.scrollHeight
+    }
+  }
 
   const handleContactNameClick = () => {
     if (conversation?.contact?.name) {
@@ -56,14 +72,89 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
 
   useEffect(() => {
     if (conversation && open) {
-      fetchMessages()
+      fetchMessages(false)
     }
   }, [conversation, open])
 
-  const fetchMessages = async () => {
+  // Scroll to bottom after opening/switching conversation
+  useEffect(() => {
+    if (open && conversation) {
+      const t = setTimeout(() => scrollToBottom(false), 0)
+      return () => clearTimeout(t)
+    }
+  }, [open, conversation?.id])
+
+  // Scroll to bottom whenever new messages arrive while abierto
+  useEffect(() => {
+    if (open && conversation && messages.length > 0) {
+      const t = setTimeout(() => scrollToBottom(true), 0)
+      return () => clearTimeout(t)
+    }
+  }, [messages.length, open, conversation?.id])
+
+  // SSE live updates
+  useEffect(() => {
+    let es: EventSource | null = null
+    async function connectSSE() {
+      if (!conversation || !open) return
+      try {
+        // Obtener token de Clerk para query param
+        const token = await getToken()
+        if (!token) return
+        const url = new URL(getApiUrl(`conversations/${conversation.id}/stream`))
+        url.searchParams.set('token', token)
+        es = new EventSource(url.toString())
+        setEventSource(es)
+        es.addEventListener('message', (evt: MessageEvent) => {
+          try {
+            const payload = JSON.parse(evt.data) as { type?: string; record?: any }
+            const rec = payload?.record
+            if (!rec || rec.conversation_id !== conversation.id) return
+            const newMsg = {
+              id: rec.id,
+              conversation_id: rec.conversation_id,
+              body: rec.content || '',
+              sender: rec.sender_type === 'contact' ? 'contact' : 'bot',
+              role: rec.role,
+              sender_type: rec.sender_type,
+              metadata: rec.metadata || {},
+              created_at: rec.created_at,
+            } as any
+            setMessages((prev) => {
+              if (prev.find((m) => m.id === newMsg.id)) return prev
+              const next = [...prev, newMsg]
+              next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              return next
+            })
+            setTimeout(() => scrollToBottom(true), 0)
+          } catch (e) {
+            // fallback to refetch if parse fails
+            fetchMessages(true)
+          }
+        })
+        es.addEventListener('subscribed', () => {
+          // initial sync without flicker
+          fetchMessages(true)
+        })
+      } catch (e) {
+        console.error('SSE connection error:', e)
+      }
+    }
+    connectSSE()
+    return () => {
+      if (es) es.close()
+      if (eventSource) eventSource.close()
+      setEventSource(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation?.id, open])
+
+  const fetchMessages = async (silent: boolean = false) => {
     if (!conversation) return
     
-    setLoading(true)
+    if (!silent && messages.length === 0) {
+      setLoading(true)
+    }
     try {
       logMigrationEvent('Chat messages fetch', { conversationId: conversation.id })
       const data = await authenticatedFetch(
@@ -71,11 +162,12 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
       )
       if (data.success) {
         setMessages(data.data)
+        setTimeout(() => scrollToBottom(!silent), 0)
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -278,7 +370,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
 
             {/* Chat Messages */}
             <div className="flex flex-col h-[calc(100vh-200px)] mt-6">
-              <div className="flex-1 overflow-y-auto space-y-4 px-4 pb-6">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-4 px-4 pb-6">
                 {loading ? (
                   <div className="space-y-4">
                     {[...Array(5)].map((_, i) => (
@@ -326,6 +418,44 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
                     </div>
                   ))
                 )}
+              </div>
+              {/* Composer */}
+              <div className="px-4 pb-4 border-t pt-3">
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!conversation || !input.trim()) return
+                    setSending(true)
+                    try {
+                      const url = getApiUrl(`conversations/${conversation.id}/messages/send`)
+                      const resp = await authenticatedFetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: input })
+                      })
+                      if (resp?.success) {
+                        setInput('')
+                        await fetchMessages()
+                      }
+                    } catch (err) {
+                      console.error('Error sending message:', err)
+                    } finally {
+                      setSending(false)
+                    }
+                  }}
+                >
+                  <input
+                    className="flex-1 border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring"
+                    placeholder="Escribe un mensaje..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    disabled={sending}
+                  />
+                  <Button type="submit" size="sm" disabled={sending || !input.trim()}>
+                    {sending ? 'Enviando...' : 'Enviar'}
+                  </Button>
+                </form>
               </div>
             </div>
           </>

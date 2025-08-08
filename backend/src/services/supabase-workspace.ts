@@ -20,6 +20,7 @@ export const TABLES = {
   CONTACTS: 'contacts_new',
   CONVERSATIONS: 'conversations_new',
   MESSAGES: 'messages_new',
+  AGENTS: 'agents',
   // Keep old tables for gradual migration
   CLIENTS: 'clients',
   CONTACTS_OLD: 'contacts',
@@ -399,8 +400,10 @@ export const db = {
     return data.map(message => ({
       id: message.id,
       conversation_id: message.conversation_id,
-      body: message.content || '',  // content es TEXT, no JSONB
-      sender: message.sender_type === 'ai' ? 'bot' : 'contact',  // Frontend espera 'sender'
+      body: message.content || '',
+      // sender mapping:
+      // ai -> 'bot', human -> 'bot' (treated as agent-side bubble), contact -> 'contact'
+      sender: message.sender_type === 'contact' ? 'contact' : 'bot',
       role: message.role,
       sender_type: message.sender_type,
       metadata: message.metadata || {},
@@ -409,14 +412,24 @@ export const db = {
   },
   
   async createMessage(messageData: Partial<any>, conversationId: number, workspaceId: number) {
+    // Respect explicit sender_type; fallback only if not provided
+    const resolvedSenderType = messageData.sender_type
+      ? messageData.sender_type
+      : (messageData.sender === 'bot' ? 'ai' : 'contact');
+
+    const resolvedRole = messageData.role
+      ? messageData.role
+      : (resolvedSenderType === 'ai' || messageData.sender === 'bot' ? 'assistant' : 'user');
+
     const messagePayload = {
       workspace_id: workspaceId,
       conversation_id: conversationId,
-      content: messageData.content || messageData.body || '',
-      role: messageData.role || (messageData.sender === 'bot' ? 'assistant' : 'user'),
-      sender_type: messageData.sender_type || (messageData.sender === 'bot' ? 'ai' : 'contact'),
+      content: messageData.content ?? messageData.body ?? '',
+      role: resolvedRole,
+      sender_type: resolvedSenderType,
+      sent_by: messageData.sent_by ?? null,
       metadata: messageData.metadata || {},
-    };
+    } as Record<string, any>;
     
     const { data, error } = await supabase
       .from(TABLES.MESSAGES)
@@ -517,6 +530,54 @@ export const db = {
         topCountries
       }
     };
+  },
+
+  // ================================================
+  // AGENTS (workspace-scoped)
+  // ================================================
+
+  async getAgents(workspaceId: number) {
+    const { data, error } = await supabase
+      .from(TABLES.AGENTS)
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getAgentByKey(key: string, workspaceId: number) {
+    const { data, error } = await supabase
+      .from(TABLES.AGENTS)
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .eq('key', key)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error; // not found is okay
+    return data || null;
+  },
+
+  async createAgent(agentData: Partial<any>, workspaceId: number) {
+    const payload = { ...agentData, workspace_id: workspaceId };
+    const { data, error } = await supabase
+      .from(TABLES.AGENTS)
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateAgent(agentId: number, updates: Partial<any>, workspaceId: number) {
+    const { data, error } = await supabase
+      .from(TABLES.AGENTS)
+      .update(updates)
+      .eq('id', agentId)
+      .eq('workspace_id', workspaceId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
   
   async getConversationsEvolution(workspaceId: number, period: 'daily' | 'monthly' | 'yearly', startDate?: string, endDate?: string) {

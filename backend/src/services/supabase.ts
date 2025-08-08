@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
+// Ensure .env.local is loaded in dev before reading envs
 dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;

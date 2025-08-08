@@ -23,6 +23,7 @@ import contactsWorkspaceRoutes from './routes/contacts-workspace';
 import analyticsWorkspaceRoutes from './routes/analytics-workspace';
 import socialConnectionsWorkspaceRoutes from './routes/social-connections-workspace';
 import webhooksSocialRoutes from './routes/webhooks-social';
+import agentsWorkspaceRoutes from './routes/agents-workspace';
 import { MIGRATION_CONFIG, logMigrationEvent } from './config/migration';
 
 // Load environment variables
@@ -102,6 +103,7 @@ app.use('/api/v2/conversations', conversationsWorkspaceRoutes);
 app.use('/api/v2/contacts', contactsWorkspaceRoutes);
 app.use('/api/v2/analytics', analyticsWorkspaceRoutes);
 app.use('/api/v2/social-connections', socialConnectionsWorkspaceRoutes);
+app.use('/api/v2/agents', agentsWorkspaceRoutes);
 
 // Social webhooks (sin autenticación, verificación interna)
 app.use('/api/webhooks', webhooksSocialRoutes);
@@ -114,6 +116,7 @@ if (MIGRATION_CONFIG.ENABLE_WORKSPACE_ROUTES) {
   app.use('/api/contacts', contactsWorkspaceRoutes);
   app.use('/api/analytics', analyticsWorkspaceRoutes);
   app.use('/api/social-connections', socialConnectionsWorkspaceRoutes);
+  app.use('/api/agents', agentsWorkspaceRoutes);
   console.log('🚀 Using NEW workspace-based routes as primary');
 } else {
   // Primary routes use legacy system
