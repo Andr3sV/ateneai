@@ -327,7 +327,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-full sm:w-[90vw] sm:max-w-[640px] md:w-[70vw] md:max-w-[800px] p-0 sm:p-0">
+      <SheetContent className="w-full max-w-full sm:w-[90vw] sm:max-w-[640px] md:w-[70vw] md:max-w-[800px] h-[100dvh] sm:h-[90vh] p-0 sm:p-0 flex flex-col">
         {conversation && (
           <>
             <SheetHeader className="space-y-3 px-4 py-3 sticky top-0 bg-white z-10 border-b">
@@ -369,7 +369,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
             </SheetHeader>
 
             {/* Chat Messages */}
-            <div className="flex flex-col h-[calc(100vh-160px)] sm:h-[calc(100vh-200px)] mt-2 sm:mt-4">
+            <div className="flex flex-col flex-1 min-h-0 mt-2 sm:mt-4">
               <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto space-y-4 px-3 sm:px-4 pb-4 sm:pb-6">
                 {loading ? (
                   <div className="space-y-4">
@@ -420,7 +420,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
                 )}
               </div>
               {/* Composer */}
-              <div className="px-3 sm:px-4 pb-[env(safe-area-inset-bottom)] sm:pb-4 border-t pt-2 sm:pt-3 bg-white">
+              <div className="px-3 sm:px-4 pb-[env(safe-area-inset-bottom)] sm:pb-4 border-t pt-2 sm:pt-3 bg-white shrink-0">
                 <form
                   className="flex items-center gap-2"
                   onSubmit={async (e) => {
