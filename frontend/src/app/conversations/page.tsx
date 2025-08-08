@@ -423,7 +423,7 @@ export default function ConversationsPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-4 p-3 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
       <div className="flex flex-col gap-2">
@@ -433,10 +433,10 @@ export default function ConversationsPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg border shadow-sm p-4">
-        <div className="flex gap-4 items-end">
+      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
           {/* Search */}
-          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-sm">
+          <form onSubmit={handleSearchSubmit} className="flex-1 sm:max-w-sm">
             <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -509,8 +509,30 @@ export default function ConversationsPage() {
       </div>
 
       {/* Conversations Table */}
-      <div className="bg-white rounded-lg border shadow-sm p-4">
-        <Table>
+      <div className="bg-white rounded-lg border shadow-sm p-0 sm:p-4">
+        {/* Mobile list */}
+        <div className="sm:hidden divide-y">
+          {conversations.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">{loading ? 'Cargando...' : 'No hay conversaciones disponibles'}</div>
+          ) : (
+            conversations.map((c) => (
+              <button key={c.id} className="w-full text-left p-4 flex items-start gap-3 active:bg-gray-50" onClick={() => handleConversationClick(c)}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-medium truncate">{c.contact?.name || 'Sin nombre'}</div>
+                    {getStatusBadge(c.status, c.id)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1 truncate">{formatPhone(c.contact?.phone)}</div>
+                  <div className="text-xs text-gray-600 mt-1 truncate">
+                    {c.last_message ? formatLastMessageContent(c.last_message.content) : 'Sin mensajes'}
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+        {/* Desktop table */}
+        <Table className="hidden sm:table">
           <TableHeader>
             <TableRow className="border-b border-gray-200">
               <TableHead className="text-left font-semibold text-gray-900">Contacto</TableHead>

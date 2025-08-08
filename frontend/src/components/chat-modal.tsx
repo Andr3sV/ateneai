@@ -327,10 +327,10 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[45vw] min-w-[400px] max-w-[800px]">
+      <SheetContent className="w-full max-w-full sm:w-[90vw] sm:max-w-[640px] md:w-[70vw] md:max-w-[800px] p-0 sm:p-0">
         {conversation && (
           <>
-            <SheetHeader className="space-y-3 px-4">
+            <SheetHeader className="space-y-3 px-4 py-3 sticky top-0 bg-white z-10 border-b">
               <div className="flex items-start justify-between">
                 <div className="flex-1 pr-8">
                   <SheetTitle 
@@ -369,8 +369,8 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
             </SheetHeader>
 
             {/* Chat Messages */}
-            <div className="flex flex-col h-[calc(100vh-200px)] mt-6">
-              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-4 px-4 pb-6">
+            <div className="flex flex-col h-[calc(100vh-160px)] sm:h-[calc(100vh-200px)] mt-2 sm:mt-4">
+              <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto space-y-4 px-3 sm:px-4 pb-4 sm:pb-6">
                 {loading ? (
                   <div className="space-y-4">
                     {[...Array(5)].map((_, i) => (
@@ -396,13 +396,13 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
                       }`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        className={`max-w-[85%] sm:max-w-[80%] rounded-lg px-3 py-2 sm:px-4 ${
                           message.sender === 'bot'
                             ? 'bg-gray-100 text-gray-900'
                             : 'bg-blue-500 text-white'
                         }`}
                       >
-                        <div className="text-sm whitespace-pre-line">
+                        <div className="text-sm whitespace-pre-line leading-relaxed">
                           {formatMessageContent(message.body)}
                         </div>
                         <div
@@ -420,7 +420,7 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
                 )}
               </div>
               {/* Composer */}
-              <div className="px-4 pb-4 border-t pt-3">
+              <div className="px-3 sm:px-4 pb-[env(safe-area-inset-bottom)] sm:pb-4 border-t pt-2 sm:pt-3 bg-white">
                 <form
                   className="flex items-center gap-2"
                   onSubmit={async (e) => {
@@ -446,13 +446,13 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
                   }}
                 >
                   <input
-                    className="flex-1 border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring"
+                    className="flex-1 border rounded-md px-3 py-3 text-sm focus:outline-none focus:ring"
                     placeholder="Escribe un mensaje..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={sending}
                   />
-                  <Button type="submit" size="sm" disabled={sending || !input.trim()}>
+                  <Button type="submit" size="sm" className="h-10 px-4" disabled={sending || !input.trim()}>
                     {sending ? 'Enviando...' : 'Enviar'}
                   </Button>
                 </form>
