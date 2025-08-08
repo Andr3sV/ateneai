@@ -335,7 +335,8 @@ router.post('/:id/messages/send', requireWorkspaceContext, async (req, res): Pro
 
     // Lookup conversation to get contact_id and channel_type (when present)
     const conversation = await db.getConversation(conversationId, req.workspaceContext.workspaceId);
-    const contactId = conversation?.contact?.id || conversation?.contact_id;
+    const contactId = (conversation as any)?.contact?.id || (conversation as any)?.contact_id;
+    const contactPhone = (conversation as any)?.contact?.phone;
     const channelType = (conversation as any)?.channel_type || (conversation as any)?.metadata?.platform || null;
 
     // Insert message as human (agent) in DB first
@@ -347,31 +348,65 @@ router.post('/:id/messages/send', requireWorkspaceContext, async (req, res): Pro
       metadata: { origin: 'app', ...(metadata || {}) }
     }, conversationId, req.workspaceContext.workspaceId);
 
-    // Forward to external messaging service (fire-and-forget style)
-    const externalUrl = process.env.EXTERNAL_MESSAGING_URL;
-    const externalToken = process.env.EXTERNAL_MESSAGING_TOKEN;
-    if (!externalUrl) {
-      console.warn('⚠️ EXTERNAL_MESSAGING_URL not configured; skipping external dispatch');
-    } else {
+    // Prefer WhatsApp-specific dispatcher if enabled and channel matches
+    const waUrl = process.env.WHATSAPP_SEND_TEXT_URL; // full endpoint e.g. https://webhook.ateneai.com/api/whatsapp/send/text
+    const waToken = process.env.WHATSAPP_SERVICE_TOKEN;
+    const enabledWorkspacesEnv = process.env.WHATSAPP_ENABLED_WORKSPACES || '';
+    const enabledWorkspaces = enabledWorkspacesEnv
+      .split(',')
+      .map(v => parseInt(v.trim()))
+      .filter(n => !Number.isNaN(n));
+    const isWorkspaceEnabled = enabledWorkspaces.length === 0 || enabledWorkspaces.includes(req.workspaceContext.workspaceId);
+
+    if ((channelType === 'whatsapp' || (channelType == null && (conversation as any)?.metadata?.platform === 'whatsapp'))
+        && waUrl && isWorkspaceEnabled && contactPhone) {
       try {
-        await fetch(`${externalUrl.replace(/\/$/, '')}/send-message`, {
+        await fetch(waUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(externalToken ? { 'Authorization': `Bearer ${externalToken}` } : {})
+            ...(waToken ? { Authorization: `Bearer ${waToken}` } : {})
           },
           body: JSON.stringify({
+            to: contactPhone,
+            body: content,
             workspace_id: req.workspaceContext.workspaceId,
             conversation_id: conversationId,
             contact_id: contactId,
-            message: content,
-            channel_type: channelType,
             agent_id: req.workspaceContext.userId,
+            // reference for idempotency/debugging
+            metadata: { message_id: inserted.id }
           })
         });
-      } catch (dispatchError) {
-        console.error('❌ External send failed:', dispatchError);
-        // We keep the inserted message; external service can retry via queue later if needed
+      } catch (waErr) {
+        console.error('❌ WhatsApp service send failed:', waErr);
+      }
+    } else {
+      // Generic external messaging dispatch (optional)
+      const externalUrl = process.env.EXTERNAL_MESSAGING_URL;
+      const externalToken = process.env.EXTERNAL_MESSAGING_TOKEN;
+      if (!externalUrl) {
+        console.warn('⚠️ EXTERNAL_MESSAGING_URL not configured; skipping external dispatch');
+      } else {
+        try {
+          await fetch(`${externalUrl.replace(/\/$/, '')}/send-message`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(externalToken ? { 'Authorization': `Bearer ${externalToken}` } : {})
+            },
+            body: JSON.stringify({
+              workspace_id: req.workspaceContext.workspaceId,
+              conversation_id: conversationId,
+              contact_id: contactId,
+              message: content,
+              channel_type: channelType,
+              agent_id: req.workspaceContext.userId,
+            })
+          });
+        } catch (dispatchError) {
+          console.error('❌ External send failed:', dispatchError);
+        }
       }
     }
 
