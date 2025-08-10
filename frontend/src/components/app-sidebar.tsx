@@ -101,7 +101,7 @@ export function AppSidebar() {
                   className="justify-between"
                 >
                   <div className="flex items-center gap-2">
-                    <MessageSquare />
+                    <MessageSquare className="h-4 w-4" />
                     <span>Messages</span>
                   </div>
                   <ChevronDown className={cn("transition-transform", messagesOpen ? "rotate-180" : "rotate-0")} />

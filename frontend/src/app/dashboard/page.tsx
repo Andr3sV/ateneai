@@ -402,7 +402,6 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-      </div>
 
       {/* Contacts Section */}
       <div className="flex flex-col gap-4">
