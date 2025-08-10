@@ -12,6 +12,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { X } from 'lucide-react'
@@ -40,9 +41,10 @@ interface ChatModalProps {
   conversation: Conversation | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onStatusUpdated?: (newStatus: string) => void
 }
 
-export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) {
+export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }: ChatModalProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [input, setInput] = useState('')
@@ -173,27 +175,68 @@ export function ChatModal({ conversation, open, onOpenChange }: ChatModalProps) 
 
   const getStatusBadge = (status: string) => {
     const statusLower = status.toLowerCase()
-    
-    if (statusLower === 'closed' || statusLower === 'closed_timeout') {
-      return (
-        <Badge className="bg-red-100 text-red-800">
-          {statusLower === 'closed_timeout' ? 'Closed Timeout' : 'Closed'}
-        </Badge>
-      )
+
+    const getStatusColor = (s: string) => {
+      const sl = s.toLowerCase()
+      if (sl === 'closed' || sl === 'closed_timeout' || sl === 'closed_human') {
+        return 'bg-red-100 text-red-800 hover:bg-red-200'
+      }
+      if (sl === 'open') {
+        return 'bg-green-100 text-green-800 hover:bg-green-200'
+      }
+      return 'bg-blue-100 text-blue-800 hover:bg-blue-200'
     }
-    
-    if (statusLower === 'open') {
-      return (
-        <Badge className="bg-green-100 text-green-800">
-          Open
-        </Badge>
-      )
+
+    const getStatusDisplay = (s: string) => {
+      const sl = s.toLowerCase()
+      if (sl === 'closed_timeout') return 'Closed Timeout'
+      if (sl === 'closed_human') return 'Closed Human'
+      if (sl === 'closed') return 'Closed'
+      if (sl === 'open') return 'Open'
+      return s
     }
-    
+
+    const updateStatus = async (newStatus: string) => {
+      if (!conversation) return
+      try {
+        const data = await authenticatedFetch(
+          getApiUrl(`conversations/${conversation.id}/status`),
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+          }
+        )
+        if (data.success) {
+          onStatusUpdated?.(newStatus)
+        }
+      } catch (e) {
+        console.error('Error updating status in modal:', e)
+      }
+    }
+
     return (
-      <Badge className="bg-blue-100 text-blue-800">
-        {status}
-      </Badge>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Badge className={`${getStatusColor(status)} cursor-pointer`}>
+            {getStatusDisplay(status)}
+          </Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onClick={() => updateStatus('open')}>
+            <span className="text-green-600">● Open</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateStatus('closed')}>
+            <span className="text-red-600">● Closed</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateStatus('closed_timeout')}>
+            <span className="text-red-600">● Closed Timeout</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateStatus('closed_human')}>
+            <span className="text-red-600">● Closed Human</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
   }
 
