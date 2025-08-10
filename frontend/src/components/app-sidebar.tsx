@@ -1,10 +1,11 @@
 "use client"
 
-import { Home, MessageSquare, Settings, User, Share2 } from "lucide-react"
+import { Home, MessageSquare, User, Share2, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
+import { useMemo, useState } from "react"
 
 import {
   Sidebar,
@@ -17,7 +18,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 // Menu items
 const items = [
@@ -47,6 +52,12 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { user } = useUser()
 
+  const isMessagesActive = useMemo(
+    () => pathname.startsWith("/messages") || pathname.startsWith("/conversations"),
+    [pathname]
+  )
+  const [messagesOpen, setMessagesOpen] = useState<boolean>(isMessagesActive)
+
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -72,16 +83,69 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {/* Home Dashboard */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/dashboard"}>
+                  <Link href="/dashboard">
+                    <Home />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Messages collapsible */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={isMessagesActive}
+                  onClick={() => setMessagesOpen((v) => !v)}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare />
+                    <span>Messages</span>
+                  </div>
+                  <ChevronDown className={cn("transition-transform", messagesOpen ? "rotate-180" : "rotate-0")} />
+                </SidebarMenuButton>
+
+                {messagesOpen && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/messages")}>
+                        <Link href="/messages/dashboard">
+                          <span>Dashboard</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/conversations")}>
+                        <Link href="/conversations">
+                          <span>Conversations</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+
+              {/* Contacts */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/contacts")}>
+                  <Link href="/contacts">
+                    <User />
+                    <span>Contacts</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Social Connections */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/social-connections")}>
+                  <Link href="/social-connections">
+                    <Share2 />
+                    <span>Social Connections</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

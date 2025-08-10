@@ -9,8 +9,9 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
 import { format, subDays, subMonths, subYears } from 'date-fns'
-import { Calendar as CalendarIcon, TrendingUp } from 'lucide-react'
+import { Calendar as CalendarIcon, TrendingUp, MessageSquare, AlertCircle, Phone, Instagram, Mail, Users } from 'lucide-react'
 import { getApiUrl, logMigrationEvent } from '@/config/features'
+import { StatCard } from '@/components/stat-card'
 
 
 
@@ -304,58 +305,25 @@ export default function DashboardPage() {
       {/* Conversations Section */}
       <div className="flex flex-col gap-4">
         <h2 className="text-2xl font-semibold text-gray-900">Conversations</h2>
-        
-        {/* Métricas de Conversaciones */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Total Conversaciones
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {loading ? '...' : stats?.totalConversations || 0}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Escaladas a Humano
-                  </dt>
-                  <dd className="text-3xl font-semibold text-red-600">
-                    {loading ? '...' : stats?.escalatedConversations || 0}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Tasa de Escalación
-                  </dt>
-                  <dd className="text-3xl font-semibold text-orange-600">
-                    {loading ? '...' : `${stats?.escalationRate || 0}%`}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCard
+            title="Total Conversations"
+            value={loading ? '...' : (stats?.totalConversations ?? 0)}
+            description="Conversaciones en el periodo"
+            icon={<MessageSquare className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Escaladas a Humano"
+            value={loading ? '...' : (stats?.escalatedConversations ?? 0)}
+            description="Derivadas a equipo"
+            icon={<AlertCircle className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Tasa de Escalación"
+            value={loading ? '...' : `${stats?.escalationRate ?? 0}%`}
+            description="Porcentaje del total"
+            icon={<TrendingUp className="h-4 w-4" />}
+          />
         </div>
       </div>
 
@@ -439,130 +407,52 @@ export default function DashboardPage() {
       {/* Contacts Section */}
       <div className="flex flex-col gap-4">
         <h2 className="text-2xl font-semibold text-gray-900">Contactos</h2>
-        
-        {/* Métricas de Contactos */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Total Contactos
-                    </dt>
-                    <dd className="text-3xl font-semibold text-gray-900">
-                      {loading ? '...' : stats?.contacts?.totalContacts || 0}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Leads
-                    </dt>
-                    <dd className="text-3xl font-semibold text-blue-600">
-                      {loading ? '...' : stats?.contacts?.leads || 0}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Clientes
-                    </dt>
-                    <dd className="text-3xl font-semibold text-green-600">
-                      {loading ? '...' : stats?.contacts?.clients || 0}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Conversion Rate
-                    </dt>
-                    <dd className="text-3xl font-semibold text-purple-600">
-                      {loading ? '...' : `${stats?.contacts?.conversionRate || 0}%`}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Contacts"
+            value={loading ? '...' : (stats?.contacts?.totalContacts ?? 0)}
+            description="All contacts in database"
+            icon={<Users className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Leads"
+            value={loading ? '...' : (stats?.contacts?.leads ?? 0)}
+            description="Contactos en etapa lead"
+            icon={<Users className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Clients"
+            value={loading ? '...' : (stats?.contacts?.clients ?? 0)}
+            description="Contactos activos clientes"
+            icon={<Users className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Conversion Rate"
+            value={loading ? '...' : `${stats?.contacts?.conversionRate ?? 0}%`}
+            description="Leads a clientes"
+            icon={<TrendingUp className="h-4 w-4" />}
+          />
         </div>
 
-        {/* Métricas de Campos de Contacto */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      📞 Teléfonos
-                    </dt>
-                    <dd className="text-3xl font-semibold text-gray-900">
-                      {loading ? '...' : stats?.contacts?.fields?.phones || 0}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      📱 Instagram URLs
-                    </dt>
-                    <dd className="text-3xl font-semibold text-pink-600">
-                      {loading ? '...' : stats?.contacts?.fields?.instagrams || 0}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      📧 Emails
-                    </dt>
-                    <dd className="text-3xl font-semibold text-blue-600">
-                      {loading ? '...' : stats?.contacts?.fields?.emails || 0}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCard
+            title="Phones"
+            value={loading ? '...' : (stats?.contacts?.fields?.phones ?? 0)}
+            description="Contactos con teléfono"
+            icon={<Phone className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Instagrams"
+            value={loading ? '...' : (stats?.contacts?.fields?.instagrams ?? 0)}
+            description="Contactos con Instagram"
+            icon={<Instagram className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Emails"
+            value={loading ? '...' : (stats?.contacts?.fields?.emails ?? 0)}
+            description="Contactos con email"
+            icon={<Mail className="h-4 w-4" />}
+          />
         </div>
 
         {/* Gráfico Evolutivo de Contactos */}
