@@ -358,10 +358,32 @@ router.post('/:id/messages/send', requireWorkspaceContext, async (req, res): Pro
       .filter(n => !Number.isNaN(n));
     const isWorkspaceEnabled = enabledWorkspaces.length === 0 || enabledWorkspaces.includes(req.workspaceContext.workspaceId);
 
-    if ((channelType === 'whatsapp' || (channelType == null && (conversation as any)?.metadata?.platform === 'whatsapp'))
-        && waUrl && isWorkspaceEnabled && contactPhone) {
+    // Normalize platform and add fallback when channel is unknown but phone looks valid
+    const platformSource = (channelType || (conversation as any)?.metadata?.platform || '') as string;
+    const platformNormalized = typeof platformSource === 'string' ? platformSource.toLowerCase().trim() : '';
+    const looksLikePhone = typeof contactPhone === 'string' && /^[+]?[\d\s-]{6,}$/.test(contactPhone);
+    const shouldUseWhatsApp = Boolean(
+      waUrl && isWorkspaceEnabled && contactPhone && (
+        platformNormalized === 'whatsapp' || (platformNormalized === '' && looksLikePhone)
+      )
+    );
+
+    console.log('📨 Send debug →', {
+      conversationId,
+      workspaceId: req.workspaceContext.workspaceId,
+      contactId,
+      contactPhone,
+      channelType,
+      platformNormalized,
+      enabledWorkspaces,
+      isWorkspaceEnabled,
+      hasWaUrl: Boolean(waUrl),
+      shouldUseWhatsApp
+    });
+
+    if (shouldUseWhatsApp) {
       try {
-        await fetch(waUrl, {
+        const resp = await fetch(waUrl as string, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -369,13 +391,18 @@ router.post('/:id/messages/send', requireWorkspaceContext, async (req, res): Pro
           },
           body: JSON.stringify({
             to: contactPhone,
-            text: content, // CAMBIO: 'body' → 'text'
+            text: content,
             workspace_id: req.workspaceContext.workspaceId,
             conversation_id: conversationId,
             contact_id: contactId,
             agent_id: req.workspaceContext.userId,
             metadata: { message_id: inserted.id }
           })
+        });
+        console.log('✅ WhatsApp send response:', {
+          ok: resp.ok,
+          status: resp.status,
+          statusText: resp.statusText
         });
       } catch (waErr) {
         console.error('❌ WhatsApp service send failed:', waErr);

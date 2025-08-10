@@ -538,8 +538,8 @@ export default function ConversationsPage() {
             </Button>
           )}
         </div>
-      </div>
-
+        </div>
+        
       {/* Conversations Table */}
       <div className="bg-white rounded-lg border shadow-sm p-0 sm:p-4">
         {/* Mobile list */}
@@ -753,6 +753,11 @@ export default function ConversationsPage() {
         conversation={selectedConversation}
         open={chatModalOpen}
         onOpenChange={setChatModalOpen}
+        onStatusUpdated={(newStatus) => {
+          if (!selectedConversation) return
+          setSelectedConversation(prev => prev ? { ...prev, status: newStatus } : prev)
+          setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, status: newStatus } : c))
+        }}
       />
     </div>
   )
