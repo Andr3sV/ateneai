@@ -369,12 +369,11 @@ router.post('/:id/messages/send', requireWorkspaceContext, async (req, res): Pro
           },
           body: JSON.stringify({
             to: contactPhone,
-            body: content,
+            text: content, // CAMBIO: 'body' → 'text'
             workspace_id: req.workspaceContext.workspaceId,
             conversation_id: conversationId,
             contact_id: contactId,
             agent_id: req.workspaceContext.userId,
-            // reference for idempotency/debugging
             metadata: { message_id: inserted.id }
           })
         });
