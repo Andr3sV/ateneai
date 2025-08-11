@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch"
+import { usePageTitle } from "@/hooks/usePageTitle"
 import { getApiUrl } from "@/config/features"
 import { StatCard } from "@/components/stat-card"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,9 @@ interface EvolutionData {
 export default function MessagesDashboardPage() {
   const { user } = useUser()
   const authenticatedFetch = useAuthenticatedFetch()
+  
+  // Set page title in header
+  usePageTitle('Messages Dashboard')
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [evolutionData, setEvolutionData] = useState<EvolutionData[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,12 +81,6 @@ export default function MessagesDashboardPage() {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Messages Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Resumen de actividad de conversaciones
-          </p>
-        </div>
 
         {/* Date Filters */}
         <div className="flex flex-wrap gap-2">
@@ -125,9 +123,12 @@ export default function MessagesDashboardPage() {
                   mode="single"
                   selected={startDate}
                   onSelect={setStartDate}
-                  disabled={(date) =>
-                    date > new Date() || (endDate && date > endDate)
-                  }
+                  required
+                  disabled={(date) => {
+                    const afterToday = date > new Date()
+                    const afterEnd = endDate ? date > endDate : false
+                    return afterToday || afterEnd
+                  }}
                 />
               </div>
               <div className="p-3">
@@ -136,9 +137,12 @@ export default function MessagesDashboardPage() {
                   mode="single"
                   selected={endDate}
                   onSelect={setEndDate}
-                  disabled={(date) =>
-                    date > new Date() || (startDate && date < startDate)
-                  }
+                  required
+                  disabled={(date) => {
+                    const afterToday = date > new Date()
+                    const beforeStart = startDate ? date < startDate : false
+                    return afterToday || beforeStart
+                  }}
                 />
               </div>
             </PopoverContent>

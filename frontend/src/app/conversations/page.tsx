@@ -3,6 +3,7 @@
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -51,6 +52,7 @@ export default function ConversationsPage() {
   const { user } = useUser()
   const { getToken } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
+  
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({
@@ -59,6 +61,10 @@ export default function ConversationsPage() {
     total: 0,
     totalPages: 0
   })
+  
+  // Set page title in header
+  usePageTitle('Conversations')
+  
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [chatModalOpen, setChatModalOpen] = useState(false)
   
@@ -455,93 +461,72 @@ export default function ConversationsPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-3 sm:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-gray-900">Conversations</h1>
-          <p className="text-gray-600">Gestiona todas las conversaciones ({pagination.total} total)</p>
+    <div className="flex flex-1 flex-col">
+      {/* Filters directly below header - compact spacing */}
+      <div className="px-6 py-4 bg-background border-b">
+        <div className="bg-white rounded-lg border shadow-sm p-4">
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+            {/* Search */}
+            <form onSubmit={handleSearchSubmit} className="flex-1 sm:max-w-sm">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nombre o teléfono..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  Search
+                </Button>
+              </div>
+            </form>
+
+            {/* Status Filter */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">Estado</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="closed_timeout">Closed Timeout</SelectItem>
+                  <SelectItem value="closed_human">Closed Human</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Assigned To Filter */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">Asignado a</label>
+              <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="agent_1">IA</SelectItem>
+                  <SelectItem value="human">Human</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
-          {/* Search */}
-          <form onSubmit={handleSearchSubmit} className="flex-1 sm:max-w-sm">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar por nombre o teléfono..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button 
-                type="submit"
-                variant="outline"
-                className="whitespace-nowrap"
-              >
-                Search
-              </Button>
-            </div>
-          </form>
-
-          {/* Status Filter */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">Estado</label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="closed_timeout">Closed Timeout</SelectItem>
-                <SelectItem value="closed_human">Closed Human</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Assigned To Filter */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">Asignado a</label>
-            <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="agent_1">IA</SelectItem>
-                <SelectItem value="human">Human</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Clear Filters */}
-          {(statusFilter !== 'all' || assignedToFilter !== 'all' || searchTerm !== '') && (
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setStatusFilter('all')
-                setAssignedToFilter('all')
-                setSearchTerm('')
-              }}
-              className="mb-0"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Limpiar
-            </Button>
-          )}
-        </div>
-        </div>
         
       {/* Conversations Table */}
-      <div className="bg-white rounded-lg border shadow-sm p-0 sm:p-4">
+      <div className="px-6 py-4">
+        <div className="bg-white rounded-lg border shadow-sm p-4">
         {/* Mobile list */}
         <div className="sm:hidden divide-y">
           {conversations.length === 0 ? (
@@ -682,6 +667,7 @@ export default function ConversationsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Pagination */}

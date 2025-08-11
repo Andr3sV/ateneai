@@ -3,6 +3,7 @@
 import { useUser, UserButton, useAuth } from '@clerk/nextjs'
 import { useEffect, useState } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -123,6 +124,9 @@ export default function DashboardPage() {
   const { user } = useUser()
   const { getToken } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
+  
+  // Set page title in header
+  usePageTitle('Dashboard')
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [evolutionData, setEvolutionData] = useState<EvolutionData[]>([])
   const [contactsEvolutionData, setContactsEvolutionData] = useState<EvolutionData[]>([])
@@ -234,10 +238,6 @@ export default function DashboardPage() {
       {/* Header with Date Filters */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Bienvenido, {user?.firstName || 'Usuario'}</p>
-          </div>
           
           {/* Date Filters */}
           <div className="flex flex-wrap items-center gap-2">
@@ -280,9 +280,11 @@ export default function DashboardPage() {
                     mode="single"
                     selected={startDate}
                     onSelect={setStartDate}
-                    disabled={(date) =>
-                      date > new Date() || (endDate && date > endDate)
-                    }
+                    disabled={(date) => {
+                      const afterToday = date > new Date()
+                      const afterEnd = endDate ? date > endDate : false
+                      return afterToday || afterEnd
+                    }}
                   />
                 </div>
                 <div className="p-3">
@@ -291,9 +293,11 @@ export default function DashboardPage() {
                     mode="single"
                     selected={endDate}
                     onSelect={setEndDate}
-                    disabled={(date) =>
-                      date > new Date() || (startDate && date < startDate)
-                    }
+                    disabled={(date) => {
+                      const afterToday = date > new Date()
+                      const beforeStart = startDate ? date < startDate : false
+                      return afterToday || beforeStart
+                    }}
                   />
                 </div>
               </PopoverContent>
@@ -304,7 +308,6 @@ export default function DashboardPage() {
 
       {/* Conversations Section */}
       <div className="flex flex-col gap-4">
-        <h2 className="text-2xl font-semibold text-gray-900">Conversations</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard
             title="Total Conversations"

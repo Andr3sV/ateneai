@@ -3,6 +3,7 @@
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useEffect, useState } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,6 +43,9 @@ export default function SocialConnectionsPage() {
   const { user } = useUser()
   const { getToken } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
+  
+  // Set page title in header
+  usePageTitle('Social Connections')
   
   const [connections, setConnections] = useState<SocialConnection[]>([])
   const [loading, setLoading] = useState(true)
@@ -297,10 +301,6 @@ export default function SocialConnectionsPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col gap-6 p-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-gray-900">Social Connections</h1>
-          <p className="text-gray-600">Conecta tus redes sociales para centralizar mensajes</p>
-        </div>
         <div className="flex items-center justify-center h-32">
           <div className="text-gray-500">Cargando conexiones...</div>
         </div>
@@ -312,12 +312,6 @@ export default function SocialConnectionsPage() {
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-gray-900">Social Connections</h1>
-          <p className="text-gray-600">
-            Conecta tus cuentas de Facebook e Instagram para centralizar todos los mensajes
-          </p>
-        </div>
         
         <Button variant="outline" size="sm">
           <Settings className="h-4 w-4 mr-2" />

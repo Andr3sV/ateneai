@@ -23,7 +23,10 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
               <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
                 <SidebarTrigger />
                 <div className="flex-1">
-                  {/* Aquí puedes agregar más elementos del header si necesitas */}
+                  {/* Title area - will be populated by each page */}
+                  <div id="page-title" className="flex items-center">
+                    {/* Page title will be inserted here */}
+                  </div>
                 </div>
               </header>
               

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -121,6 +122,9 @@ const getStatusBadgeStyle = (status: Contact['status']) => {
 export default function ContactsPage() {
   const router = useRouter()
   const authenticatedFetch = useAuthenticatedFetch()
+  
+  // Set page title in header
+  usePageTitle('Contacts')
   
   // State
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -327,9 +331,10 @@ export default function ContactsPage() {
         console.error('❌ Failed to create contact:', data)
         alert('Error creating contact: ' + (data.error || 'Unknown error'))
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error creating contact:', error)
-      alert('Error creating contact: ' + error.message)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      alert('Error creating contact: ' + message)
     }
   }
 
@@ -360,12 +365,6 @@ export default function ContactsPage() {
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Contacts</h1>
-          <p className="text-muted-foreground">
-            Manage and track your customer relationships
-          </p>
-        </div>
         
         <Dialog open={isNewContactModalOpen} onOpenChange={setIsNewContactModalOpen}>
           <DialogTrigger asChild>
