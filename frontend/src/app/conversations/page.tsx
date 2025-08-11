@@ -462,70 +462,63 @@ export default function ConversationsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Filters directly below header - compact spacing */}
-      <div className="px-6 py-4 bg-background border-b">
-        <div className="bg-white rounded-lg border shadow-sm p-4">
-          <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
-            {/* Search */}
-            <form onSubmit={handleSearchSubmit} className="flex-1 sm:max-w-sm">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Buscar por nombre o teléfono..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Button 
-                  type="submit"
-                  variant="outline"
-                  className="whitespace-nowrap"
-                >
-                  Search
-                </Button>
-              </div>
-            </form>
-
-            {/* Status Filter */}
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">Estado</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                  <SelectItem value="closed_timeout">Closed Timeout</SelectItem>
-                  <SelectItem value="closed_human">Closed Human</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Filters directly below header - compact spacing, no frame */}
+      <div className="px-6 py-4 bg-background">
+        <div className="flex items-center gap-4">
+          {/* Search */}
+          <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar por nombre o teléfono..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
             </div>
+            <Button 
+              type="submit"
+              variant="outline"
+              className="whitespace-nowrap"
+            >
+              Search
+            </Button>
+          </form>
 
-            {/* Assigned To Filter */}
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">Asignado a</label>
-              <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="agent_1">IA</SelectItem>
-                  <SelectItem value="human">Human</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Status Filter */}
+          <div className="flex items-center space-x-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los estados</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="closed_timeout">Closed Timeout</SelectItem>
+                <SelectItem value="closed_human">Closed Human</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Assigned To Filter */}
+          <div className="flex items-center space-x-2">
+            <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
+              <SelectTrigger className="w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los asignados</SelectItem>
+                <SelectItem value="agent_1">IA</SelectItem>
+                <SelectItem value="human">Human</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
         
-      {/* Conversations Table */}
-      <div className="px-6 py-4">
+      {/* Conversations Table and Pagination in a single card */}
+      <div className="px-6 py-2">
         <div className="bg-white rounded-lg border shadow-sm p-4">
         {/* Mobile list */}
         <div className="sm:hidden divide-y">
@@ -667,72 +660,53 @@ export default function ConversationsPage() {
             )}
           </TableBody>
         </Table>
+          {/* Pagination inside the same card — match Contacts List */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(1)}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(pagination.totalPages)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white rounded-lg border shadow-sm p-4">
-          <div className="text-sm text-gray-700">
-            Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} conversaciones
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(1)}
-              disabled={pagination.page === 1}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(pagination.page - 1)}
-              disabled={pagination.page === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNumber = Math.max(1, Math.min(pagination.totalPages - 4, pagination.page - 2)) + i
-                if (pageNumber > pagination.totalPages) return null
-                
-                return (
-                  <Button
-                    key={pageNumber}
-                    variant={pageNumber === pagination.page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => fetchConversations(pageNumber)}
-                    className="w-8"
-                  >
-                    {pageNumber}
-                  </Button>
-                )
-              })}
-            </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(pagination.totalPages)}
-              disabled={pagination.page === pagination.totalPages}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Chat Modal */}
       <ChatModal

@@ -58,6 +58,12 @@ export function AppSidebar() {
   )
   const [messagesOpen, setMessagesOpen] = useState<boolean>(isMessagesActive)
 
+  const isContactsActive = useMemo(
+    () => pathname.startsWith("/contacts"),
+    [pathname]
+  )
+  const [contactsOpen, setContactsOpen] = useState<boolean>(isContactsActive)
+
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -127,14 +133,38 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
-              {/* Contacts */}
+              {/* Contacts collapsible */}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith("/contacts")}>
-                  <Link href="/contacts">
-                    <User />
+                <SidebarMenuButton
+                  isActive={isContactsActive}
+                  onClick={() => setContactsOpen((v) => !v)}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
                     <span>Contacts</span>
-                  </Link>
+                  </div>
+                  <ChevronDown className={cn("transition-transform", contactsOpen ? "rotate-180" : "rotate-0")} />
                 </SidebarMenuButton>
+
+                {contactsOpen && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/contacts/dashboard")}>
+                        <Link href="/contacts/dashboard">
+                          <span>Dashboard</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/contacts" || pathname.startsWith("/contacts/list")}>
+                        <Link href="/contacts/list">
+                          <span>List</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
               </SidebarMenuItem>
 
               {/* Social Connections */}
