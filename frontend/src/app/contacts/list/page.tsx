@@ -216,10 +216,60 @@ export default function ContactsListPage() {
   const formatDate = (dateString: string) => { if (!dateString) return '-'; return new Date(dateString).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Dialog open={isNewContactModalOpen} onOpenChange={setIsNewContactModalOpen}>
+    <div className="flex flex-1 flex-col">
+      {/* Filters band to match Conversations spacing */}
+      <div className="px-6 py-4 bg-background">
+        <div className="flex items-center justify-between">
+        {/* Filters on the left */}
+        <div className="flex items-center gap-4">
+          {/* Search */}
+          <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by phone number..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="pl-9 w-64"
+              />
+            </div>
+            <Button type="submit" variant="outline">Search</Button>
+          </form>
+
+          {/* Status Filter */}
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Lead">Lead</SelectItem>
+                <SelectItem value="MQL">MQL</SelectItem>
+                <SelectItem value="Client">Client</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Clear Filters */}
+          {(searchPhone || statusFilter !== 'all') && (
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                setSearchValue('')
+                setSearchPhone('')
+                setStatusFilter('all')
+              }}
+              className="text-muted-foreground"
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+
+          {/* New Contact button on the right */}
+          <Dialog open={isNewContactModalOpen} onOpenChange={setIsNewContactModalOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -287,84 +337,12 @@ export default function ContactsListPage() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
-
-      {/* Metrics */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Contacts</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalContacts}</div>
-            <p className="text-xs text-muted-foreground">All contacts in database</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Leads</CardTitle>
-            <UserPlus className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalLeads}</div>
-            <p className="text-xs text-muted-foreground">New prospects</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">MQLs</CardTitle>
-            <Building2 className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalMQLs}</div>
-            <p className="text-xs text-muted-foreground">Marketing qualified</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clients</CardTitle>
-            <Building2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalClients}</div>
-            <p className="text-xs text-muted-foreground">Active customers</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2 flex-1">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by phone number..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="pl-9" />
-              </div>
-              <Button type="submit" variant="outline">Search</Button>
-            </form>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-                <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Lead">Lead</SelectItem>
-                  <SelectItem value="MQL">MQL</SelectItem>
-                  <SelectItem value="Client">Client</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {(searchPhone || statusFilter !== 'all') && (
-              <Button variant="ghost" onClick={() => { setSearchValue(''); setSearchPhone(''); setStatusFilter('all') }} className="text-muted-foreground">Clear filters</Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Contacts Table */}
+      <div className="px-6 py-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -473,6 +451,7 @@ export default function ContactsListPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

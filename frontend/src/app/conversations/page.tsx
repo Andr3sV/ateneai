@@ -463,7 +463,7 @@ export default function ConversationsPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Filters directly below header - compact spacing, no frame */}
-      <div className="px-6 py-4 bg-background border-b">
+      <div className="px-6 py-4 bg-background">
         <div className="flex items-center gap-4">
           {/* Search */}
           <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2">
@@ -517,8 +517,8 @@ export default function ConversationsPage() {
         </div>
       </div>
         
-      {/* Conversations Table */}
-      <div className="px-6 py-4">
+      {/* Conversations Table and Pagination in a single card */}
+      <div className="px-6 py-2">
         <div className="bg-white rounded-lg border shadow-sm p-4">
         {/* Mobile list */}
         <div className="sm:hidden divide-y">
@@ -660,72 +660,53 @@ export default function ConversationsPage() {
             )}
           </TableBody>
         </Table>
+          {/* Pagination inside the same card — match Contacts List */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(1)}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchConversations(pagination.totalPages)}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white rounded-lg border shadow-sm p-4">
-          <div className="text-sm text-gray-700">
-            Mostrando {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} conversaciones
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(1)}
-              disabled={pagination.page === 1}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(pagination.page - 1)}
-              disabled={pagination.page === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNumber = Math.max(1, Math.min(pagination.totalPages - 4, pagination.page - 2)) + i
-                if (pageNumber > pagination.totalPages) return null
-                
-                return (
-                  <Button
-                    key={pageNumber}
-                    variant={pageNumber === pagination.page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => fetchConversations(pageNumber)}
-                    className="w-8"
-                  >
-                    {pageNumber}
-                  </Button>
-                )
-              })}
-            </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchConversations(pagination.totalPages)}
-              disabled={pagination.page === pagination.totalPages}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Chat Modal */}
       <ChatModal
