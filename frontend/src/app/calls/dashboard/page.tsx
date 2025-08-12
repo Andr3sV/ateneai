@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar as CalendarIcon, TrendingUp } from 'lucide-react'
 import { format, subDays } from 'date-fns'
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend, Label } from 'recharts'
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend, Label, BarChart, Bar } from 'recharts'
 import { StatCard } from '@/components/stat-card'
 
 interface EvolutionData { date: string; count: number }
@@ -38,6 +38,10 @@ export default function CallsDashboardPage() {
   const [stats, setStats] = useState<CallsStats | null>(null)
   const [loading, setLoading] = useState(false)
   const [mqlChartPeriod, setMqlChartPeriod] = useState<'daily' | 'monthly' | 'yearly'>('daily')
+  const [clientsEvolution, setClientsEvolution] = useState<EvolutionData[]>([])
+  const [agentLeaderboard, setAgentLeaderboard] = useState<{ agent_name: string; mqls: number; win_rate: number }[]>([])
+  const [mqlsByCity, setMqlsByCity] = useState<{ city: string; count: number }[]>([])
+  const [contactRep, setContactRep] = useState<{ avgCallsToMql: number; avgCallsToClient: number; topContacts: { contact_name: string; calls: number }[] } | null>(null)
 
   const formattedRange = useMemo(() => {
     return `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`
@@ -50,15 +54,24 @@ export default function CallsDashboardPage() {
       const end_date = endDate.toISOString()
       const evoParams = new URLSearchParams({ period: chartPeriod, start_date, end_date })
       const mqlEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'mql' })
+      const clientsEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'client' })
       const statsParams = new URLSearchParams({ start_date, end_date })
-      const [evoRes, mqlEvoRes, statsRes] = await Promise.all([
+      const [evoRes, mqlEvoRes, clientsEvoRes, statsRes, agentsRes, cityRes, repRes] = await Promise.all([
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${evoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${mqlEvoParams}`)),
+        authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${clientsEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/stats?${statsParams}`)),
+        authenticatedFetch(getApiUrl(`calls/dashboard/agents?${statsParams}`)),
+        authenticatedFetch(getApiUrl(`calls/dashboard/mqls-by-city?${statsParams}`)),
+        authenticatedFetch(getApiUrl(`calls/dashboard/contact-repetition?${statsParams}`)),
       ])
       if (evoRes.success) setEvolution(evoRes.data)
       if (mqlEvoRes.success) setMqlEvolution(mqlEvoRes.data)
+      if (clientsEvoRes.success) setClientsEvolution(clientsEvoRes.data)
       if (statsRes.success) setStats(statsRes.data)
+      if (agentsRes.success) setAgentLeaderboard((agentsRes.data || []).map((a: any) => ({ agent_name: a.agent_name, mqls: a.mqls, win_rate: a.win_rate })))
+      if (cityRes.success) setMqlsByCity(cityRes.data || [])
+      if (repRes.success) setContactRep(repRes.data)
     } catch (e) {
       console.error('Error fetching calls dashboard:', e)
     } finally {
@@ -242,16 +255,16 @@ export default function CallsDashboardPage() {
         </div>
       </div>
 
-      {/* MQL Evolution */}
+      {/* MQL/Client Evolution with moving average */}
       <div className="grid grid-cols-1 gap-6">
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
               <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Evolución de MQLs
+                Evolución de MQLs y Clientes
               </h3>
-              <p className="text-sm text-gray-500">MQLs generados en el tiempo</p>
+              <p className="text-sm text-gray-500">Tendencia con media móvil</p>
             </div>
             <div className="flex gap-2">
               {(['daily', 'monthly', 'yearly'] as const).map((period) => (
@@ -296,16 +309,66 @@ export default function CallsDashboardPage() {
                     }
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#ef4444" 
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
+                <Line type="monotone" dataKey="count" name="MQLs" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="count" name="Clientes" data={clientsEvolution} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Agent Leaderboard and MQLs by City */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Top Agentes (MQLs / Win rate)</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agentLeaderboard} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="agent_name" width={120} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="mqls" name="MQLs" fill="#3b82f6" />
+                <Bar dataKey="win_rate" name="Win %" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">MQLs por ciudad</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={mqlsByCity}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="city" interval={0} angle={-20} textAnchor="end" height={60} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" name="MQLs" fill="#8b5cf6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact repetition */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h3 className="text-lg font-medium text-gray-900">Repetición por contacto</h3>
+        <p className="text-sm text-gray-500 mb-4">¿Cuántas llamadas promedio hasta ser MQL/Cliente?</p>
+        <div className="flex flex-wrap gap-6">
+          <StatCard title="Promedio llamadas → MQL" value={contactRep?.avgCallsToMql ?? 0} description="Promedio global" />
+          <StatCard title="Promedio llamadas → Cliente" value={contactRep?.avgCallsToClient ?? 0} description="Promedio global" />
+        </div>
+        <div className="mt-6 h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={(contactRep?.topContacts || []).map(c => ({ name: c.contact_name, calls: c.calls }))}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={60} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="calls" name="Calls" fill="#f59e0b" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

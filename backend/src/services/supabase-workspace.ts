@@ -740,6 +740,155 @@ export const db = {
       .sort((a, b) => a.date.localeCompare(b.date));
   },
 
+  // ================================================
+  // CALLS DASHBOARD: Agent leaderboard, MQLs by city, Contact repetition
+  // ================================================
+
+  async getAgentLeaderboard(
+    workspaceId: number,
+    startDate?: string,
+    endDate?: string,
+    limit: number = 5
+  ) {
+    let query = supabase
+      .from(TABLES.CALLS)
+      .select(
+        `id, status, created_at, agent_id, agent:agents(id, name)`
+      )
+      .eq('workspace_id', workspaceId);
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    type Agg = { agentId: number; agentName: string; total: number; mql: number; client: number };
+    const byAgent = new Map<number, Agg>();
+    (data || []).forEach(row => {
+      const agentId = row.agent_id as number | null;
+      if (!agentId) return;
+      const name = (row as any).agent?.name || 'Unknown';
+      const entry = byAgent.get(agentId) || { agentId, agentName: name, total: 0, mql: 0, client: 0 };
+      entry.total += 1;
+      const st = (row.status || '').toString().toLowerCase();
+      if (st === 'mql') entry.mql += 1;
+      if (st === 'client') entry.client += 1;
+      byAgent.set(agentId, entry);
+    });
+
+    const leaderboard = Array.from(byAgent.values())
+      .sort((a, b) => b.mql - a.mql)
+      .slice(0, Math.max(0, limit))
+      .map(a => ({
+        agent_id: a.agentId,
+        agent_name: a.agentName,
+        total_calls: a.total,
+        mqls: a.mql,
+        clients: a.client,
+        win_rate: a.total > 0 ? Math.round((a.client / a.total) * 100) : 0,
+      }));
+
+    return leaderboard;
+  },
+
+  async getMqlsByCity(
+    workspaceId: number,
+    startDate?: string,
+    endDate?: string
+  ) {
+    let query = supabase
+      .from(TABLES.CALLS)
+      .select('id, city, status, created_at')
+      .eq('workspace_id', workspaceId)
+      .eq('status', 'mql');
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const cityCounts: Record<string, number> = {};
+    (data || []).forEach(row => {
+      const city = (row.city || 'Unknown').toString();
+      cityCounts[city] = (cityCounts[city] || 0) + 1;
+    });
+
+    return Object.entries(cityCounts)
+      .map(([city, count]) => ({ city, count }))
+      .sort((a, b) => b.count - a.count);
+  },
+
+  async getContactRepetition(
+    workspaceId: number,
+    startDate?: string,
+    endDate?: string,
+    topLimit: number = 10
+  ) {
+    let query = supabase
+      .from(TABLES.CALLS)
+      .select(`id, contact_id, status, created_at, contact:contacts_new(id, name)`)
+      .eq('workspace_id', workspaceId);
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    type CallRow = { id: number; contact_id: number | null; status: string | null; created_at: string; contact?: { id: number; name: string | null } };
+    const byContact = new Map<number, CallRow[]>();
+
+    (data || []).forEach((row: any) => {
+      const contactId = row.contact_id as number | null;
+      if (!contactId) return;
+      const arr = byContact.get(contactId) || [];
+      arr.push(row as CallRow);
+      byContact.set(contactId, arr);
+    });
+
+    let totalToMql = 0;
+    let mqlContacts = 0;
+    let totalToClient = 0;
+    let clientContacts = 0;
+
+    const topContacts: { contact_id: number; contact_name: string; calls: number; reached_mql: boolean; reached_client: boolean }[] = [];
+
+    byContact.forEach((rows, contactId) => {
+      rows.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const calls = rows.length;
+      const name = (rows[0] as any).contact?.name || `Contact ${contactId}`;
+      let idxMql: number | null = null;
+      let idxClient: number | null = null;
+      rows.forEach((r, idx) => {
+        const st = (r.status || '').toLowerCase();
+        if (st === 'mql' && idxMql === null) idxMql = idx + 1; // 1-based count
+        if (st === 'client' && idxClient === null) idxClient = idx + 1;
+      });
+      const reachedMql = idxMql !== null;
+      const reachedClient = idxClient !== null;
+      if (idxMql) { totalToMql += idxMql; mqlContacts += 1; }
+      if (idxClient) { totalToClient += idxClient; clientContacts += 1; }
+      topContacts.push({ contact_id: contactId, contact_name: name, calls, reached_mql: reachedMql, reached_client: reachedClient });
+    });
+
+    topContacts.sort((a, b) => b.calls - a.calls);
+    const top = topContacts.slice(0, Math.max(0, topLimit));
+
+    const avgCallsToMql = mqlContacts > 0 ? parseFloat((totalToMql / mqlContacts).toFixed(2)) : 0;
+    const avgCallsToClient = clientContacts > 0 ? parseFloat((totalToClient / clientContacts).toFixed(2)) : 0;
+
+    return {
+      avgCallsToMql,
+      avgCallsToClient,
+      topContacts: top,
+    };
+  },
+
   async createAgent(agentData: Partial<any>, workspaceId: number) {
     const payload = { ...agentData, workspace_id: workspaceId };
     const { data, error } = await supabase

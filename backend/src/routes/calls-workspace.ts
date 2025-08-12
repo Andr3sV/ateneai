@@ -119,6 +119,68 @@ router.get('/dashboard/evolution', requireWorkspaceContext, async (req, res): Pr
   }
 });
 
+// Agent leaderboard
+router.get('/dashboard/agents', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const { start_date, end_date, limit } = req.query as Record<string, string>;
+    const result = await db.getAgentLeaderboard(
+      req.workspaceContext.workspaceId,
+      start_date,
+      end_date,
+      limit ? parseInt(limit, 10) : 5
+    );
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching agent leaderboard:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// MQLs by city
+router.get('/dashboard/mqls-by-city', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const { start_date, end_date } = req.query as Record<string, string>;
+    const result = await db.getMqlsByCity(
+      req.workspaceContext.workspaceId,
+      start_date,
+      end_date,
+    );
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching mqls by city:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Contact repetition and averages
+router.get('/dashboard/contact-repetition', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const { start_date, end_date, limit } = req.query as Record<string, string>;
+    const result = await db.getContactRepetition(
+      req.workspaceContext.workspaceId,
+      start_date,
+      end_date,
+      limit ? parseInt(limit, 10) : 10
+    );
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching contact repetition:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;
 
 
