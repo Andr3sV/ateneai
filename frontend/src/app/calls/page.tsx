@@ -248,11 +248,11 @@ export default function CallsPage() {
             <TableBody>
             {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Loading...</TableCell>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Loading...</TableCell>
               </TableRow>
             ) : calls.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">No results</TableCell>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No results</TableCell>
               </TableRow>
             ) : (
                 calls.map((c) => (
