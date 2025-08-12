@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { usePageTitle } from '@/hooks/usePageTitle'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -341,18 +342,10 @@ export default function ContactsListPage() {
         </div>
       </div>
 
-      {/* Contacts Table */}
+      {/* Contacts Table styled like Calls → Conversations */}
       <div className="px-6 py-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>
-              Contacts { (searchPhone || statusFilter !== 'all') && (<span className="text-sm font-normal text-muted-foreground ml-2">({pagination.total} filtered)</span>) }
-            </span>
-            <span className="text-sm font-normal text-muted-foreground">{pagination.total} total</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <Card>
+          <CardContent className="p-4">
           {loading ? (
             <div className="flex items-center justify-center py-12"><div className="text-muted-foreground">Loading contacts...</div></div>
           ) : contacts.length === 0 ? (
@@ -364,93 +357,113 @@ export default function ContactsListPage() {
             </div>
           ) : (
             <>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Name</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Phone</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Instagram</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Country</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Last Activity</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contacts.map((contact, index) => (
-                      <tr key={contact.id} className={`border-b hover:bg-muted/30 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-muted/10'}`}
-                        onClick={(e) => { if (!editingCell && !e.defaultPrevented) { handleContactClick(contact.id) } }}
-                      >
-                        <td className="py-3 px-4">
-                          <div className="flex items-center">
-                            <div>
-                              <div className="font-medium">{contact.name || 'Unnamed Contact'}</div>
-                              {contact.email && (<div className="text-xs text-muted-foreground flex items-center"><Mail className="h-3 w-3 mr-1" />{contact.email}</div>)}
-                            </div>
+              <Table className="hidden sm:table">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-200">
+                    <TableHead className="text-left font-semibold text-gray-900">Name</TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        Phone
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        Status
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Instagram className="h-4 w-4" />
+                        Instagram
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">Country</TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        Last Activity
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contacts.map((contact) => (
+                    <TableRow key={contact.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={(e) => { if (!editingCell && !e.defaultPrevented) { handleContactClick(contact.id) } }}>
+                      <TableCell className="py-4">
+                        <div className="font-medium text-gray-900">{contact.name || 'Unnamed Contact'}</div>
+                        {contact.email && (
+                          <div className="text-xs text-muted-foreground flex items-center"><Mail className="h-3 w-3 mr-1" />{contact.email}</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Phone className="h-4 w-4 text-gray-400" />
+                          <span>{formatPhoneNumber(contact.phone)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        {editingCell?.contactId === contact.id && editingCell?.field === 'status' ? (
+                          <div className="flex items-center space-x-2">
+                            <Select value={editValue} onValueChange={setEditValue}>
+                              <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Lead">Lead</SelectItem>
+                                <SelectItem value="MQL">MQL</SelectItem>
+                                <SelectItem value="Client">Client</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); saveEdit() }}><Check className="h-3 w-3" /></Button>
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); cancelEditing() }}><X className="h-3 w-3" /></Button>
                           </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center text-sm"><Phone className="h-3 w-3 mr-2 text-muted-foreground" />{formatPhoneNumber(contact.phone)}</div>
-                        </td>
-                        <td className="py-3 px-4">
-                          {editingCell?.contactId === contact.id && editingCell?.field === 'status' ? (
-                            <div className="flex items-center space-x-2">
-                              <Select value={editValue} onValueChange={setEditValue}>
-                                <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Lead">Lead</SelectItem>
-                                  <SelectItem value="MQL">MQL</SelectItem>
-                                  <SelectItem value="Client">Client</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); saveEdit() }}><Check className="h-3 w-3" /></Button>
-                              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); cancelEditing() }}><X className="h-3 w-3" /></Button>
-                            </div>
+                        ) : (
+                          <Badge className={`cursor-pointer ${getStatusBadgeStyle(contact.status)}`} onClick={(e) => { e.stopPropagation(); startEditing(contact.id, 'status', contact.status || '') }}>
+                            {contact.status || 'Unknown'}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center">
+                          {contact.instagram_url ? (
+                            <a href={contact.instagram_url} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-800 transition-colors" onClick={(e) => e.stopPropagation()}>
+                              <Instagram className="h-4 w-4" />
+                            </a>
                           ) : (
-                            <Badge className={`cursor-pointer ${getStatusBadgeStyle(contact.status)}`} onClick={(e) => { e.stopPropagation(); startEditing(contact.id, 'status', contact.status || '') }}>
-                              {contact.status || 'Unknown'}
-                            </Badge>
+                            <span className="text-muted-foreground">-</span>
                           )}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-center">
-                            {contact.instagram_url ? (
-                              <a href={contact.instagram_url} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-800 transition-colors" onClick={(e) => e.stopPropagation()}>
-                                <Instagram className="h-4 w-4" />
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-center"><span className="text-lg">{getCountryFlag(contact.country)}</span></div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center text-sm text-muted-foreground"><MessageCircle className="h-3 w-3 mr-1" />{contact.last_interaction ? formatDate(contact.last_interaction) : 'No activity'}</div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <span className="text-lg">{getCountryFlag(contact.country)}</span>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <MessageCircle className="h-3 w-3 mr-1" />
+                          {contact.last_interaction ? formatDate(contact.last_interaction) : 'No activity'}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
               {pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <div className="text-sm text-muted-foreground">Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results</div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(1)} disabled={pagination.page === 1}><ChevronsLeft className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => handlePageChange(1)} disabled={pagination.page === 1}><ChevronsLeft className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}><ChevronLeft className="h-4 w-4" /></Button>
                     <span className="text-sm font-medium">Page {pagination.page} of {pagination.totalPages}</span>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages}><ChevronRight className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages}><ChevronsRight className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages}><ChevronRight className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages}><ChevronsRight className="h-4 w-4" /></Button>
                   </div>
                 </div>
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

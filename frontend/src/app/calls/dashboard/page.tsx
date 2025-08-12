@@ -92,6 +92,50 @@ export default function CallsDashboardPage() {
   const interestData = Object.entries(stats?.interestBreakdown || {}).map(([name, value]) => ({ name, value }))
   const TOTAL_INTEREST = interestData.reduce((sum, d) => sum + (d.value as number), 0)
 
+  const formatTick = (value: string, period: 'daily' | 'monthly' | 'yearly') => {
+    if (period === 'daily') {
+      const d = new Date(value)
+      if (isNaN(d.getTime())) return String(value)
+      return format(d, 'MMM dd')
+    }
+    if (period === 'monthly') {
+      const s = String(value)
+      const parts = s.split('-')
+      if (parts.length >= 2) {
+        const y = Number(parts[0])
+        const m = Number(parts[1])
+        if (!isNaN(y) && !isNaN(m) && m >= 1 && m <= 12) {
+          const d = new Date(y, m - 1, 1)
+          return format(d, 'MMM yyyy')
+        }
+      }
+      return String(value)
+    }
+    return String(value)
+  }
+
+  const formatLabel = (value: string, period: 'daily' | 'monthly' | 'yearly') => {
+    if (period === 'daily') {
+      const d = new Date(value)
+      if (isNaN(d.getTime())) return String(value)
+      return format(d, 'MMM dd, yyyy')
+    }
+    if (period === 'monthly') {
+      const s = String(value)
+      const parts = s.split('-')
+      if (parts.length >= 2) {
+        const y = Number(parts[0])
+        const m = Number(parts[1])
+        if (!isNaN(y) && !isNaN(m) && m >= 1 && m <= 12) {
+          const d = new Date(y, m - 1, 1)
+          return format(d, 'MMM yyyy')
+        }
+      }
+      return String(value)
+    }
+    return String(value)
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Date Filters */}
@@ -187,27 +231,11 @@ export default function CallsDashboardPage() {
                 <XAxis 
                   dataKey="date" 
                   fontSize={12}
-                  tickFormatter={(value) => {
-                    if (chartPeriod === 'daily') {
-                      return format(new Date(value), 'MMM dd')
-                    } else if (chartPeriod === 'monthly') {
-                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
-                    } else {
-                      return String(value)
-                    }
-                  }}
+                  tickFormatter={(value) => formatTick(String(value), chartPeriod)}
                 />
                 <YAxis fontSize={12} />
                 <Tooltip 
-                  labelFormatter={(value) => {
-                    if (chartPeriod === 'daily') {
-                      return format(new Date(value as string), 'MMM dd, yyyy')
-                    } else if (chartPeriod === 'monthly') {
-                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
-                    } else {
-                      return String(value)
-                    }
-                  }}
+                  labelFormatter={(value) => formatLabel(String(value), chartPeriod)}
                 />
                 <Line 
                   type="monotone" 
@@ -287,27 +315,11 @@ export default function CallsDashboardPage() {
                 <XAxis 
                   dataKey="date" 
                   fontSize={12}
-                  tickFormatter={(value) => {
-                    if (mqlChartPeriod === 'daily') {
-                      return format(new Date(value), 'MMM dd')
-                    } else if (mqlChartPeriod === 'monthly') {
-                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
-                    } else {
-                      return String(value)
-                    }
-                  }}
+                  tickFormatter={(value) => formatTick(String(value), mqlChartPeriod)}
                 />
                 <YAxis fontSize={12} />
                 <Tooltip 
-                  labelFormatter={(value) => {
-                    if (mqlChartPeriod === 'daily') {
-                      return format(new Date(value as string), 'MMM dd, yyyy')
-                    } else if (mqlChartPeriod === 'monthly') {
-                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
-                    } else {
-                      return String(value)
-                    }
-                  }}
+                  labelFormatter={(value) => formatLabel(String(value), mqlChartPeriod)}
                 />
                 <Line type="monotone" dataKey="count" name="MQLs" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
                 <Line type="monotone" dataKey="count" name="Clientes" data={clientsEvolution} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />

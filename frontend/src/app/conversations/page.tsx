@@ -499,7 +499,7 @@ export default function ConversationsPage() {
                 <SelectItem value="closed_human">Closed Human</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+      </div>
 
           {/* Assigned To Filter */}
           <div className="flex items-center space-x-2">
@@ -515,7 +515,7 @@ export default function ConversationsPage() {
             </Select>
           </div>
         </div>
-      </div>
+        </div>
         
       {/* Conversations Table and Pagination in a single card */}
       <div className="px-6 py-2">
@@ -595,7 +595,7 @@ export default function ConversationsPage() {
                         <span className="font-medium text-gray-900">
                           {conversation.contact?.name || 'Sin nombre'}
                         </span>
-                        {hasPendingMessages(conversation) && (
+                        {conversation.status.toLowerCase().startsWith('closed') ? null : hasPendingMessages(conversation) && (
                           <div className="flex items-center gap-1 mt-1">
                             <AlertCircle className="h-3 w-3 text-red-500" />
                             <span className="text-xs text-red-600 font-medium">
@@ -644,7 +644,9 @@ export default function ConversationsPage() {
 
                   {/* Waiting Time */}
                   <TableCell className="py-4">
-                    {conversation.last_message && hasPendingMessages(conversation) ? (
+                    {conversation.status.toLowerCase().startsWith('closed') ? (
+                      <span className="text-gray-400 text-sm">-</span>
+                    ) : conversation.last_message && hasPendingMessages(conversation) ? (
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-orange-500" />
                         <span className="text-sm text-orange-600 font-medium">
@@ -665,7 +667,7 @@ export default function ConversationsPage() {
             <div className="flex items-center justify-between pt-4">
               <div className="text-sm text-muted-foreground">
                 Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
-              </div>
+                </div>
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"

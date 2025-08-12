@@ -753,7 +753,7 @@ export const db = {
     let query = supabase
       .from(TABLES.CALLS)
       .select(
-        `id, status, created_at, agent_id, agent:agents(id, name)`
+        `id, status, created_at, agent_id, agent:agents(id, name, type, channel_type)`
       )
       .eq('workspace_id', workspaceId);
 
@@ -769,7 +769,11 @@ export const db = {
     (data || []).forEach(row => {
       const agentId = row.agent_id as number | null;
       if (!agentId) return;
-      const name = (row as any).agent?.name || 'Unknown';
+      const agent = (row as any).agent || {};
+      const agentType: string | undefined = (agent.type || agent.channel_type || '').toString().toLowerCase();
+      // Only consider agents for Calls
+      if (agentType && agentType !== 'call') return;
+      const name = agent.name || 'Unknown';
       const entry = byAgent.get(agentId) || { agentId, agentName: name, total: 0, mql: 0, client: 0 };
       entry.total += 1;
       const st = (row.status || '').toString().toLowerCase();
