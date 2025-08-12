@@ -24,29 +24,7 @@ import {
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 
-// Menu items
-const items = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Conversations",
-    url: "/conversations",
-    icon: MessageSquare,
-  },
-  {
-    title: "Contacts",
-    url: "/contacts",
-    icon: User,
-  },
-  {
-    title: "Social Connections",
-    url: "/social-connections",
-    icon: Share2,
-  },
-]
+
 
 export function AppSidebar() {
   const pathname = usePathname()
