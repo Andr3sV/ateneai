@@ -637,6 +637,23 @@ export const db = {
     };
   },
 
+  async getCallById(workspaceId: number, callId: number) {
+    const { data, error } = await supabase
+      .from(TABLES.CALLS)
+      .select(
+        `
+        *,
+        contact:contacts_new(id, name, phone),
+        agent:agents(id, name)
+        `
+      )
+      .eq('workspace_id', workspaceId)
+      .eq('id', callId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   async getCallsStats(
     workspaceId: number,
     startDate?: string,

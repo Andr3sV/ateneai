@@ -51,6 +51,30 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
   }
 });
 
+// Get single call by id with transcript and criteria_evaluation
+router.get('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const id = parseInt(req.params.id as string)
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ success: false, error: 'Invalid id' })
+      return;
+    }
+    const result = await db.getCallById?.(req.workspaceContext.workspaceId, id)
+    if (!result) {
+      res.status(404).json({ success: false, error: 'Not found' });
+      return;
+    }
+    res.json({ success: true, data: result })
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/:id:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 // Dashboard stats for calls
 router.get('/dashboard/stats', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {

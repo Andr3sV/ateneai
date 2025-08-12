@@ -16,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Phone, User, Calendar as CalendarIcon, Tag as TagIcon } from 'lucide-react'
+import { CallModal } from '@/components/call-modal'
 
 interface CallItem {
   id: number
@@ -37,6 +38,8 @@ export default function CallsPage() {
 
   const [calls, setCalls] = useState<CallItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [selectedCallId, setSelectedCallId] = useState<number | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   // Filters
   const [fromFilter, setFromFilter] = useState<string>('')
@@ -251,7 +254,7 @@ export default function CallsPage() {
               </TableRow>
             ) : (
                 calls.map((c) => (
-                  <TableRow key={c.id} className="hover:bg-gray-50 transition-colors">
+                  <TableRow key={c.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => { setSelectedCallId(c.id); setModalOpen(true) }}>
                     <TableCell className="py-4">
                       <span className="font-medium text-gray-900">{c.contact?.name || 'Sin nombre'}</span>
                     </TableCell>
@@ -306,6 +309,9 @@ export default function CallsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Call details modal */}
+      <CallModal callId={selectedCallId} open={modalOpen} onOpenChange={setModalOpen} />
     </div>
   )
 }
