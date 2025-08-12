@@ -4,14 +4,15 @@ import { requireWorkspaceContext } from '../middleware/workspace';
 
 const router = Router();
 
-// List agents for workspace
+// List agents for workspace (optional filter by type)
 router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     if (!req.workspaceContext) {
       res.status(401).json({ success: false, error: 'No workspace context available' });
       return;
     }
-    const agents = await db.getAgents(req.workspaceContext.workspaceId);
+    const type = (req.query.type as string) || undefined;
+    const agents = await db.getAgents(req.workspaceContext.workspaceId, { type });
     res.json({ success: true, data: agents });
   } catch (error: any) {
     console.error('❌ Error listing agents:', error);

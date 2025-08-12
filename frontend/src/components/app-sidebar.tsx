@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, MessageSquare, User, Share2, ChevronDown } from "lucide-react"
+import { Home, MessageSquare, User, Share2, ChevronDown, Phone } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -63,6 +63,12 @@ export function AppSidebar() {
     [pathname]
   )
   const [contactsOpen, setContactsOpen] = useState<boolean>(isContactsActive)
+
+  const isCallsActive = useMemo(
+    () => pathname.startsWith("/calls"),
+    [pathname]
+  )
+  const [callsOpen, setCallsOpen] = useState<boolean>(isCallsActive)
 
   return (
     <Sidebar>
@@ -160,6 +166,47 @@ export function AppSidebar() {
                       <SidebarMenuSubButton asChild isActive={pathname === "/contacts" || pathname.startsWith("/contacts/list")}>
                         <Link href="/contacts/list">
                           <span>List</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+
+              {/* Calls collapsible */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={isCallsActive}
+                  onClick={() => setCallsOpen((v) => !v)}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    <span>Calls</span>
+                  </div>
+                  <ChevronDown className={cn("transition-transform", callsOpen ? "rotate-180" : "rotate-0")} />
+                </SidebarMenuButton>
+
+                {callsOpen && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/calls/dashboard")}>
+                        <Link href="/calls/dashboard">
+                          <span>Dashboard</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/calls"}>
+                        <Link href="/calls">
+                          <span>Conversations</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/calls/agents")}>
+                        <Link href="/calls/agents">
+                          <span>Agents</span>
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>

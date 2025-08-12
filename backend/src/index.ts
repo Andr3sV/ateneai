@@ -25,6 +25,7 @@ import socialConnectionsWorkspaceRoutes from './routes/social-connections-worksp
 import webhooksSocialRoutes from './routes/webhooks-social';
 import conversationsPublicRoutes from './routes/conversations-public';
 import agentsWorkspaceRoutes from './routes/agents-workspace';
+import callsWorkspaceRoutes from './routes/calls-workspace';
 import { MIGRATION_CONFIG, logMigrationEvent } from './config/migration';
 
 // Load environment variables
@@ -55,10 +56,10 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Rate limiting
+// Rate limiting - Higher limit for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 100 : 10000, // 100 for production, 10,000 for development
   message: 'Too many requests from this IP, please try again later.',
 });
 
@@ -101,6 +102,7 @@ logMigrationEvent('Server startup', {
 
 app.use('/api/v2/auth', authWorkspaceRoutes);
 app.use('/api/v2/conversations', conversationsWorkspaceRoutes);
+app.use('/api/v2/calls', callsWorkspaceRoutes);
 app.use('/api/v2/contacts', contactsWorkspaceRoutes);
 app.use('/api/v2/analytics', analyticsWorkspaceRoutes);
 app.use('/api/v2/social-connections', socialConnectionsWorkspaceRoutes);
@@ -121,6 +123,7 @@ if (MIGRATION_CONFIG.ENABLE_WORKSPACE_ROUTES) {
   app.use('/api/analytics', analyticsWorkspaceRoutes);
   app.use('/api/social-connections', socialConnectionsWorkspaceRoutes);
   app.use('/api/agents', agentsWorkspaceRoutes);
+    app.use('/api/calls', callsWorkspaceRoutes);
   console.log('🚀 Using NEW workspace-based routes as primary');
 } else {
   // Primary routes use legacy system

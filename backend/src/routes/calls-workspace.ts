@@ -1,0 +1,99 @@
+import { Router } from 'express';
+import { db } from '../services/supabase-workspace';
+import { requireWorkspaceContext } from '../middleware/workspace';
+
+const router = Router();
+
+// List calls with filters and pagination
+router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = (page - 1) * limit;
+
+    const { from, to, status, interest, type, start_date, end_date } = req.query as Record<string, string>;
+
+    const filterPayload = {
+      from: from || undefined,
+      to: to || undefined,
+      status: (status as any) || undefined,
+      interest: (interest as any) || undefined,
+      type: (type as any) || undefined,
+      start_date: start_date || undefined,
+      end_date: end_date || undefined,
+      limit,
+      offset,
+    } as const;
+
+    const result = await db.getCalls(req.workspaceContext.workspaceId, filterPayload);
+
+    console.log(`📞 Calls list for workspace ${req.workspaceContext.workspaceId}: ${result.data.length} of ${result.total} (page ${page})`, filterPayload);
+
+    res.json({
+      success: true,
+      data: result.data,
+      pagination: {
+        page,
+        limit,
+        total: result.total,
+        totalPages: Math.ceil((result.total || 0) / limit),
+        hasMore: result.data.length === limit,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Dashboard stats for calls
+router.get('/dashboard/stats', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const { start_date, end_date } = req.query as Record<string, string>;
+    const stats = await db.getCallsStats(req.workspaceContext.workspaceId, start_date, end_date);
+
+    res.json({ success: true, data: stats });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/dashboard/stats:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Evolution data for calls
+router.get('/dashboard/evolution', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const { period, start_date, end_date } = req.query as Record<string, string>;
+    const resolvedPeriod = (period === 'monthly' || period === 'yearly') ? period : 'daily';
+
+    const evo = await db.getCallsEvolution(
+      req.workspaceContext.workspaceId,
+      resolvedPeriod,
+      start_date,
+      end_date
+    );
+
+    res.json({ success: true, data: evo });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/dashboard/evolution:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+export default router;
+
+

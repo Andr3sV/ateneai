@@ -20,6 +20,7 @@ export const TABLES = {
   CONTACTS: 'contacts_new',
   CONVERSATIONS: 'conversations_new',
   MESSAGES: 'messages_new',
+  CALLS: 'calls',
   AGENTS: 'agents',
   // Keep old tables for gradual migration
   CLIENTS: 'clients',
@@ -536,12 +537,18 @@ export const db = {
   // AGENTS (workspace-scoped)
   // ================================================
 
-  async getAgents(workspaceId: number) {
-    const { data, error } = await supabase
+  async getAgents(workspaceId: number, options?: { type?: string }) {
+    let query = supabase
       .from(TABLES.AGENTS)
       .select('*')
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: true });
+
+    if (options?.type) {
+      query = query.eq('type', options.type);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   },
@@ -555,6 +562,160 @@ export const db = {
       .single();
     if (error && error.code !== 'PGRST116') throw error; // not found is okay
     return data || null;
+  },
+
+  // ================================================
+  // CALLS (workspace-scoped)
+  // ================================================
+
+  async getCalls(
+    workspaceId: number,
+    filters: {
+      from?: string
+      to?: string
+      status?: 'lead' | 'mql' | 'client'
+      interest?: 'energy' | 'alarm' | 'telco'
+      type?: 'outbound' | 'inbound'
+      start_date?: string
+      end_date?: string
+      limit?: number
+      offset?: number
+    } = {}
+  ) {
+    // Count query first
+    let countQuery = supabase
+      .from(TABLES.CALLS)
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId);
+
+    if (filters.status) countQuery = countQuery.eq('status', filters.status);
+    if (filters.interest) countQuery = countQuery.eq('interest', filters.interest);
+    if (filters.type) countQuery = countQuery.eq('type', filters.type);
+    if (filters.from) countQuery = countQuery.ilike('phone_from', `%${filters.from}%`);
+    if (filters.to) countQuery = countQuery.ilike('phone_to', `%${filters.to}%`);
+    if (filters.start_date && filters.end_date) {
+      countQuery = countQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
+    }
+
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
+
+    // Data query with joins and pagination
+    let dataQuery = supabase
+      .from(TABLES.CALLS)
+      .select(
+        `
+        *,
+        contact:contacts_new(id, name, phone),
+        agent:agents(id, name)
+        `
+      )
+      .eq('workspace_id', workspaceId);
+
+    if (filters.status) dataQuery = dataQuery.eq('status', filters.status);
+    if (filters.interest) dataQuery = dataQuery.eq('interest', filters.interest);
+    if (filters.type) dataQuery = dataQuery.eq('type', filters.type);
+    if (filters.from) dataQuery = dataQuery.ilike('phone_from', `%${filters.from}%`);
+    if (filters.to) dataQuery = dataQuery.ilike('phone_to', `%${filters.to}%`);
+    if (filters.start_date && filters.end_date) {
+      dataQuery = dataQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
+    }
+
+    // Pagination
+    if (filters.offset !== undefined && filters.limit) {
+      dataQuery = dataQuery.range(filters.offset, filters.offset + filters.limit - 1);
+    } else if (filters.limit) {
+      dataQuery = dataQuery.limit(filters.limit);
+    }
+
+    const { data, error } = await dataQuery.order('created_at', { ascending: false });
+    if (error) throw error;
+
+    return {
+      data,
+      total: count || 0,
+    };
+  },
+
+  async getCallsStats(
+    workspaceId: number,
+    startDate?: string,
+    endDate?: string
+  ) {
+    let query = supabase
+      .from(TABLES.CALLS)
+      .select('status, interest, type, created_at')
+      .eq('workspace_id', workspaceId);
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const total = data.length;
+    const outbound = data.filter(c => c.type === 'outbound').length;
+    const inbound = data.filter(c => c.type === 'inbound').length;
+
+    const statusBreakdown = data.reduce<Record<string, number>>((acc, row) => {
+      const key = (row.status || 'unknown').toLowerCase();
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    const interestBreakdown = data.reduce<Record<string, number>>((acc, row) => {
+      const key = (row.interest || 'unknown').toLowerCase();
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      total,
+      outbound,
+      inbound,
+      statusBreakdown,
+      interestBreakdown,
+    };
+  },
+
+  async getCallsEvolution(
+    workspaceId: number,
+    period: 'daily' | 'monthly' | 'yearly',
+    startDate?: string,
+    endDate?: string
+  ) {
+    let query = supabase
+      .from(TABLES.CALLS)
+      .select('created_at')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: true });
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const evolutionMap: { [key: string]: number } = {};
+    data.forEach(call => {
+      if (!call.created_at) return;
+      const date = new Date(call.created_at);
+      let key: string;
+      if (period === 'daily') {
+        key = date.toISOString().split('T')[0];
+      } else if (period === 'monthly') {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      } else {
+        key = date.getFullYear().toString();
+      }
+      evolutionMap[key] = (evolutionMap[key] || 0) + 1;
+    });
+
+    return Object.entries(evolutionMap)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
   },
 
   async createAgent(agentData: Partial<any>, workspaceId: number) {
