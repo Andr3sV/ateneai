@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../services/supabase-workspace';
 import { requireWorkspaceContext } from '../middleware/workspace';
+import axios from 'axios';
 
 const router = Router();
 
@@ -182,5 +183,117 @@ router.get('/dashboard/contact-repetition', requireWorkspaceContext, async (req,
 });
 
 export default router;
+
+// Bulk calling integration (voice orchestrator)
+// POST /api/calls/bulk
+// Body: {
+//   campaignId?: string,
+//   agentExternalId: string,
+//   agentPhoneExternalId: string,
+//   fromNumber: string,
+//   rows: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>
+// }
+router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const {
+      campaignId,
+      agentExternalId,
+      agentPhoneExternalId,
+      fromNumber,
+      rows
+    } = req.body as {
+      campaignId?: string
+      agentExternalId: string
+      agentPhoneExternalId: string
+      fromNumber: string
+      rows: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>
+    };
+
+    if (!agentExternalId || !agentPhoneExternalId || !fromNumber || !Array.isArray(rows) || rows.length === 0) {
+      res.status(400).json({ success: false, error: 'Missing fields: agentExternalId, agentPhoneExternalId, fromNumber, rows' });
+      return;
+    }
+
+    // Prepare payload for voice orchestrator
+    const payload = {
+      workspaceId: String(req.workspaceContext.workspaceId),
+      campaignId,
+      agentId: agentExternalId,
+      agentPhoneNumberId: agentPhoneExternalId,
+      fromNumber,
+      calls: rows.map(r => ({ toNumber: r.toNumber, variables: r.variables || {}, metadata: r.metadata || {} }))
+    };
+
+    const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
+    // Per workspace API key with env fallback
+    const workspaceApiKey = await db.getWorkspaceVoiceApiKey(req.workspaceContext.workspaceId).catch(() => null);
+    const API_KEY = workspaceApiKey || process.env.VOICE_ORCHESTRATOR_API_KEY;
+    if (!API_KEY) {
+      res.status(500).json({ success: false, error: 'Missing voice API key (workspace.voice_api_key or VOICE_ORCHESTRATOR_API_KEY)' });
+      return;
+    }
+
+    // Batch in chunks of up to 5000
+    const CHUNK = 5000;
+    let enqueuedTotal = 0;
+    for (let i = 0; i < payload.calls.length; i += CHUNK) {
+      const body = { ...payload, calls: payload.calls.slice(i, i + CHUNK) };
+          console.log('📞 Sending batch call to voice orchestrator:', { 
+      url: `${VOICE_URL}/calls/bulk`, 
+      workspaceId: body.workspaceId,
+      callsCount: body.calls.length 
+    });
+    
+    const { data } = await axios.post(
+      `${VOICE_URL}/calls/bulk`,
+      body,
+      { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } }
+    );
+      enqueuedTotal += Number(data?.enqueued || 0);
+    }
+
+    res.json({ success: true, enqueued: enqueuedTotal });
+  } catch (error: any) {
+    console.error('❌ Error in POST /calls/bulk:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({ success: false, error: error.response?.data || error.message });
+  }
+});
+
+// Poll progress proxy
+router.get('/bulk/progress', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const { campaignId } = req.query as { campaignId?: string };
+    if (!campaignId) {
+      res.status(400).json({ success: false, error: 'campaignId is required' });
+      return;
+    }
+    const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
+    const workspaceApiKey = await db.getWorkspaceVoiceApiKey(req.workspaceContext.workspaceId).catch(() => null);
+    const API_KEY = workspaceApiKey || process.env.VOICE_ORCHESTRATOR_API_KEY;
+    if (!API_KEY) {
+      res.status(500).json({ success: false, error: 'Missing voice API key (workspace.voice_api_key or VOICE_ORCHESTRATOR_API_KEY)' });
+      return;
+    }
+    const { data } = await axios.get(
+      `${VOICE_URL}/calls/progress`,
+      { params: { workspaceId: req.workspaceContext.workspaceId, campaignId }, headers: { Authorization: `Bearer ${API_KEY}` } }
+    );
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/bulk/progress:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({ success: false, error: error.response?.data || error.message });
+  }
+});
 
 
