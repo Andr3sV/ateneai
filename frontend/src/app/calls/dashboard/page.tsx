@@ -1,15 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { usePageTitle } from '@/hooks/usePageTitle'
-import { getApiUrl, logMigrationEvent } from '@/config/features'
+import { getApiUrl } from '@/config/features'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar as CalendarIcon } from 'lucide-react'
+import { Calendar as CalendarIcon, TrendingUp } from 'lucide-react'
 import { format, subDays } from 'date-fns'
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts'
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend, Label } from 'recharts'
 import { StatCard } from '@/components/stat-card'
 
 interface EvolutionData { date: string; count: number }
@@ -28,46 +28,36 @@ export default function CallsDashboardPage() {
   usePageTitle('Calls Dashboard')
   const authenticatedFetch = useAuthenticatedFetch()
 
-  const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'custom'>('30d')
-  const [customStartDate, setCustomStartDate] = useState<Date>()
-  const [customEndDate, setCustomEndDate] = useState<Date>()
+  // Attio-style: quick buttons + custom popover range
+  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30))
+  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [chartPeriod, setChartPeriod] = useState<'daily' | 'monthly' | 'yearly'>('daily')
 
   const [evolution, setEvolution] = useState<EvolutionData[]>([])
+  const [mqlEvolution, setMqlEvolution] = useState<EvolutionData[]>([])
   const [stats, setStats] = useState<CallsStats | null>(null)
   const [loading, setLoading] = useState(false)
+  const [mqlChartPeriod, setMqlChartPeriod] = useState<'daily' | 'monthly' | 'yearly'>('daily')
 
-  const getDateFilters = () => {
-    let startDate: string
-    let endDate: string = new Date().toISOString()
-    switch (dateRange) {
-      case '7d': startDate = subDays(new Date(), 7).toISOString(); break
-      case '30d': startDate = subDays(new Date(), 30).toISOString(); break
-      case '90d': startDate = subDays(new Date(), 90).toISOString(); break
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          startDate = customStartDate.toISOString()
-          endDate = customEndDate.toISOString()
-        } else {
-          startDate = subDays(new Date(), 30).toISOString()
-        }
-        break
-      default:
-        startDate = subDays(new Date(), 30).toISOString()
-    }
-    return { start_date: startDate, end_date: endDate }
-  }
+  const formattedRange = useMemo(() => {
+    return `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`
+  }, [startDate, endDate])
 
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const { start_date, end_date } = getDateFilters()
-      const evoParams = new URLSearchParams({ period: 'daily', start_date, end_date })
+      const start_date = startDate.toISOString()
+      const end_date = endDate.toISOString()
+      const evoParams = new URLSearchParams({ period: chartPeriod, start_date, end_date })
+      const mqlEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'mql' })
       const statsParams = new URLSearchParams({ start_date, end_date })
-      const [evoRes, statsRes] = await Promise.all([
+      const [evoRes, mqlEvoRes, statsRes] = await Promise.all([
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${evoParams}`)),
+        authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${mqlEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/stats?${statsParams}`)),
       ])
       if (evoRes.success) setEvolution(evoRes.data)
+      if (mqlEvoRes.success) setMqlEvolution(mqlEvoRes.data)
       if (statsRes.success) setStats(statsRes.data)
     } catch (e) {
       console.error('Error fetching calls dashboard:', e)
@@ -79,76 +69,241 @@ export default function CallsDashboardPage() {
   useEffect(() => {
     fetchAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange, customStartDate, customEndDate])
+  }, [startDate, endDate, chartPeriod, mqlChartPeriod])
+
+  const handleQuickDateFilter = (days: number) => {
+    setEndDate(new Date())
+    setStartDate(subDays(new Date(), days))
+  }
 
   const interestData = Object.entries(stats?.interestBreakdown || {}).map(([name, value]) => ({ name, value }))
+  const TOTAL_INTEREST = interestData.reduce((sum, d) => sum + (d.value as number), 0)
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header with date filters */}
-      <div className="flex items-center justify-between">
-        <div className="text-2xl font-semibold">Calls Dashboard</div>
-        <div className="flex items-center gap-2">
-          {(['7d','30d','90d'] as const).map((key) => (
-            <Button key={key} variant={dateRange === key ? 'default' : 'outline'} onClick={() => setDateRange(key)}>
-              {key.toUpperCase()}
-            </Button>
-          ))}
+    <div className="flex flex-1 flex-col gap-6 p-6">
+      {/* Date Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => handleQuickDateFilter(7)}>Last 7 days</Button>
+          <Button variant="outline" size="sm" onClick={() => handleQuickDateFilter(30)}>Last 30 days</Button>
+          <Button variant="outline" size="sm" onClick={() => handleQuickDateFilter(90)}>Last 90 days</Button>
+
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant={dateRange === 'custom' ? 'default' : 'outline'} onClick={() => setDateRange('custom')}>
-                <CalendarIcon className="mr-2 h-4 w-4" /> Custom
+              <Button variant="outline" size="sm">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                {formattedRange}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <div className="flex gap-2 p-3">
-                <Calendar mode="single" selected={customStartDate} onSelect={setCustomStartDate} />
-                <Calendar mode="single" selected={customEndDate} onSelect={setCustomEndDate} />
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-3 border-b">
+                <div className="text-sm font-medium">Start Date</div>
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(d) => d && setStartDate(d)}
+                  required
+                  disabled={(date) => {
+                    const afterToday = date > new Date()
+                    const afterEnd = endDate ? date > endDate : false
+                    return afterToday || afterEnd
+                  }}
+                />
+              </div>
+              <div className="p-3">
+                <div className="text-sm font-medium">End Date</div>
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(d) => d && setEndDate(d)}
+                  required
+                  disabled={(date) => {
+                    const afterToday = date > new Date()
+                    const beforeStart = startDate ? date < startDate : false
+                    return afterToday || beforeStart
+                  }}
+                />
               </div>
             </PopoverContent>
           </Popover>
         </div>
       </div>
 
-      {/* Key stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Calls" value={loading ? '...' : (stats?.total ?? 0)} description="All calls in range" />
-        <StatCard title="Outbound" value={loading ? '...' : (stats?.outbound ?? 0)} description="Calls initiated by agents" />
-        <StatCard title="Inbound" value={loading ? '...' : (stats?.inbound ?? 0)} description="Calls received" />
-        <StatCard title="Lead → Client %" value={loading ? '...' : (() => {
+        <StatCard title="Total Calls" value={stats?.total ?? 0} description="All calls in range" />
+        <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Total MQLs in range" />
+        <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Total clientes en el periodo" />
+        <StatCard title="Lead → Client %" value={(() => {
           const leads = stats?.statusBreakdown?.['lead'] ?? 0
           const clients = stats?.statusBreakdown?.['client'] ?? 0
           return leads > 0 ? `${Math.round((clients / leads) * 100)}%` : '0%'
         })()} description="Conversion within period" />
       </div>
 
-      {/* Evolution line chart */}
+      {/* Chart and Pie Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        {/* Evolution Card */}
+        <div className="lg:col-span-2 bg-white shadow rounded-lg p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Evolución de Llamadas
+              </h3>
+              <p className="text-sm text-gray-500">Tendencia de llamadas en el tiempo</p>
+            </div>
+            <div className="flex gap-2">
+              {(['daily', 'monthly', 'yearly'] as const).map((period) => (
+                <Button
+                  key={period}
+                  variant={chartPeriod === period ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setChartPeriod(period)}
+                >
+                  {period === 'daily' ? 'Diario' : period === 'monthly' ? 'Mensual' : 'Anual'}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={evolution}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} />
+                <XAxis 
+                  dataKey="date" 
+                  fontSize={12}
+                  tickFormatter={(value) => {
+                    if (chartPeriod === 'daily') {
+                      return format(new Date(value), 'MMM dd')
+                    } else if (chartPeriod === 'monthly') {
+                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
+                    } else {
+                      return String(value)
+                    }
+                  }}
+                />
                 <YAxis fontSize={12} />
-                <Tooltip />
-                <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Tooltip 
+                  labelFormatter={(value) => {
+                    if (chartPeriod === 'daily') {
+                      return format(new Date(value as string), 'MMM dd, yyyy')
+                    } else if (chartPeriod === 'monthly') {
+                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
+                    } else {
+                      return String(value)
+                    }
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
-        {/* Interest pie */}
-        <div>
+
+        {/* Interest Donut */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Interés</h3>
+          <p className="text-sm text-gray-500 mb-4">Distribución por interés</p>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie dataKey="value" data={interestData} cx="50%" cy="50%" outerRadius={90} label>
-                  {interestData.map((_, idx) => (
+                <Pie 
+                  dataKey="value" 
+                  data={interestData} 
+                  cx="50%" cy="50%" 
+                  innerRadius={55} 
+                  outerRadius={90}
+                >
+                  {interestData.map((d, idx) => (
                     <Cell key={`cell-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
                   ))}
+                  <Label
+                    value={`${TOTAL_INTEREST}`}
+                    position="center"
+                    className="text-xl font-semibold fill-gray-900"
+                  />
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value: number, name: string) => {
+                  const pct = TOTAL_INTEREST ? Math.round((value / TOTAL_INTEREST) * 100) : 0
+                  return [`${value} (${pct}%)`, name]
+                }} />
+                <Legend verticalAlign="bottom" align="center" />
               </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* MQL Evolution */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Evolución de MQLs
+              </h3>
+              <p className="text-sm text-gray-500">MQLs generados en el tiempo</p>
+            </div>
+            <div className="flex gap-2">
+              {(['daily', 'monthly', 'yearly'] as const).map((period) => (
+                <Button
+                  key={period}
+                  variant={mqlChartPeriod === period ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMqlChartPeriod(period)}
+                >
+                  {period === 'daily' ? 'Diario' : period === 'monthly' ? 'Mensual' : 'Anual'}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={mqlEvolution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  fontSize={12}
+                  tickFormatter={(value) => {
+                    if (mqlChartPeriod === 'daily') {
+                      return format(new Date(value), 'MMM dd')
+                    } else if (mqlChartPeriod === 'monthly') {
+                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
+                    } else {
+                      return String(value)
+                    }
+                  }}
+                />
+                <YAxis fontSize={12} />
+                <Tooltip 
+                  labelFormatter={(value) => {
+                    if (mqlChartPeriod === 'daily') {
+                      return format(new Date(value as string), 'MMM dd, yyyy')
+                    } else if (mqlChartPeriod === 'monthly') {
+                      return format(new Date(String(value) + '-01'), 'MMM yyyy')
+                    } else {
+                      return String(value)
+                    }
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>

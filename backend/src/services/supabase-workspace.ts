@@ -700,13 +700,18 @@ export const db = {
     workspaceId: number,
     period: 'daily' | 'monthly' | 'yearly',
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    statusFilter?: 'lead' | 'mql' | 'client'
   ) {
     let query = supabase
       .from(TABLES.CALLS)
       .select('created_at')
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: true });
+
+    if (statusFilter) {
+      query = query.eq('status', statusFilter);
+    }
 
     if (startDate && endDate) {
       query = query.gte('created_at', startDate).lte('created_at', endDate);

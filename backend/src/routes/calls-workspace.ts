@@ -93,7 +93,7 @@ router.get('/dashboard/stats', requireWorkspaceContext, async (req, res): Promis
   }
 });
 
-// Evolution data for calls
+// Evolution data for calls (supports optional status filter e.g., mql)
 router.get('/dashboard/evolution', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     if (!req.workspaceContext) {
@@ -101,14 +101,15 @@ router.get('/dashboard/evolution', requireWorkspaceContext, async (req, res): Pr
       return;
     }
 
-    const { period, start_date, end_date } = req.query as Record<string, string>;
+    const { period, start_date, end_date, status } = req.query as Record<string, string>;
     const resolvedPeriod = (period === 'monthly' || period === 'yearly') ? period : 'daily';
 
     const evo = await db.getCallsEvolution(
       req.workspaceContext.workspaceId,
       resolvedPeriod,
       start_date,
-      end_date
+      end_date,
+      (status as any) || undefined
     );
 
     res.json({ success: true, data: evo });

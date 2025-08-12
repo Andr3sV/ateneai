@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, MessageSquare, User, Share2, ChevronDown, Phone } from "lucide-react"
+import { Home, MessageSquare, User, ChevronDown, Phone, Share2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -53,7 +53,7 @@ export function AppSidebar() {
   const { user } = useUser()
 
   const isMessagesActive = useMemo(
-    () => pathname.startsWith("/messages") || pathname.startsWith("/conversations"),
+    () => pathname.startsWith("/messages") || pathname.startsWith("/conversations") || pathname.startsWith("/social-connections"),
     [pathname]
   )
   const [messagesOpen, setMessagesOpen] = useState<boolean>(isMessagesActive)
@@ -135,37 +135,10 @@ export function AppSidebar() {
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                )}
-              </SidebarMenuItem>
-
-              {/* Contacts collapsible */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={isContactsActive}
-                  onClick={() => setContactsOpen((v) => !v)}
-                  className="justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span>Contacts</span>
-                  </div>
-                  <ChevronDown className={cn("transition-transform", contactsOpen ? "rotate-180" : "rotate-0")} />
-                </SidebarMenuButton>
-
-                {contactsOpen && (
-                  <SidebarMenuSub>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/contacts/dashboard")}>
-                        <Link href="/contacts/dashboard">
-                          <span>Dashboard</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/contacts" || pathname.startsWith("/contacts/list")}>
-                        <Link href="/contacts/list">
-                          <span>List</span>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/social-connections")}>
+                        <Link href="/social-connections">
+                          <span>Social Connections</span>
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -214,14 +187,38 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
-              {/* Social Connections */}
+              {/* Contacts collapsible (moved below Calls) */}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith("/social-connections")}>
-                  <Link href="/social-connections">
-                    <Share2 />
-                    <span>Social Connections</span>
-                  </Link>
+                <SidebarMenuButton
+                  isActive={isContactsActive}
+                  onClick={() => setContactsOpen((v) => !v)}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Contacts</span>
+                  </div>
+                  <ChevronDown className={cn("transition-transform", contactsOpen ? "rotate-180" : "rotate-0")} />
                 </SidebarMenuButton>
+
+                {contactsOpen && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/contacts/dashboard")}>
+                        <Link href="/contacts/dashboard">
+                          <span>Dashboard</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/contacts" || pathname.startsWith("/contacts/list")}>
+                        <Link href="/contacts/list">
+                          <span>List</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
