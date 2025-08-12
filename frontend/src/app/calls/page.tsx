@@ -29,6 +29,7 @@ interface CallItem {
   interest: 'energy' | 'alarm' | 'telco' | null
   type: 'outbound' | 'inbound' | null
   created_at: string
+  duration?: number | null
 }
 
 export default function CallsPage() {
@@ -241,6 +242,7 @@ export default function CallsPage() {
                     Date
                   </div>
                 </TableHead>
+                <TableHead className="text-left font-semibold text-gray-900">Duration</TableHead>
             </TableRow>
           </TableHeader>
             <TableBody>
@@ -281,6 +283,9 @@ export default function CallsPage() {
                     </TableCell>
                     <TableCell className="py-4">
                       {format(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      {typeof c.duration === 'number' ? `${Math.floor((c.duration || 0)/60)}m ${Math.floor((c.duration || 0)%60)}s` : '-'}
                     </TableCell>
                   </TableRow>
                 ))

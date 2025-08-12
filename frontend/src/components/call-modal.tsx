@@ -22,6 +22,8 @@ type CallDetail = {
   created_at: string
   transcript?: string | null
   criteria_evaluation?: string[] | null
+  duration?: number | null
+  dinamic_variables?: string[] | null
 }
 
 interface CallModalProps {
@@ -81,7 +83,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <SheetHeader className="space-y-3 px-4 py-3 sticky top-0 bg-white z-10 border-b">
-            <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between">
               <div className="flex-1 pr-8">
                 <SheetTitle className="text-lg font-semibold">
                   {call?.contact?.name || 'Call details'}
@@ -92,6 +94,9 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                     {call?.agent?.name && <span>• 👤 {call.agent.name}</span>}
                     {call?.type && <span>• ☎️ {call.type === 'inbound' ? 'Inbound' : 'Outbound'}</span>}
                     {call?.city && <span>• 🏙️ {call.city}</span>}
+                      {typeof call?.duration === 'number' && (
+                        <span>• ⏱️ {Math.floor((call.duration || 0) / 60)}m {Math.floor((call.duration || 0) % 60)}s</span>
+                      )}
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     {renderStatusBadge(call?.status || null)}
@@ -135,6 +140,24 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">No criteria provided</div>
+              )}
+            </div>
+
+            {/* Dynamic Variables */}
+            <div>
+              <div className="text-sm font-semibold mb-2">Dynamic Variables</div>
+              {loading ? (
+                <div className="text-sm text-gray-500">Loading…</div>
+              ) : (call?.dinamic_variables && call.dinamic_variables.length > 0) ? (
+                <div className="flex flex-wrap gap-2">
+                  {call.dinamic_variables.map((token, idx) => (
+                    <Badge key={idx} variant="secondary" className="px-2 py-1 text-xs">
+                      {token}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">No dynamic variables</div>
               )}
             </div>
           </div>

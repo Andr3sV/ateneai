@@ -33,3 +33,4 @@ Thumbs.db
 *.bundle
 *.zip
 *.tar.gz
+.vercel
