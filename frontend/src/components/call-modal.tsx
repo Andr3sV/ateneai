@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { getApiUrl } from '@/config/features'
+import { X } from 'lucide-react'
 
 type CallDetail = {
   id: number
@@ -80,21 +81,33 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <SheetHeader className="space-y-3 px-4 py-3 sticky top-0 bg-white z-10 border-b">
-            <SheetTitle className="text-lg font-semibold">
-              {call?.contact?.name || 'Call details'}
-            </SheetTitle>
-            <SheetDescription className="text-left">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                {call?.contact?.phone && <span>📱 {call.contact.phone}</span>}
-                {call?.agent?.name && <span>• 👤 {call.agent.name}</span>}
-                {call?.type && <span>• ☎️ {call.type === 'inbound' ? 'Inbound' : 'Outbound'}</span>}
-                {call?.city && <span>• 🏙️ {call.city}</span>}
+            <div className="flex items-start justify-between">
+              <div className="flex-1 pr-8">
+                <SheetTitle className="text-lg font-semibold">
+                  {call?.contact?.name || 'Call details'}
+                </SheetTitle>
+                <SheetDescription className="text-left">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                    {call?.contact?.phone && <span>📱 {call.contact.phone}</span>}
+                    {call?.agent?.name && <span>• 👤 {call.agent.name}</span>}
+                    {call?.type && <span>• ☎️ {call.type === 'inbound' ? 'Inbound' : 'Outbound'}</span>}
+                    {call?.city && <span>• 🏙️ {call.city}</span>}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    {renderStatusBadge(call?.status || null)}
+                    {renderInterestBadge(call?.interest || null)}
+                  </div>
+                </SheetDescription>
               </div>
-              <div className="mt-2 flex items-center gap-2">
-                {renderStatusBadge(call?.status || null)}
-                {renderInterestBadge(call?.interest || null)}
-              </div>
-            </SheetDescription>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </SheetHeader>
 
           {/* Body */}
