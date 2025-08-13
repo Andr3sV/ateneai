@@ -35,12 +35,23 @@ async function fireConfetti() {
   } catch {}
 }
 
-function playPing(audioEnabled: boolean) {
-  if (!audioEnabled) return
+function playPing(enabled: boolean) {
+  if (!enabled) return
   try {
-    const audio = new Audio('/sounds/goal.mp3')
-    audio.volume = 0.3
-    audio.play().catch(() => {})
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.type = 'triangle'
+    o.frequency.value = 880
+    g.gain.value = 0.001
+    o.connect(g)
+    g.connect(ctx.destination)
+    o.start()
+    // quick envelope
+    g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25)
+    o.stop(ctx.currentTime + 0.3)
+    o.onended = () => ctx.close()
   } catch {}
 }
 
@@ -68,6 +79,8 @@ export default function CallsPage() {
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const celebratedIdsRef = useRef<Set<number>>(new Set())
+  const initialSilentPollDoneRef = useRef<boolean>(false)
 
   // Filters
   const [fromFilter, setFromFilter] = useState<string>('')
@@ -81,7 +94,6 @@ export default function CallsPage() {
   // Pagination
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const [celebrateEnabled, setCelebrateEnabled] = useState<boolean>(true)
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
 
   const callsSignature = (list: CallItem[]) =>
     list
@@ -128,12 +140,27 @@ export default function CallsPage() {
       
       if (data.success) {
         const next = (data.data || []) as CallItem[]
-        // Detect new MQL/Client entries to celebrate
-        const currentIds = new Set(calls.map(c => c.id))
-        const newQualified = next.filter(c => !currentIds.has(c.id) && (c.status === 'mql' || c.status === 'client'))
-        if (newQualified.length > 0 && celebrateEnabled) {
-          fireConfetti()
-          playPing(soundEnabled)
+        if (silent) {
+          // Detect newly arrived qualified rows only once per ID
+          const qualifiedNow = next
+            .filter(r => {
+              const s = (r.status || '').toLowerCase()
+              return s === 'mql' || s === 'client'
+            })
+            .map(r => r.id)
+
+          // On first silent tick, just prime the set (no celebration)
+          if (!initialSilentPollDoneRef.current) {
+            qualifiedNow.forEach(id => celebratedIdsRef.current.add(id))
+            initialSilentPollDoneRef.current = true
+          } else {
+            const newOnes = qualifiedNow.filter(id => !celebratedIdsRef.current.has(id))
+            if (newOnes.length > 0 && celebrateEnabled) {
+              fireConfetti()
+              playPing(true)
+              newOnes.forEach(id => celebratedIdsRef.current.add(id))
+            }
+          }
         }
         setCallsIfChanged(next)
         setPagination({
@@ -145,7 +172,7 @@ export default function CallsPage() {
       }
     } catch (e) {
       console.error('❌ Error fetching calls:', e)
-      setCalls([])
+      if (!silent) setCalls([])
     } finally {
       if (!silent) setLoading(false)
     }
@@ -269,12 +296,8 @@ export default function CallsPage() {
           </div>
           <div className="ml-auto flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Confetti</span>
+              <span className="text-lg">🎉</span>
               <Switch checked={celebrateEnabled} onCheckedChange={setCelebrateEnabled} />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sound</span>
-              <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} />
             </div>
           </div>
         </div>
