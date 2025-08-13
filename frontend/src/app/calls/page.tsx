@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { subDays, format as formatDate } from 'date-fns'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { usePageTitle } from '@/hooks/usePageTitle'
@@ -41,6 +41,7 @@ export default function CallsPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Filters
   const [fromFilter, setFromFilter] = useState<string>('')
@@ -54,9 +55,31 @@ export default function CallsPage() {
   // Pagination
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
 
-  const fetchCalls = async (pageNum = 1) => {
+  const callsSignature = (list: CallItem[]) =>
+    list
+      .map(c => [
+        c.id,
+        c.created_at,
+        c.status || '',
+        c.duration ?? '',
+        c.contact?.name || '',
+        c.phone_from || '',
+        c.phone_to || '',
+        c.agent?.name || '',
+        c.interest || '',
+        c.type || ''
+      ].join('|'))
+      .join('~')
+
+  const setCallsIfChanged = (next: CallItem[]) => {
+    if (callsSignature(calls) !== callsSignature(next)) {
+      setCalls(next)
+    }
+  }
+
+  const fetchCalls = async (pageNum = 1, silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       const params = new URLSearchParams({ page: String(pageNum), limit: String(pagination.limit) })
       if (fromFilter) params.append('from', fromFilter)
       if (toFilter) params.append('to', toFilter)
@@ -69,14 +92,14 @@ export default function CallsPage() {
       }
 
       const apiUrl = getApiUrl(`calls?${params.toString()}`)
-      console.log('🔍 Calls API URL:', apiUrl)
+      if (!silent) console.log('🔍 Calls API URL:', apiUrl)
       
-      logMigrationEvent('Calls fetch', { page: pageNum })
+      if (!silent) logMigrationEvent('Calls fetch', { page: pageNum })
       const data = await authenticatedFetch(apiUrl)
-      console.log('📞 Calls API response:', data)
+      if (!silent) console.log('📞 Calls API response:', data)
       
       if (data.success) {
-        setCalls(data.data || [])
+        setCallsIfChanged(data.data || [])
         setPagination({
           page: pageNum,
           limit: pagination.limit,
@@ -88,7 +111,7 @@ export default function CallsPage() {
       console.error('❌ Error fetching calls:', e)
       setCalls([])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -102,6 +125,18 @@ export default function CallsPage() {
     fetchCalls(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromFilter, toFilter, statusFilter, interestFilter, typeFilter, dateStart, dateEnd])
+
+  // Silent background polling to auto-refresh without flicker
+  useEffect(() => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+    pollTimerRef.current = setInterval(() => {
+      fetchCalls(pagination.page, true)
+    }, 10000)
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+    }
+    // Include relevant dependencies so polling respects current page/filters
+  }, [pagination.page, fromFilter, toFilter, statusFilter, interestFilter, typeFilter, dateStart, dateEnd])
 
   const applyQuickDateRange = (days: number) => {
     setDateStart(subDays(new Date(), days))

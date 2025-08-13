@@ -67,6 +67,7 @@ export default function ConversationsPage() {
   
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [chatModalOpen, setChatModalOpen] = useState(false)
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   // Filtros
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -105,6 +106,17 @@ export default function ConversationsPage() {
     }
   }, [debouncedSearchTerm, user])
 
+  // Silent background polling every 10s
+  useEffect(() => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+    pollTimerRef.current = setInterval(() => {
+      fetchConversations(pagination.page, true)
+    }, 10000)
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+    }
+  }, [pagination.page, statusFilter, assignedToFilter, debouncedSearchTerm])
+
   // Helper: open conversation by id using direct fetch if not in current page
   const openConversationById = useCallback(async (conversationId: number) => {
     try {
@@ -137,9 +149,28 @@ export default function ConversationsPage() {
     openConversationById(id)
   }, [conversations, openConversationById])
 
-  const fetchConversations = async (pageNum = 1) => {
+  const conversationsSignature = (list: Conversation[]) =>
+    list
+      .map(c => [
+        c.id,
+        c.status,
+        c.assigned_to,
+        c.contact?.name || '',
+        c.contact?.phone || '',
+        c.last_message?.sender_type || '',
+        c.last_message?.created_at || ''
+      ].join('|'))
+      .join('~')
+
+  const setConversationsIfChanged = (next: Conversation[]) => {
+    if (conversationsSignature(conversations) !== conversationsSignature(next)) {
+      setConversations(next)
+    }
+  }
+
+  const fetchConversations = async (pageNum = 1, silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
 
       // Construir URL con filtros
       const params = new URLSearchParams({
@@ -154,7 +185,7 @@ export default function ConversationsPage() {
       logMigrationEvent('Conversations fetch', { userId: user?.id, page: pageNum, limit: pagination.limit })
       const data = await authenticatedFetch(getApiUrl(`conversations?${params.toString()}`))
       if (data.success) {
-        setConversations(data.data || [])
+        setConversationsIfChanged(data.data || [])
         setPagination({
           page: pageNum,
           limit: pagination.limit,
@@ -167,7 +198,7 @@ export default function ConversationsPage() {
         if (response.ok) {
           const fallbackData = await response.json()
           if (fallbackData.success) {
-            setConversations(fallbackData.data || [])
+            setConversationsIfChanged(fallbackData.data || [])
             setPagination({
               page: pageNum,
               limit: pagination.limit,
@@ -180,7 +211,7 @@ export default function ConversationsPage() {
     } catch (error) {
       console.error('Error fetching conversations:', error)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
