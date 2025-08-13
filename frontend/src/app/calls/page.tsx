@@ -65,6 +65,7 @@ interface CallItem {
   status: 'lead' | 'mql' | 'client' | null
   interest: 'energy' | 'alarm' | 'telco' | null
   type: 'outbound' | 'inbound' | null
+  call_type?: 'transfer' | 'call_later' | null
   created_at: string
   duration?: number | null
 }
@@ -233,6 +234,14 @@ export default function CallsPage() {
     return <Badge className={styles}>{text}</Badge>
   }
 
+  const getCallTypeBadge = (callType: CallItem['call_type']) => {
+    if (!callType) return <span className="text-gray-400">-</span>
+    const t = callType.toLowerCase()
+    if (t === 'transfer') return <Badge className="bg-green-100 text-green-800">Transfer</Badge>
+    if (t === 'call_later') return <Badge className="bg-red-100 text-red-800">Call later</Badge>
+    return <span className="text-gray-400">-</span>
+  }
+
   return (
     <div className="p-6 space-y-4">
       {/* Filters header */}
@@ -342,6 +351,12 @@ export default function CallsPage() {
                 </TableHead>
                 <TableHead className="text-left font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
+                    <TagIcon className="h-4 w-4" />
+                    Type
+                  </div>
+                </TableHead>
+                <TableHead className="text-left font-semibold text-gray-900">
+                  <div className="flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4" />
                     Date
                   </div>
@@ -384,6 +399,9 @@ export default function CallsPage() {
                     </TableCell>
                     <TableCell className="py-4">
                       {getInterestBadge(c.interest)}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      {getCallTypeBadge(c.call_type || null)}
                     </TableCell>
                     <TableCell className="py-4">
                       {format(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}
