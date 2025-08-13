@@ -41,28 +41,16 @@ export default function CreateBatchCallPage() {
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    // Load agents of type call. If backend isn't available locally, use sample data.
+    // Load agents of type call scoped to current workspace.
     authenticatedFetch(`/api/v2/agents?type=call`).then((res) => {
       if (res?.success) {
         const apiAgents = Array.isArray(res.data) ? res.data : []
-        if (apiAgents.length > 0) {
-          setAgents(apiAgents)
-        } else {
-          // Fallback samples if API returns empty list
-          setAgents([
-            { id: 1, name: 'Cold - Energy - Call - Endesa V2', external_id: 'agent_cold_energy_call_endesa_v2', phone: '+34 881 55 60 00', phone_external_id: 'phnum_energy_001' },
-            { id: 2, name: 'Alarm - Outbound - V1', external_id: 'agent_cold_alarm_call', phone: '+34 600 11 22 33', phone_external_id: 'phnum_alarm_001' },
-          ])
-        }
+        setAgents(apiAgents)
       } else {
-        throw new Error('agents fetch failed')
+        setAgents([])
       }
     }).catch(() => {
-      // Fallback samples for local testing
-      setAgents([
-        { id: 1, name: 'Cold - Energy - Call - Endesa V2', external_id: 'agent_cold_energy_call_endesa_v2', phone: '+34 881 55 60 00', phone_external_id: 'phnum_energy_001' },
-        { id: 2, name: 'Alarm - Outbound - V1', external_id: 'agent_cold_alarm_call', phone: '+34 600 11 22 33', phone_external_id: 'phnum_alarm_001' },
-      ])
+      setAgents([])
     })
   }, [authenticatedFetch])
 
@@ -300,9 +288,13 @@ export default function CreateBatchCallPage() {
               <SelectValue placeholder="Select a phone number" />
             </SelectTrigger>
             <SelectContent>
-              {phoneOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
+              {phoneOptions.length > 0 ? (
+                phoneOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))
+              ) : (
+                <SelectItem disabled value="__none">No phone numbers available</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -314,11 +306,18 @@ export default function CreateBatchCallPage() {
               <SelectValue placeholder="Select an agent" />
             </SelectTrigger>
             <SelectContent>
-              {agentOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
+              {agentOptions.length > 0 ? (
+                agentOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))
+              ) : (
+                <SelectItem disabled value="__none">No agents available</SelectItem>
+              )}
             </SelectContent>
           </Select>
+          {agents.length === 0 && (
+            <div className="text-xs text-muted-foreground">No hay agentes de tipo call en este workspace.</div>
+          )}
         </div>
 
         <div className="space-y-3">
