@@ -17,6 +17,32 @@ import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Phone, User, Calendar as CalendarIcon, Tag as TagIcon } from 'lucide-react'
 import { CallModal } from '@/components/call-modal'
+import { Switch } from '@/components/ui/switch'
+
+// light-weight confetti (dynamic import to avoid SSR issues)
+let confettiFn: ((opts?: any) => void) | null = null
+async function fireConfetti() {
+  try {
+    if (!confettiFn) {
+      const mod = await import('canvas-confetti')
+      confettiFn = mod.default as any
+    }
+    confettiFn && confettiFn({
+      particleCount: 120,
+      spread: 70,
+      origin: { y: 0.6 }
+    })
+  } catch {}
+}
+
+function playPing(audioEnabled: boolean) {
+  if (!audioEnabled) return
+  try {
+    const audio = new Audio('/sounds/goal.mp3')
+    audio.volume = 0.3
+    audio.play().catch(() => {})
+  } catch {}
+}
 
 interface CallItem {
   id: number
@@ -54,6 +80,8 @@ export default function CallsPage() {
 
   // Pagination
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
+  const [celebrateEnabled, setCelebrateEnabled] = useState<boolean>(true)
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
 
   const callsSignature = (list: CallItem[]) =>
     list
@@ -99,7 +127,15 @@ export default function CallsPage() {
       if (!silent) console.log('📞 Calls API response:', data)
       
       if (data.success) {
-        setCallsIfChanged(data.data || [])
+        const next = (data.data || []) as CallItem[]
+        // Detect new MQL/Client entries to celebrate
+        const currentIds = new Set(calls.map(c => c.id))
+        const newQualified = next.filter(c => !currentIds.has(c.id) && (c.status === 'mql' || c.status === 'client'))
+        if (newQualified.length > 0 && celebrateEnabled) {
+          fireConfetti()
+          playPing(soundEnabled)
+        }
+        setCallsIfChanged(next)
         setPagination({
           page: pageNum,
           limit: pagination.limit,
@@ -230,6 +266,16 @@ export default function CallsPage() {
             {(dateStart || dateEnd) && (
               <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
             )}
+          </div>
+          <div className="ml-auto flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Confetti</span>
+              <Switch checked={celebrateEnabled} onCheckedChange={setCelebrateEnabled} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Sound</span>
+              <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} />
+            </div>
           </div>
         </div>
       </div>
