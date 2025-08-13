@@ -1,0 +1,127 @@
+"use client"
+
+import Link from "next/link"
+import { useEffect, useMemo, useState } from "react"
+import { usePageTitle } from "@/hooks/usePageTitle"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch"
+
+type BatchRow = {
+  id: number
+  name: string
+  status: string
+  total_recipients: number
+  processed_recipients: number
+  phone_external_id?: string | null
+  agent_external_id?: string | null
+  created_at: string
+  campaign_id?: string | null
+}
+
+export default function CampaignsPage() {
+  usePageTitle("Campaigns")
+  const authenticatedFetch = useAuthenticatedFetch()
+
+  const [items, setItems] = useState<BatchRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+  const [agentsMap, setAgentsMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null
+    const load = async () => {
+      try {
+        const res = await authenticatedFetch('/api/calls/bulk/list', { muteErrors: true })
+        if (res?.success && Array.isArray(res.data)) {
+          setItems(res.data)
+        }
+      } finally {
+        if (loading) setLoading(false)
+      }
+    }
+    load()
+    // Auto refresh every 10s to update progress
+    timer = setInterval(load, 10000)
+    return () => { if (timer) clearInterval(timer) }
+  }, [authenticatedFetch])
+
+  // Load agents map to resolve external_id -> name
+  useEffect(() => {
+    authenticatedFetch('/api/v2/agents?type=call', { muteErrors: true }).then((res) => {
+      const map: Record<string, string> = {}
+      if (res?.success && Array.isArray(res.data)) {
+        res.data.forEach((a: any) => {
+          if (a?.external_id) map[a.external_id] = a.name || a.external_id
+        })
+      }
+      setAgentsMap(map)
+    }).catch(() => {})
+  }, [authenticatedFetch])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return items
+    return items.filter(b => (b.name || '').toLowerCase().includes(q))
+  }, [items, search])
+
+  const cards = useMemo(() => {
+    return filtered.map((b) => {
+      const pct = b.total_recipients > 0 ? Math.round(((b.processed_recipients || 0) / b.total_recipients) * 100) : 0
+      const inProgress = pct < 100
+      const agentName = b.agent_external_id ? (agentsMap[b.agent_external_id] || b.agent_external_id) : ''
+      return (
+        <Card key={b.id} className="p-4 flex flex-col gap-3 border-gray-200 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <div className="text-[15px] font-semibold text-gray-900">{b.name || 'Untitled Batch'}</div>
+              <div className="text-xs text-gray-500">
+                {(b.total_recipients || 0)} {(b.total_recipients || 0) === 1 ? 'recipient' : 'recipients'}
+                {agentName ? <> · {agentName}</> : null}
+              </div>
+            </div>
+            <span className={`text-xs px-2 py-1 rounded-full ${inProgress ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+              {inProgress ? 'In progress' : 'Completed'}
+            </span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs text-gray-600">
+              <span>Progress</span>
+              <span className="font-medium text-gray-800">{pct}%</span>
+            </div>
+            <Progress value={pct} className="h-1.5" />
+          </div>
+          <div className="text-xs text-gray-500">Started {new Date(b.created_at).toLocaleString()}</div>
+        </Card>
+      )
+    })
+  }, [filtered, agentsMap])
+
+  return (
+    <div className="flex flex-1 flex-col p-6 gap-6">
+      {/* Search + primary action */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="w-72">
+          <Input placeholder="Search Batch Calls…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <Button asChild>
+          <Link href="/calls/campaigns/create">Create a batch call</Link>
+        </Button>
+      </div>
+
+      {loading ? (
+        <Card className="p-6 text-gray-600">Loading…</Card>
+      ) : filtered.length === 0 ? (
+        <Card className="p-6 text-gray-600">No campaigns yet.</Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {cards}
+        </div>
+      )}
+    </div>
+  )
+}
+
+

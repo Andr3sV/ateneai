@@ -243,6 +243,7 @@ export default function CreateBatchCallPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          campaignName: batchName || 'Untitled Batch',
           campaignId: cid,
           agentExternalId,
           agentPhoneExternalId: phoneExternalId,
@@ -261,12 +262,15 @@ export default function CreateBatchCallPage() {
           // Stop polling if backend or orchestrator reports 404 (campaign not found)
           if (pr && pr.status === 404) {
             clearInterval(progressTimerRef.current as NodeJS.Timeout)
+            // Navigate to list once finished or unavailable
+            window.location.href = '/calls/campaigns'
             return
           }
           if (pr?.success) {
             setProgress(pr.data)
             if (pr.data?.done) {
               clearInterval(progressTimerRef.current as NodeJS.Timeout)
+              window.location.href = '/calls/campaigns'
             }
           }
         } catch {

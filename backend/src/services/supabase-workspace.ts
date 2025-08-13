@@ -22,6 +22,8 @@ export const TABLES = {
   MESSAGES: 'messages_new',
   CALLS: 'calls',
   AGENTS: 'agents',
+  BATCH_CALLS: 'batch_calls',
+  BATCH_CALL_RECIPIENTS: 'batch_call_recipients',
   // Keep old tables for gradual migration
   CLIENTS: 'clients',
   CONTACTS_OLD: 'contacts',
@@ -75,6 +77,16 @@ export const db = {
     
     if (error) throw error;
     return data;
+  },
+
+  async getWorkspaceVoiceApiKey(workspaceId: number): Promise<string | null> {
+    const { data, error } = await supabase
+      .from(TABLES.WORKSPACES)
+      .select('voice_api_key')
+      .eq('id', workspaceId)
+      .single();
+    if (error) throw error;
+    return (data?.voice_api_key as string | null) || null;
   },
   
   async getUserByClerkId(clerkUserId: string) {
@@ -635,6 +647,54 @@ export const db = {
       data,
       total: count || 0,
     };
+  },
+
+  // ================================================
+  // BATCH CALLS (workspace-scoped)
+  // ================================================
+
+  async createBatchCall(
+    workspaceId: number,
+    payload: {
+      name: string
+      phone_external_id?: string | null
+      agent_external_id?: string | null
+      status?: 'pending' | 'processing' | 'completed' | 'failed'
+      total_recipients?: number
+      processed_recipients?: number
+      // We don't have a dedicated column for campaignId; reuse file_url as a flexible text field
+      campaign_id?: string | null
+    }
+  ) {
+    const insertPayload: any = {
+      workspace_id: workspaceId,
+      name: payload.name,
+      phone_external_id: payload.phone_external_id ?? null,
+      agent_external_id: payload.agent_external_id ?? null,
+      status: payload.status ?? 'processing',
+      total_recipients: payload.total_recipients ?? 0,
+      processed_recipients: payload.processed_recipients ?? 0,
+      file_url: payload.campaign_id ? `cid:${payload.campaign_id}` : null,
+    };
+
+    const { data, error } = await supabase
+      .from(TABLES.BATCH_CALLS)
+      .insert(insertPayload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async listBatchCalls(workspaceId: number, options?: { limit?: number }) {
+    const { data, error } = await supabase
+      .from(TABLES.BATCH_CALLS)
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false })
+      .limit(options?.limit ?? 50);
+    if (error) throw error;
+    return data || [];
   },
 
   async getCallById(workspaceId: number, callId: number) {
