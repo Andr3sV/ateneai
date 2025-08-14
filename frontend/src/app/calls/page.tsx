@@ -7,6 +7,7 @@ import { usePageTitle } from '@/hooks/usePageTitle'
 import { getApiUrl, logMigrationEvent } from '@/config/features'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Calendar } from '@/components/ui/calendar'
@@ -235,28 +236,37 @@ export default function CallsPage() {
   const canPrev = pagination.page > 1
   const canNext = pagination.page < pagination.totalPages
 
-  const getStatusBadge = (status: CallItem['status']) => {
-    if (!status) return <span className="text-gray-400">-</span>
-    const s = status.toLowerCase()
-    const styles = s === 'client'
-      ? 'bg-green-100 text-green-800'
-      : s === 'mql'
-      ? 'bg-red-100 text-red-800'
-      : 'bg-yellow-100 text-yellow-800'
-    const text = s.charAt(0).toUpperCase() + s.slice(1)
-    return <Badge className={styles}>{text}</Badge>
+  const StatusDropdown = ({ value, onChange }: { value: CallItem['status']; onChange: (v: CallItem['status']) => void }) => {
+    const s = (value || '').toString().toLowerCase()
+    const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const label = s ? (s === 'lead' ? 'Rechazado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Badge className={`${badgeColor} cursor-pointer`}>{label}</Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onClick={() => onChange('mql')}> 
+            <span className="text-red-600">●</span>
+            <span className="ml-2 text-red-600 font-medium">Mql</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('client')}>
+            <span className="text-green-600">●</span>
+            <span className="ml-2 text-green-700 font-medium">Client</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('lead')}>
+            <span className="text-gray-500">●</span>
+            <span className="ml-2 text-gray-700 font-medium">Rechazado</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
   }
 
   const getInterestBadge = (interest: CallItem['interest']) => {
     if (!interest) return <span className="text-gray-400">-</span>
-    const i = interest.toLowerCase()
-    const styles = i === 'energy'
-      ? 'bg-emerald-100 text-emerald-800'
-      : i === 'alarm'
-      ? 'bg-red-100 text-red-800'
-      : 'bg-violet-100 text-violet-800'
-    const text = i.charAt(0).toUpperCase() + i.slice(1)
-    return <Badge className={styles}>{text}</Badge>
+    const text = interest.charAt(0).toUpperCase() + interest.slice(1)
+    return <Badge className="bg-gray-100 text-gray-700">{text}</Badge>
   }
 
   const getCallTypeBadge = (callType: CallItem['call_type']) => {
@@ -419,8 +429,23 @@ export default function CallsPage() {
                     <TableCell className="py-4">
                       <span className="text-gray-700">{c.agent?.name || '-'}</span>
                     </TableCell>
-                    <TableCell className="py-4">
-                      {getStatusBadge(c.status)}
+                    <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                      <StatusDropdown
+                        value={c.status}
+                        onChange={async (next) => {
+                          try {
+                            await authenticatedFetch(getApiUrl(`calls/${c.id}/status`), {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: next }),
+                            })
+                            // Update locally without refetch to keep UI snappy
+                            setCalls((prev) => prev.map((row) => row.id === c.id ? { ...row, status: next } : row))
+                          } catch (e) {
+                            console.error('Failed updating call status', e)
+                          }
+                        }}
+                      />
                     </TableCell>
                     <TableCell className="py-4">
                       {getInterestBadge(c.interest)}

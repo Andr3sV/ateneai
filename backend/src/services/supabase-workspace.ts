@@ -649,6 +649,18 @@ export const db = {
     };
   },
 
+  async updateCallStatus(workspaceId: number, callId: number, status: 'mql' | 'client' | 'lead') {
+    const { data, error } = await supabase
+      .from(TABLES.CALLS)
+      .update({ status })
+      .eq('workspace_id', workspaceId)
+      .eq('id', callId)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   // ================================================
   // BATCH CALLS (workspace-scoped)
   // ================================================

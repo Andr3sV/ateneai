@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Badge } from '@/components/ui/badge'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { getApiUrl } from '@/config/features'
@@ -65,16 +66,31 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
     fetchCall()
   }, [open, callId, authenticatedFetch])
 
-  const renderStatusBadge = (status: CallDetail['status']) => {
-    if (!status) return null
-    const s = status.toLowerCase()
-    const styles = s === 'client'
-      ? 'bg-green-100 text-green-800'
-      : s === 'mql'
-      ? 'bg-red-100 text-red-800'
-      : 'bg-yellow-100 text-yellow-800'
-    const text = s.charAt(0).toUpperCase() + s.slice(1)
-    return <Badge className={styles}>{text}</Badge>
+  const StatusDropdown = ({ value, onChange }: { value: CallDetail['status']; onChange: (v: CallDetail['status']) => void }) => {
+    const s = (value || '').toString().toLowerCase()
+    const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const label = s ? (s === 'lead' ? 'Rechazado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Badge className={`${badgeColor} cursor-pointer`}>{label}</Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onClick={() => onChange('mql')}>
+            <span className="text-red-600">●</span>
+            <span className="ml-2 text-red-600 font-medium">Mql</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('client')}>
+            <span className="text-green-600">●</span>
+            <span className="ml-2 text-green-700 font-medium">Client</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('lead')}>
+            <span className="text-gray-500">●</span>
+            <span className="ml-2 text-gray-700 font-medium">Rechazado</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
   }
 
   const renderInterestBadge = (interest: CallDetail['interest']) => {
@@ -111,7 +127,22 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                       )}
                   </div>
                   <div className="mt-2 flex items-center gap-2">
-                    {renderStatusBadge(call?.status || null)}
+                    <StatusDropdown
+                      value={call?.status || null}
+                      onChange={async (next) => {
+                        if (!call) return
+                        try {
+                          await authenticatedFetch(getApiUrl(`calls/${call.id}/status`), {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: next }),
+                          })
+                          setCall({ ...call, status: next })
+                        } catch (e) {
+                          console.error('Failed updating call status', e)
+                        }
+                      }}
+                    />
                     {renderInterestBadge(call?.interest || null)}
                   </div>
                 </SheetDescription>

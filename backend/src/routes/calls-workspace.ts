@@ -76,6 +76,33 @@ router.get('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
   }
 })
 
+// Update call status
+router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const id = parseInt(req.params.id as string)
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ success: false, error: 'Invalid id' })
+      return;
+    }
+    const body = req.body as { status?: string }
+    const allowed = ['mql','client','lead']
+    const next = (body.status || '').toLowerCase()
+    if (!allowed.includes(next)) {
+      res.status(400).json({ success: false, error: `Invalid status. Allowed: ${allowed.join(', ')}` })
+      return;
+    }
+    const updated = await db.updateCallStatus(req.workspaceContext.workspaceId, id, next as any)
+    res.json({ success: true, data: updated })
+  } catch (error: any) {
+    console.error('❌ Error in PUT /calls/:id/status:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 // Dashboard stats for calls
 router.get('/dashboard/stats', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
