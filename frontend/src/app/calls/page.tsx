@@ -35,22 +35,35 @@ async function fireConfetti() {
   } catch {}
 }
 
-function playPing(enabled: boolean) {
+async function playCelebrationSound(enabled: boolean) {
   if (!enabled) return
   try {
+    // Prefer a stronger applause sound if available
+    const applause = new Audio('/sounds/applause.mp3')
+    applause.volume = 0.9
+    await applause.play()
+    return
+  } catch {}
+  try {
+    const goal = new Audio('/sounds/goal.mp3')
+    goal.volume = 0.9
+    await goal.play()
+    return
+  } catch {}
+  try {
+    // Fallback: louder WebAudio synth if files are not available
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
     const o = ctx.createOscillator()
     const g = ctx.createGain()
-    o.type = 'triangle'
-    o.frequency.value = 880
+    o.type = 'square'
+    o.frequency.value = 660
     g.gain.value = 0.001
     o.connect(g)
     g.connect(ctx.destination)
     o.start()
-    // quick envelope
-    g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01)
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25)
-    o.stop(ctx.currentTime + 0.3)
+    g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02)
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6)
+    o.stop(ctx.currentTime + 0.65)
     o.onended = () => ctx.close()
   } catch {}
 }
@@ -158,7 +171,7 @@ export default function CallsPage() {
             const newOnes = qualifiedNow.filter(id => !celebratedIdsRef.current.has(id))
             if (newOnes.length > 0 && celebrateEnabled) {
               fireConfetti()
-              playPing(true)
+              playCelebrationSound(true)
               newOnes.forEach(id => celebratedIdsRef.current.add(id))
             }
           }

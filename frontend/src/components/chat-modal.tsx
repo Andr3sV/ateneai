@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { X, Share2 } from 'lucide-react'
+import { X, Share2, Check } from 'lucide-react'
 import { getApiUrl, logMigrationEvent } from '@/config/features'
 
 interface Message {
@@ -54,6 +54,7 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
   const router = useRouter()
   const { getToken } = useAuth()
   const messagesContainerRef = useRef<HTMLDivElement | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const handleShare = async () => {
     try {
@@ -61,6 +62,8 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
       if (!id || typeof window === 'undefined') return
       const url = `${window.location.origin}/conversations?open=${id}`
       await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
     } catch {}
   }
 
@@ -401,10 +404,10 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0"
-                    title="Copy share link"
+                    title={copied ? 'Copied!' : 'Copy share link'}
                     onClick={handleShare}
                   >
-                    <Share2 className="h-4 w-4" />
+                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
                   </Button>
                   <Button
                     variant="ghost"

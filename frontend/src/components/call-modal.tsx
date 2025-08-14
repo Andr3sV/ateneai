@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { getApiUrl } from '@/config/features'
-import { X, Share2 } from 'lucide-react'
+import { X, Share2, Check } from 'lucide-react'
 
 type CallDetail = {
   id: number
@@ -36,6 +36,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   const authenticatedFetch = useAuthenticatedFetch()
   const [call, setCall] = useState<CallDetail | null>(null)
   const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
   
   const handleShare = async () => {
     try {
@@ -43,6 +44,8 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
       if (!id || typeof window === 'undefined') return
       const url = `${window.location.origin}/calls?open=${id}`
       await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
     } catch {}
   }
 
@@ -118,10 +121,10 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0"
-                  title="Copy share link"
+                  title={copied ? 'Copied!' : 'Copy share link'}
                   onClick={handleShare}
                 >
-                  <Share2 className="h-4 w-4" />
+                  {copied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
                 </Button>
                 <Button
                   variant="ghost"
