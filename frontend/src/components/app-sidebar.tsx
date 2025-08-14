@@ -83,6 +83,16 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Tasks */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/tasks")}>
+                  <Link href="/tasks">
+                    <Share2 className="h-4 w-4" />
+                    <span>Tasks</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Messages collapsible */}
               <SidebarMenuItem>
                 <SidebarMenuButton
