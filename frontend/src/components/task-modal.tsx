@@ -48,7 +48,13 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
       setAssignees(task.assignees || [])
       setContacts(task.contacts || [])
     } else {
-      setTitle('')
+      // Prefill title when creating from a call/contact context
+      if (initialContacts && initialContacts.length > 0) {
+        const firstName = initialContacts[0]?.name || 'contacto'
+        setTitle(`Llamar a ${firstName}`)
+      } else {
+        setTitle('')
+      }
       setDue(undefined)
       setAssignees(user ? [{ id: user.id, name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email }] : [])
       setContacts(initialContacts && initialContacts.length ? initialContacts : [])
@@ -70,6 +76,10 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
     if (open && !task) {
       setAssignees(user ? [{ id: user.id, name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email }] : [])
       setContacts(initialContacts && initialContacts.length ? initialContacts : [])
+      if (initialContacts && initialContacts.length > 0) {
+        const firstName = initialContacts[0]?.name || 'contacto'
+        setTitle(prev => prev?.trim() ? prev : `Llamar a ${firstName}`)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -190,7 +200,7 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
               </Popover>
               <Popover open={recordPickerOpen} onOpenChange={setRecordPickerOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="link" className="px-0 flex items-center gap-1"><Link2 className="h-4 w-4" /> Add Record</Button>
+                  <Button variant="link" className="px-0 flex items-center gap-1"><Link2 className="h-4 w-4" /> Add contact</Button>
                 </PopoverTrigger>
                 <PopoverContent side="bottom" align="start" className="w-96 p-3">
                   <Input autoFocus placeholder="Search by name or phone..." value={contactQuery} onChange={(e) => setContactQuery(e.target.value)} />
