@@ -6,6 +6,7 @@ import { usePageTitle } from '@/hooks/usePageTitle'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
+import { TaskModal } from '@/components/task-modal'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { getApiUrl } from '@/config/features'
 import { X, Share2, Check } from 'lucide-react'
@@ -38,6 +39,8 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   const [call, setCall] = useState<CallDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [taskModalOpen, setTaskModalOpen] = useState(false)
+  const [existingTask, setExistingTask] = useState<any | null>(null)
   
   const handleShare = async () => {
     try {
@@ -66,10 +69,22 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
     fetchCall()
   }, [open, callId, authenticatedFetch])
 
+  // Fetch tasks when the modal opens and whenever call/contact changes
+  useEffect(() => {
+    async function fetchTasks() {
+      if (!open) return
+      const contactId = call?.contact?.id || null
+      if (!contactId) { setExistingTask(null); return }
+      const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
+      setExistingTask(t?.success && Array.isArray(t.data) && t.data.length > 0 ? t.data[0] : null)
+    }
+    fetchTasks()
+  }, [open, call?.contact?.id])
+
   const StatusDropdown = ({ value, onChange }: { value: CallDetail['status']; onChange: (v: CallDetail['status']) => void }) => {
     const s = (value || '').toString().toLowerCase()
     const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-    const label = s ? (s === 'lead' ? 'Rechazado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
+    const label = s ? (s === 'lead' ? 'No interesado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -86,7 +101,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('lead')}>
             <span className="text-gray-500">●</span>
-            <span className="ml-2 text-gray-700 font-medium">Rechazado</span>
+            <span className="ml-2 text-gray-700 font-medium">No interesado</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -106,6 +121,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   }
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full max-w-full sm:w-[90vw] sm:max-w-[640px] md:w-[70vw] md:max-w-[800px] h-[100dvh] sm:h-screen sm:max-h-screen sm:rounded-none sm:overflow-hidden p-0 flex flex-col">
         <div className="flex flex-col h-full">
@@ -144,6 +160,14 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                       }}
                     />
                     {renderInterestBadge(call?.interest || null)}
+                    <Badge
+                      className="bg-black text-white cursor-pointer hover:bg-neutral-900"
+                      onClick={(e) => { e.stopPropagation(); setTaskModalOpen(true) }}
+                    >
+                      {existingTask
+                        ? <>Llamada agendada {existingTask?.due_date ? new Date(existingTask.due_date).toLocaleString() : ''}</>
+                        : <>Agendar llamada</>}
+                    </Badge>
                   </div>
                 </SheetDescription>
               </div>
@@ -218,6 +242,21 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
         </div>
       </SheetContent>
     </Sheet>
+    <TaskModal
+      open={taskModalOpen}
+      onOpenChange={setTaskModalOpen}
+      task={existingTask}
+      initialContacts={call?.contact ? [{ id: call.contact.id, name: call.contact.name || call.contact.phone || `Contact ${call.contact.id}` }] : []}
+      onSaved={async (saved) => {
+        if (call?.contact?.id) {
+          const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${call.contact.id}`), { muteErrors: true } as any)
+          setExistingTask(t?.success && Array.isArray(t.data) && t.data.length > 0 ? t.data[0] : null)
+        }
+        if (saved) setExistingTask(saved)
+        setTaskModalOpen(false)
+      }}
+    />
+    </>
   )
 }
 

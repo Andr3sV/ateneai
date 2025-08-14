@@ -23,7 +23,7 @@ type TaskRow = {
   contacts: { id: number; name: string }[]
 }
 
-export function TaskModal({ open, onOpenChange, task, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; task: TaskRow | null; onSaved: () => void }) {
+export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }: { open: boolean; onOpenChange: (o: boolean) => void; task: TaskRow | null; onSaved: (saved?: TaskRow | null) => void; initialContacts?: { id: number; name: string }[] }) {
   const authenticatedFetch = useAuthenticatedFetch()
   const { user } = useWorkspaceContext()
   const [title, setTitle] = useState('')
@@ -51,9 +51,9 @@ export function TaskModal({ open, onOpenChange, task, onSaved }: { open: boolean
       setTitle('')
       setDue(undefined)
       setAssignees(user ? [{ id: user.id, name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email }] : [])
-      setContacts([])
+      setContacts(initialContacts && initialContacts.length ? initialContacts : [])
     }
-  }, [task, open, user])
+  }, [task, open])
 
   useEffect(() => {
     async function loadMembers() {
@@ -63,6 +63,15 @@ export function TaskModal({ open, onOpenChange, task, onSaved }: { open: boolean
       } catch {}
     }
     if (open) loadMembers()
+  }, [open])
+
+  // Initialize defaults only when opening create modal
+  useEffect(() => {
+    if (open && !task) {
+      setAssignees(user ? [{ id: user.id, name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email }] : [])
+      setContacts(initialContacts && initialContacts.length ? initialContacts : [])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   useEffect(() => {
@@ -108,12 +117,15 @@ export function TaskModal({ open, onOpenChange, task, onSaved }: { open: boolean
     }
     const payload = { title, due_date: dueIso, assignees, contacts }
     if (!title.trim()) return
+    let saved: TaskRow | null = null
     if (task) {
-      await authenticatedFetch(getApiUrl(`tasks/${task.id}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const resp = await authenticatedFetch(getApiUrl(`tasks/${task.id}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      if (resp?.success) saved = resp.data as TaskRow
     } else {
-      await authenticatedFetch(getApiUrl('tasks'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const resp = await authenticatedFetch(getApiUrl('tasks'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      if (resp?.success) saved = resp.data as TaskRow
     }
-    onSaved()
+    onSaved(saved)
     onOpenChange(false)
   }
 

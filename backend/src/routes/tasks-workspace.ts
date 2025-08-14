@@ -108,6 +108,34 @@ router.delete('/:id', requireWorkspaceContext, async (req, res): Promise<void> =
   }
 })
 
+// Get tasks linked to a specific contact (by contact_id inside contacts[])
+router.get('/by-contact/:contactId', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    const ctx = req.workspaceContext!
+    const contactId = parseInt(req.params.contactId)
+    if (!Number.isFinite(contactId)) {
+      res.status(400).json({ success: false, error: 'Invalid contact id' });
+      return
+    }
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('workspace_id', ctx.workspaceId)
+      .order('due_date', { ascending: true })
+      .limit(200)
+    if (error) throw error
+    const filtered = (data || []).filter((row: any) => {
+      const arr = Array.isArray(row.contacts) ? row.contacts : []
+      return arr.some((c: any) => String(c?.id) === String(contactId))
+    })
+    res.json({ success: true, data: filtered })
+    return
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message })
+    return
+  }
+})
+
 export default router
 
 // Helper endpoint: list workspace members (assignees)

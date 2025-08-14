@@ -126,7 +126,9 @@ export const db = {
     }
     
     if (filters.search) {
-      query = query.ilike('phone', `%${filters.search}%`);
+      // Search by name OR phone (case-insensitive)
+      const s = String(filters.search)
+      query = query.or(`name.ilike.%${s}%,phone.ilike.%${s}%`);
     }
     
     // Fix: Use either range() OR limit(), not both
