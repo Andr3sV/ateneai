@@ -132,6 +132,12 @@ export default function CallsPage() {
     }
   }
 
+  const shortName = (name?: string | null) => {
+    const n = (name || '').trim()
+    if (!n) return 'Sin nombre'
+    return n.length > 14 ? `${n.slice(0, 14)}...` : n
+  }
+
   const fetchCalls = async (pageNum = 1, silent = false) => {
     try {
       if (!silent) setLoading(true)
@@ -239,7 +245,7 @@ export default function CallsPage() {
   const StatusDropdown = ({ value, onChange }: { value: CallItem['status']; onChange: (v: CallItem['status']) => void }) => {
     const s = (value || '').toString().toLowerCase()
     const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-    const label = s ? (s === 'lead' ? 'Rechazado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
+    const label = s ? (s === 'lead' ? 'No interesado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -256,7 +262,7 @@ export default function CallsPage() {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('lead')}>
             <span className="text-gray-500">●</span>
-            <span className="ml-2 text-gray-700 font-medium">Rechazado</span>
+            <span className="ml-2 text-gray-700 font-medium">No interesado</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -412,7 +418,9 @@ export default function CallsPage() {
                 calls.map((c) => (
                   <TableRow key={c.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => { setSelectedCallId(c.id); setModalOpen(true) }}>
                     <TableCell className="py-4">
-                      <span className="font-medium text-gray-900">{c.contact?.name || 'Sin nombre'}</span>
+                      <span className="font-medium text-gray-900" title={c.contact?.name || 'Sin nombre'}>
+                        {shortName(c.contact?.name)}
+                      </span>
                     </TableCell>
                     <TableCell className="py-4">
                       <div className="flex items-center gap-2 text-gray-600">
