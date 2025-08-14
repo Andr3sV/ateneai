@@ -5,7 +5,7 @@ import { db, supabase } from '../services/supabase-workspace'
 const router = Router()
 
 // List tasks with filters
-router.get('/', requireWorkspaceContext, async (req, res) => {
+router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
     const { q, assignee_id, from, to, page = '1', limit = '20' } = req.query as any
@@ -43,15 +43,16 @@ router.get('/', requireWorkspaceContext, async (req, res) => {
     res.json({ success: true, data, pagination: { page: p, limit: l, total: count || 0, totalPages: Math.ceil((count || 0) / l) } })
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message })
+    return
   }
 })
 
 // Create task
-router.post('/', requireWorkspaceContext, async (req, res) => {
+router.post('/', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
     const { title, due_date, assignees = [], contacts = [] } = req.body || {}
-    if (!title) return res.status(400).json({ success: false, error: 'title required' })
+    if (!title) { res.status(400).json({ success: false, error: 'title required' }); return }
     const { data, error } = await supabase
       .from('tasks')
       .insert({ workspace_id: ctx.workspaceId, title, due_date: due_date || null, assignees, contacts })
@@ -59,13 +60,15 @@ router.post('/', requireWorkspaceContext, async (req, res) => {
       .single()
     if (error) throw error
     res.json({ success: true, data })
+    return
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message })
+    return
   }
 })
 
 // Update task
-router.put('/:id', requireWorkspaceContext, async (req, res) => {
+router.put('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
     const id = parseInt(req.params.id)
@@ -79,13 +82,15 @@ router.put('/:id', requireWorkspaceContext, async (req, res) => {
       .single()
     if (error) throw error
     res.json({ success: true, data })
+    return
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message })
+    return
   }
 })
 
 // Delete task
-router.delete('/:id', requireWorkspaceContext, async (req, res) => {
+router.delete('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
     const id = parseInt(req.params.id)
@@ -96,11 +101,31 @@ router.delete('/:id', requireWorkspaceContext, async (req, res) => {
       .eq('id', id)
     if (error) throw error
     res.json({ success: true })
+    return
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message })
+    return
   }
 })
 
 export default router
+
+// Helper endpoint: list workspace members (assignees)
+router.get('/helpers/members', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    const ctx = req.workspaceContext!
+    const { data, error } = await supabase
+      .from('workspace_users')
+      .select('user:users_new(id, first_name, last_name)')
+      .eq('workspace_id', ctx.workspaceId)
+    if (error) throw error
+    const members = (data || []).map((row: any) => ({ id: row.user?.id, name: `${row.user?.first_name || ''} ${row.user?.last_name || ''}`.trim() || `User ${row.user?.id}` }))
+    res.json({ success: true, data: members })
+    return
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message })
+    return
+  }
+})
 
 

@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { format } from 'date-fns'
-import { Plus, Filter, Calendar as CalendarIcon } from 'lucide-react'
+import { format, endOfWeek, isToday, differenceInMinutes, differenceInHours, differenceInDays, startOfDay, endOfDay } from 'date-fns'
+import { Plus, Filter, Calendar as CalendarIcon, User, Link2 } from 'lucide-react'
 import { TaskModal } from '@/components/task-modal'
 
 type TaskRow = {
@@ -53,6 +53,65 @@ export default function TasksPage() {
   useEffect(() => { fetchTasks() }, [])
   useEffect(() => { fetchTasks() }, [query, dateStart?.toISOString(), dateEnd?.toISOString()])
 
+  const parseDueDate = (s?: string | null) => {
+    if (!s) return null
+    // If ISO with time, trust Date
+    if (s.includes('T')) return new Date(s)
+    // Parse as local date to avoid timezone shifting
+    const [y, m, d] = s.split('-').map(Number)
+    if (!y || !m || !d) return new Date(s)
+    return new Date(y, m - 1, d)
+  }
+
+  const { todayRows, weekRows, upcomingRows } = useMemo(() => {
+    const now = new Date()
+    const sod = startOfDay(now)
+    const eod = endOfDay(now)
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
+    const group = { todayRows: [] as TaskRow[], weekRows: [] as TaskRow[], upcomingRows: [] as TaskRow[] }
+    ;(rows || []).forEach(r => {
+      const d = parseDueDate(r.due_date)
+      if (!d) { group.upcomingRows.push(r); return }
+      if (d >= sod && d <= eod) { group.todayRows.push(r); return }
+      if (d > eod && d <= weekEnd) { group.weekRows.push(r); return }
+      group.upcomingRows.push(r)
+    })
+    return group
+  }, [rows])
+
+  const renderDue = (row: TaskRow, section: 'today' | 'week' | 'upcoming') => {
+    const now = new Date()
+    const d = parseDueDate(row.due_date)
+    if (!d) return '-'
+    if (section === 'today') {
+      const remainingMin = Math.max(0, differenceInMinutes(d, now))
+      if (remainingMin < 60) return `${remainingMin} min left`
+      const remainingH = Math.ceil(differenceInHours(d, now))
+      return `${remainingH} h left`
+    }
+    if (section === 'week') {
+      const days = Math.max(0, differenceInDays(startOfDay(d), startOfDay(now)))
+      return days === 1 ? 'in 1 day' : `in ${days} days`
+    }
+    return format(d, 'MMM dd, yyyy')
+  }
+
+  const renderSection = (title: string, items: TaskRow[], section: 'today' | 'week' | 'upcoming') => (
+    <>
+      <TableRow>
+        <TableCell colSpan={4} className="py-2 text-xs text-gray-600 bg-white">{title} {items.length > 0 && <span className="ml-1">{items.length}</span>}</TableCell>
+      </TableRow>
+      {items.map(r => (
+        <TableRow key={r.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => { setEditing(r); setModalOpen(true) }}>
+          <TableCell className="py-3">{r.title}</TableCell>
+          <TableCell className={`py-3 ${section === 'upcoming' ? 'text-gray-800' : 'text-orange-600 font-medium'}`}>{renderDue(r, section)}</TableCell>
+          <TableCell className="py-3">{r.assignees?.map(a => a.name).join(', ') || '-'}</TableCell>
+          <TableCell className="py-3">{r.contacts?.map(c => c.name).join(', ') || '-'}</TableCell>
+        </TableRow>
+      ))}
+    </>
+  )
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-2">
@@ -83,15 +142,21 @@ export default function TasksPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
+      <Card className="border shadow-sm">
+        <CardContent className="p-4">
+          <Table className="hidden sm:table">
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-1/2">Task</TableHead>
-                <TableHead className="w-1/6">Due date</TableHead>
-                <TableHead className="w-1/6">Assigned to</TableHead>
-                <TableHead className="w-1/6">Record</TableHead>
+              <TableRow className="border-b border-gray-200">
+                <TableHead className="text-left font-semibold text-gray-900 w-1/2">Task</TableHead>
+                <TableHead className="text-left font-semibold text-gray-900 w-1/6">
+                  <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Due date</div>
+                </TableHead>
+                <TableHead className="text-left font-semibold text-gray-900 w-1/6">
+                  <div className="flex items-center gap-2"><User className="h-4 w-4" /> Assigned to</div>
+                </TableHead>
+                <TableHead className="text-left font-semibold text-gray-900 w-1/6">
+                  <div className="flex items-center gap-2"><Link2 className="h-4 w-4" /> Record</div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -100,14 +165,11 @@ export default function TasksPage() {
               ) : rows.length === 0 ? (
                 <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">No tasks</TableCell></TableRow>
               ) : (
-                rows.map(r => (
-                  <TableRow key={r.id} className="cursor-pointer" onClick={() => { setEditing(r); setModalOpen(true) }}>
-                    <TableCell className="py-3">{r.title}</TableCell>
-                    <TableCell className="py-3">{r.due_date ? format(new Date(r.due_date), 'MMM dd, yyyy') : '-'}</TableCell>
-                    <TableCell className="py-3">{r.assignees?.map(a => a.name).join(', ') || '-'}</TableCell>
-                    <TableCell className="py-3">{r.contacts?.map(c => c.name).join(', ') || '-'}</TableCell>
-                  </TableRow>
-                ))
+                <>
+                  {renderSection('Today', todayRows, 'today')}
+                  {renderSection('This week', weekRows, 'week')}
+                  {renderSection('Upcoming', upcomingRows, 'upcoming')}
+                </>
               )}
             </TableBody>
           </Table>
