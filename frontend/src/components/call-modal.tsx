@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { getApiUrl } from '@/config/features'
-import { X } from 'lucide-react'
+import { X, Share2 } from 'lucide-react'
 
 type CallDetail = {
   id: number
@@ -36,6 +36,15 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   const authenticatedFetch = useAuthenticatedFetch()
   const [call, setCall] = useState<CallDetail | null>(null)
   const [loading, setLoading] = useState(false)
+  
+  const handleShare = async () => {
+    try {
+      const id = callId || call?.id
+      if (!id || typeof window === 'undefined') return
+      const url = `${window.location.origin}/calls?open=${id}`
+      await navigator.clipboard.writeText(url)
+    } catch {}
+  }
 
   useEffect(() => {
     async function fetchCall() {
@@ -104,14 +113,25 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                   </div>
                 </SheetDescription>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  title="Copy share link"
+                  onClick={handleShare}
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => onOpenChange(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </SheetHeader>
 

@@ -184,6 +184,18 @@ export default function CallsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Auto-open CallModal when URL has ?open=<id>
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const openParam = params.get('open')
+    if (!openParam) return
+    const id = parseInt(openParam)
+    if (Number.isNaN(id)) return
+    setSelectedCallId(id)
+    setModalOpen(true)
+  }, [])
+
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }))
     fetchCalls(1)

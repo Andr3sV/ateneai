@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { X } from 'lucide-react'
+import { X, Share2 } from 'lucide-react'
 import { getApiUrl, logMigrationEvent } from '@/config/features'
 
 interface Message {
@@ -54,6 +54,15 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
   const router = useRouter()
   const { getToken } = useAuth()
   const messagesContainerRef = useRef<HTMLDivElement | null>(null)
+
+  const handleShare = async () => {
+    try {
+      const id = conversation?.id
+      if (!id || typeof window === 'undefined') return
+      const url = `${window.location.origin}/conversations?open=${id}`
+      await navigator.clipboard.writeText(url)
+    } catch {}
+  }
 
   const scrollToBottom = (smooth: boolean) => {
     const el = messagesContainerRef.current
@@ -387,14 +396,25 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
                     {getAssignedBadge(conversation.assigned_to)}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => onOpenChange(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    title="Copy share link"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <SheetDescription className="text-left">
                 <div className="space-y-1">
