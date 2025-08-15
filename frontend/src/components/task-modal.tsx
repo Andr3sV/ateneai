@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -209,7 +210,9 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
                       <div className="text-sm text-gray-500">Type to search contacts</div>
                     ) : contacts.map((c) => (
                       <span key={c.id} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
-                        {c.name}
+                        <Link href={`/contacts/${c.id}`} target="_blank" className="underline hover:text-gray-900" onClick={(e) => e.stopPropagation()}>
+                          {c.name}
+                        </Link>
                         <button className="ml-1 text-gray-500 hover:text-gray-700" onClick={() => removeContact(c.id)}>×</button>
                       </span>
                     ))}
@@ -238,7 +241,9 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
             <div className="flex flex-wrap gap-2">
               {contacts.map((c) => (
                 <span key={c.id} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
-                  {c.name}
+                  <Link href={`/contacts/${c.id}`} target="_blank" className="underline hover:text-gray-900" onClick={(e) => e.stopPropagation()}>
+                    {c.name}
+                  </Link>
                   <button className="ml-1 text-gray-500 hover:text-gray-700" onClick={() => removeContact(c.id)}>×</button>
                 </span>
               ))}

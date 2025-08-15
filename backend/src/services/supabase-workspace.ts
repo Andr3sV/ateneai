@@ -590,6 +590,7 @@ export const db = {
       status?: 'lead' | 'mql' | 'client'
       interest?: 'energy' | 'alarm' | 'telco'
       type?: 'outbound' | 'inbound'
+      contact_id?: number
       start_date?: string
       end_date?: string
       limit?: number
@@ -607,6 +608,7 @@ export const db = {
     if (filters.type) countQuery = countQuery.eq('type', filters.type);
     if (filters.from) countQuery = countQuery.ilike('phone_from', `%${filters.from}%`);
     if (filters.to) countQuery = countQuery.ilike('phone_to', `%${filters.to}%`);
+    if (filters.contact_id) countQuery = countQuery.eq('contact_id', filters.contact_id)
     if (filters.start_date && filters.end_date) {
       countQuery = countQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
     }
@@ -629,6 +631,7 @@ export const db = {
     if (filters.status) dataQuery = dataQuery.eq('status', filters.status);
     if (filters.interest) dataQuery = dataQuery.eq('interest', filters.interest);
     if (filters.type) dataQuery = dataQuery.eq('type', filters.type);
+    if (filters.contact_id) dataQuery = dataQuery.eq('contact_id', filters.contact_id);
     if (filters.from) dataQuery = dataQuery.ilike('phone_from', `%${filters.from}%`);
     if (filters.to) dataQuery = dataQuery.ilike('phone_to', `%${filters.to}%`);
     if (filters.start_date && filters.end_date) {

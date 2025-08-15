@@ -121,6 +121,8 @@ export default function ContactDetailPage() {
   // State
   const [contact, setContact] = useState<Contact | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [calls, setCalls] = useState<any[]>([])
+  const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [conversationsLoading, setConversationsLoading] = useState(false)
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
@@ -183,10 +185,24 @@ export default function ContactDetailPage() {
     }
   }, [contactId, authenticatedFetch])
 
+  const fetchCallsAndTasks = useCallback(async () => {
+    try {
+      const [callsResp, tasksResp] = await Promise.all([
+        authenticatedFetch(getApiUrl(`calls?contact_id=${contactId}&limit=50`), { muteErrors: true } as any),
+        authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
+      ])
+      setCalls(callsResp?.success ? (callsResp.data || []) : [])
+      setTasks(tasksResp?.success ? (tasksResp.data || []) : [])
+    } catch {
+      setCalls([]); setTasks([])
+    }
+  }, [contactId, authenticatedFetch])
+
   useEffect(() => {
     fetchContact()
     fetchConversations()
-  }, [fetchContact, fetchConversations])
+    fetchCallsAndTasks()
+  }, [fetchContact, fetchConversations, fetchCallsAndTasks])
 
   // Debug: Log conversations state changes
   useEffect(() => {
@@ -487,7 +503,7 @@ export default function ContactDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                Conversations
+                Interactions
                 {conversations.length > 0 && (
                   <Badge variant="secondary" className="ml-auto">
                     {conversations.length}
@@ -495,7 +511,7 @@ export default function ContactDetailPage() {
                 )}
               </CardTitle>
               <CardDescription>
-                All conversations with this contact
+                Messages, calls and tasks for this contact
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -513,6 +529,7 @@ export default function ContactDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Messages */}
                   {Array.isArray(conversations) && conversations.map((conversation) => (
                     <div
                       key={conversation.id}
@@ -546,6 +563,32 @@ export default function ContactDetailPage() {
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                           <MessageSquare className="h-4 w-4" />
                         </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Calls */}
+                  {Array.isArray(calls) && calls.map((call) => (
+                    <div key={`call-${call.id}`} className="flex items-center justify-between p-4 border rounded-lg bg-emerald-50/40">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-800">Call</span>
+                        <span className="text-gray-700">{call.status ? call.status.toUpperCase() : '—'}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> {formatDate(call.created_at)}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Tasks */}
+                  {Array.isArray(tasks) && tasks.map((t) => (
+                    <div key={`task-${t.id}`} className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/40">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800">Task</span>
+                        <span className="text-gray-700">{t.title}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> {t.due_date ? formatDate(t.due_date) : 'No due'}
                       </div>
                     </div>
                   ))}
