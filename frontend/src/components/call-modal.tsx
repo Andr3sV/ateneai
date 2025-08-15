@@ -75,8 +75,21 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
       if (!open) return
       const contactId = call?.contact?.id || null
       if (!contactId) { setExistingTask(null); return }
+      // Primary: server by-contact
       const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
-      setExistingTask(t?.success && Array.isArray(t.data) && t.data.length > 0 ? t.data[0] : null)
+      if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
+        setExistingTask(t.data[0])
+        return
+      }
+      // Fallback: fetch all and filter client-side (covers numeric/string JSONB mismatches)
+      try {
+        const all = await authenticatedFetch(getApiUrl('tasks?'), { muteErrors: true } as any)
+        const list = Array.isArray(all?.data) ? all.data : []
+        const filtered = list.filter((row: any) => Array.isArray(row.contacts) && row.contacts.some((c: any) => String(c?.id) === String(contactId)))
+        setExistingTask(filtered.length > 0 ? filtered[0] : null)
+      } catch {
+        setExistingTask(null)
+      }
     }
     fetchTasks()
   }, [open, call?.contact?.id])
@@ -249,8 +262,20 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
       initialContacts={call?.contact ? [{ id: call.contact.id, name: call.contact.name || call.contact.phone || `Contact ${call.contact.id}` }] : []}
       onSaved={async (saved) => {
         if (call?.contact?.id) {
-          const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${call.contact.id}`), { muteErrors: true } as any)
-          setExistingTask(t?.success && Array.isArray(t.data) && t.data.length > 0 ? t.data[0] : null)
+          const contactId = call.contact.id
+          const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
+          if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
+            setExistingTask(t.data[0])
+          } else {
+            try {
+              const all = await authenticatedFetch(getApiUrl('tasks?'), { muteErrors: true } as any)
+              const list = Array.isArray(all?.data) ? all.data : []
+              const filtered = list.filter((row: any) => Array.isArray(row.contacts) && row.contacts.some((c: any) => String(c?.id) === String(contactId)))
+              setExistingTask(filtered.length > 0 ? filtered[0] : null)
+            } catch {
+              setExistingTask(null)
+            }
+          }
         }
         if (saved) setExistingTask(saved)
         setTaskModalOpen(false)
