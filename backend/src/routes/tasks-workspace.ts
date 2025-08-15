@@ -9,6 +9,7 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
     const { q, assignee_id, from, to, page = '1', limit = '20' } = req.query as any
+    console.log('🔍 Tasks API - ctx:', { workspaceId: ctx.workspaceId, userId: ctx.userId, q, assignee_id, from, to, page, limit })
     const search = q as string | undefined
     const p = Math.max(1, parseInt(page));
     const l = Math.min(100, Math.max(1, parseInt(limit)));
@@ -70,6 +71,7 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
       const { data, error } = await query
       if (error) throw error
       rows = data || []
+      console.log('📋 Tasks query result:', { totalCount, returned: rows.length, workspaceId: ctx.workspaceId, firstFew: rows.slice(0, 3).map(r => ({ id: r.id, workspace_id: r.workspace_id, title: r.title, assigneesLen: Array.isArray(r.assignees) ? r.assignees.length : null })) })
     }
 
     res.json({ success: true, data: rows, pagination: { page: p, limit: l, total: totalCount, totalPages: Math.ceil((totalCount) / l) } })
@@ -186,7 +188,20 @@ router.get('/by-contact/:contactId', requireWorkspaceContext, async (req, res): 
   }
 })
 
-export default router
+// Debug endpoint to check workspace context
+router.get('/debug/context', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    const ctx = req.workspaceContext!
+    res.json({ 
+      success: true, 
+      workspaceId: ctx.workspaceId, 
+      userId: ctx.userId,
+      timestamp: new Date().toISOString()
+    })
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message })
+  }
+})
 
 // Helper endpoint: list workspace members (assignees)
 router.get('/helpers/members', requireWorkspaceContext, async (req, res): Promise<void> => {
@@ -229,4 +244,4 @@ router.get('/helpers/members', requireWorkspaceContext, async (req, res): Promis
   }
 })
 
-
+export default router
