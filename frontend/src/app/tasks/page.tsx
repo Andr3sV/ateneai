@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { getApiUrl } from '@/config/features'
@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { format, endOfWeek, isToday, differenceInMinutes, differenceInHours, differenceInDays, startOfDay, endOfDay } from 'date-fns'
 import { Plus, Filter, Calendar as CalendarIcon, User, Link2 } from 'lucide-react'
+import Link from 'next/link'
 import { TaskModal } from '@/components/task-modal'
 
 type TaskRow = {
@@ -106,7 +107,20 @@ export default function TasksPage() {
           <TableCell className="py-3">{r.title}</TableCell>
           <TableCell className={`py-3 ${section === 'upcoming' ? 'text-gray-800' : 'text-orange-600 font-medium'}`}>{renderDue(r, section)}</TableCell>
           <TableCell className="py-3">{r.assignees?.map(a => a.name).join(', ') || '-'}</TableCell>
-          <TableCell className="py-3">{r.contacts?.map(c => c.name).join(', ') || '-'}</TableCell>
+          <TableCell className="py-3">
+            {r.contacts?.map((c, index) => (
+              <React.Fragment key={c.id}>
+                {index > 0 && ', '}
+                <Link 
+                  href={`/contacts/${c.id}`}
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {c.name}
+                </Link>
+              </React.Fragment>
+            )) || '-'}
+          </TableCell>
         </TableRow>
       ))}
     </>
@@ -155,7 +169,7 @@ export default function TasksPage() {
                   <div className="flex items-center gap-2"><User className="h-4 w-4" /> Assigned to</div>
                 </TableHead>
                 <TableHead className="text-left font-semibold text-gray-900 w-1/6">
-                  <div className="flex items-center gap-2"><Link2 className="h-4 w-4" /> Record</div>
+                  <div className="flex items-center gap-2"><Link2 className="h-4 w-4" /> Contact</div>
                 </TableHead>
               </TableRow>
             </TableHeader>
