@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,6 +30,8 @@ import {
 } from "lucide-react"
 import { format } from 'date-fns'
 import { ChatModal } from '@/components/chat-modal'
+import { CallModal } from '@/components/call-modal'
+import { TaskModal } from '@/components/task-modal'
 import { getApiUrl, logMigrationEvent } from '@/config/features'
 
 interface Contact {
@@ -127,6 +129,10 @@ export default function ContactDetailPage() {
   const [conversationsLoading, setConversationsLoading] = useState(false)
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [isChatModalOpen, setIsChatModalOpen] = useState(false)
+  const [selectedCallId, setSelectedCallId] = useState<number | null>(null)
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<any | null>(null)
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   
   // Editing state
   const [isEditing, setIsEditing] = useState(false)
@@ -267,6 +273,29 @@ export default function ContactDetailPage() {
     const match = url.match(/instagram\.com\/([^/?]+)/)
     return match ? `@${match[1]}` : url
   }
+
+  // Build unified interactions list sorted by most recent first
+  const interactions = useMemo(() => {
+    type Interaction = { id: number; type: 'message' | 'call' | 'task'; date: string; payload: any }
+    const items: Interaction[] = []
+    if (Array.isArray(conversations)) {
+      for (const c of conversations) {
+        if (c?.created_at) items.push({ id: c.id, type: 'message', date: c.created_at, payload: c })
+      }
+    }
+    if (Array.isArray(calls)) {
+      for (const cl of calls) {
+        if (cl?.created_at) items.push({ id: cl.id, type: 'call', date: cl.created_at, payload: cl })
+      }
+    }
+    if (Array.isArray(tasks)) {
+      for (const t of tasks) {
+        const when = t?.due_date || t?.created_at
+        if (when) items.push({ id: t.id, type: 'task', date: when, payload: t })
+      }
+    }
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [conversations, calls, tasks])
 
   if (loading) {
     return (
@@ -529,66 +558,64 @@ export default function ContactDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {/* Messages */}
-                  {Array.isArray(conversations) && conversations.map((conversation) => (
+                  {interactions.map((item) => (
                     <div
-                      key={conversation.id}
-                      onClick={() => handleConversationClick(conversation)}
+                      key={`${item.type}-${item.id}`}
+                      onClick={() => {
+                        if (item.type === 'message') {
+                          handleConversationClick(item.payload as Conversation)
+                        } else if (item.type === 'call') {
+                          setSelectedCallId(item.payload.id)
+                          setIsCallModalOpen(true)
+                        } else if (item.type === 'task') {
+                          setSelectedTask(item.payload)
+                          setIsTaskModalOpen(true)
+                        }
+                      }}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
                     >
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="flex items-center gap-2">
-                          {getConversationStatusIcon(conversation.status)}
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            {conversation.status}
-                          </span>
-                        </div>
-                        
+                        {item.type === 'message' && (
+                          <div className="flex items-center gap-2">
+                            {getConversationStatusIcon((item.payload as Conversation).status)}
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Message</span>
+                          </div>
+                        )}
+                        {item.type === 'call' && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-emerald-600" />
+                            <span className="px-2 py-0.5 text-[10px] rounded bg-emerald-100 text-emerald-800">Call</span>
+                            <span className="text-xs text-gray-700">{item.payload.status ? String(item.payload.status).toUpperCase() : '—'}</span>
+                          </div>
+                        )}
+                        {item.type === 'task' && (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-blue-600" />
+                            <span className="px-2 py-0.5 text-[10px] rounded bg-blue-100 text-blue-800">Task</span>
+                            <span className="text-xs text-gray-700">{item.payload.title}</span>
+                          </div>
+                        )}
+
                         <Separator orientation="vertical" className="h-4" />
-                        
-                        <div className="flex items-center gap-2">
-                          {getAssignedToIcon(conversation.assigned_to)}
-                          <span className="text-xs text-muted-foreground">
-                            {conversation.assigned_to === 'human' ? 'Human' : 'AI Assistant'}
-                          </span>
-                        </div>
+
+                        {item.type === 'message' && (
+                          <div className="flex items-center gap-2">
+                            {getAssignedToIcon((item.payload as Conversation).assigned_to)}
+                            <span className="text-xs text-muted-foreground">
+                              {(item.payload as Conversation).assigned_to === 'human' ? 'Human' : 'AI Assistant'}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(conversation.created_at)}
+                          {formatDate(item.date)}
                         </div>
-                        
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                           <MessageSquare className="h-4 w-4" />
                         </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Calls */}
-                  {Array.isArray(calls) && calls.map((call) => (
-                    <div key={`call-${call.id}`} className="flex items-center justify-between p-4 border rounded-lg bg-emerald-50/40">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-800">Call</span>
-                        <span className="text-gray-700">{call.status ? call.status.toUpperCase() : '—'}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> {formatDate(call.created_at)}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Tasks */}
-                  {Array.isArray(tasks) && tasks.map((t) => (
-                    <div key={`task-${t.id}`} className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/40">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800">Task</span>
-                        <span className="text-gray-700">{t.title}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> {t.due_date ? formatDate(t.due_date) : 'No due'}
                       </div>
                     </div>
                   ))}
@@ -607,6 +634,22 @@ export default function ContactDetailPage() {
           onOpenChange={setIsChatModalOpen}
         />
       )}
+
+      {/* Call Modal */}
+      <CallModal
+        callId={selectedCallId}
+        open={isCallModalOpen}
+        onOpenChange={setIsCallModalOpen}
+      />
+
+      {/* Task Modal */}
+      <TaskModal
+        open={isTaskModalOpen}
+        onOpenChange={setIsTaskModalOpen}
+        task={selectedTask}
+        initialContacts={contact ? [{ id: contact.id, name: contact.name || contact.phone || `Contact ${contact.id}` }] : []}
+        onSaved={() => setIsTaskModalOpen(false)}
+      />
     </div>
   )
 }
