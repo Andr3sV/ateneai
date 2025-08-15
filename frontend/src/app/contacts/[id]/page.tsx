@@ -201,7 +201,25 @@ export default function ContactDetailPage() {
       console.log('📞 Calls response:', callsResp)
       console.log('📋 Tasks response:', tasksResp)
       setCalls(callsResp?.success ? (callsResp.data || []) : [])
-      setTasks(tasksResp?.success ? (tasksResp.data || []) : [])
+
+      // Prefer server result; if empty or failed, fall back to fetching all and filtering client-side (handles prod schema quirks)
+      if (tasksResp?.success && Array.isArray(tasksResp.data) && tasksResp.data.length > 0) {
+        setTasks(tasksResp.data)
+      } else {
+        try {
+          const allTasksResp = await authenticatedFetch(getApiUrl('tasks?'), { muteErrors: true } as any)
+          const filtered = Array.isArray(allTasksResp?.data)
+            ? allTasksResp.data.filter((t: any) => {
+                const arr = Array.isArray(t.contacts) ? t.contacts : []
+                return arr.some((c: any) => String(c?.id) === String(contactId))
+              })
+            : []
+          setTasks(filtered)
+        } catch (fallbackErr) {
+          console.warn('⚠️ Fallback tasks fetch failed:', fallbackErr)
+          setTasks([])
+        }
+      }
     } catch (error) {
       console.error('❌ Error fetching calls/tasks:', error)
       setCalls([]); setTasks([])
@@ -536,9 +554,9 @@ export default function ContactDetailPage() {
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
                 Interactions
-                {conversations.length > 0 && (
+                {interactions.length > 0 && (
                   <Badge variant="secondary" className="ml-auto">
-                    {conversations.length}
+                    {interactions.length}
                   </Badge>
                 )}
               </CardTitle>
@@ -551,7 +569,7 @@ export default function ContactDetailPage() {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-muted-foreground">Loading conversations...</div>
                 </div>
-              ) : conversations.length === 0 ? (
+              ) : interactions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
                   <div className="text-lg font-medium mb-2">No conversations yet</div>
