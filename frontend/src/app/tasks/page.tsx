@@ -44,6 +44,7 @@ export default function TasksPage() {
         params.append('from', dateStart.toISOString().slice(0,10))
         params.append('to', dateEnd.toISOString().slice(0,10))
       }
+      // Note: do not auto-filter by assignee to avoid hiding shared tasks
       const data = await authenticatedFetch(getApiUrl(`tasks?${params.toString()}`))
       if (data?.success) setRows(data.data || [])
     } finally {
