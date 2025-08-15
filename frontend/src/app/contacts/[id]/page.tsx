@@ -193,13 +193,17 @@ export default function ContactDetailPage() {
 
   const fetchCallsAndTasks = useCallback(async () => {
     try {
+      console.log('🔍 Fetching calls and tasks for contact:', contactId)
       const [callsResp, tasksResp] = await Promise.all([
         authenticatedFetch(getApiUrl(`calls?contact_id=${contactId}&limit=50`), { muteErrors: true } as any),
         authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
       ])
+      console.log('📞 Calls response:', callsResp)
+      console.log('📋 Tasks response:', tasksResp)
       setCalls(callsResp?.success ? (callsResp.data || []) : [])
       setTasks(tasksResp?.success ? (tasksResp.data || []) : [])
-    } catch {
+    } catch (error) {
+      console.error('❌ Error fetching calls/tasks:', error)
       setCalls([]); setTasks([])
     }
   }, [contactId, authenticatedFetch])
@@ -210,10 +214,13 @@ export default function ContactDetailPage() {
     fetchCallsAndTasks()
   }, [fetchContact, fetchConversations, fetchCallsAndTasks])
 
-  // Debug: Log conversations state changes
+  // Debug: Log state changes
   useEffect(() => {
     console.log('🔄 Conversations state updated:', conversations)
-  }, [conversations])
+    console.log('📞 Calls state updated:', calls)
+    console.log('📋 Tasks state updated:', tasks)
+    console.log('🔗 Interactions computed:', interactions)
+  }, [conversations, calls, tasks, interactions])
 
   // Handle edit
   const handleEdit = () => {
