@@ -214,13 +214,12 @@ export default function ContactDetailPage() {
     fetchCallsAndTasks()
   }, [fetchContact, fetchConversations, fetchCallsAndTasks])
 
-  // Debug: Log state changes
+  // Debug: Log state changes (avoid referencing interactions before initialization)
   useEffect(() => {
     console.log('🔄 Conversations state updated:', conversations)
     console.log('📞 Calls state updated:', calls)
     console.log('📋 Tasks state updated:', tasks)
-    console.log('🔗 Interactions computed:', interactions)
-  }, [conversations, calls, tasks, interactions])
+  }, [conversations, calls, tasks])
 
   // Handle edit
   const handleEdit = () => {

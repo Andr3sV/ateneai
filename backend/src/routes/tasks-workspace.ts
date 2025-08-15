@@ -142,12 +142,35 @@ export default router
 router.get('/helpers/members', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
-    const { data, error } = await supabase
+    
+    // First get workspace users
+    const { data: workspaceUsers, error: workspaceError } = await supabase
       .from('workspace_users')
-      .select('user:users_new(id, first_name, last_name)')
+      .select('user_id')
       .eq('workspace_id', ctx.workspaceId)
-    if (error) throw error
-    const members = (data || []).map((row: any) => ({ id: row.user?.id, name: `${row.user?.first_name || ''} ${row.user?.last_name || ''}`.trim() || `User ${row.user?.id}` }))
+    
+    if (workspaceError) throw workspaceError
+    
+    if (!workspaceUsers || workspaceUsers.length === 0) {
+      res.json({ success: true, data: [] })
+      return
+    }
+    
+    const userIds = workspaceUsers.map(wu => wu.user_id)
+    
+    // Then get user details
+    const { data: users, error: usersError } = await supabase
+      .from('users_new')
+      .select('id, first_name, last_name')
+      .in('id', userIds)
+    
+    if (usersError) throw usersError
+    
+    const members = (users || []).map((user: any) => ({ 
+      id: user.id, 
+      name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || `User ${user.id}` 
+    }))
+    
     res.json({ success: true, data: members })
     return
   } catch (e: any) {
