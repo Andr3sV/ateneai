@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { 
@@ -190,27 +191,38 @@ export default function ContactsListPage() {
   const handleStatusFilterChange = (value: StatusFilter) => { setStatusFilter(value) }
   const handleContactClick = (contactId: number) => { router.push(`/contacts/${contactId}`) }
 
-  const startEditing = (contactId: number, field: string, currentValue: string) => {
-    setEditingCell({ contactId, field })
-    setEditValue(currentValue || '')
-  }
-  const cancelEditing = () => { setEditingCell(null); setEditValue('') }
-  const saveEdit = async () => {
-    if (!editingCell) return
+  const updateContactStatus = async (contactId: number, nextStatus: Contact['status']) => {
     try {
-      const data = await authenticatedFetch(getApiUrl(`contacts/${editingCell.contactId}`), {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [editingCell.field]: editValue })
+      const data = await authenticatedFetch(getApiUrl(`contacts/${contactId}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
       })
       if (data.success) {
-        setContacts(prev => prev.map(c => c.id === editingCell.contactId ? { ...c, [editingCell.field]: editValue } : c))
-        cancelEditing()
-        if (editingCell.field === 'status') fetchMetrics()
+        setContacts(prev => prev.map(c => c.id === contactId ? { ...c, status: nextStatus } : c))
+        fetchMetrics()
       } else {
         alert('Error saving changes: ' + (data.error || 'Unknown error'))
       }
     } catch (error) {
-      console.error('❌ Error updating contact:', error)
+      console.error('❌ Error updating contact status:', error)
     }
+  }
+
+  const StatusDropdown = ({ value, onChange }: { value: Contact['status']; onChange: (v: Contact['status']) => void }) => {
+    const badgeClass = getStatusBadgeStyle(value)
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Badge className={`cursor-pointer ${badgeClass}`}>{value || 'Unknown'}</Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => onChange('Lead')}>Lead</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('MQL')}>MQL</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('Client')}>Client</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
   }
 
   const formatPhoneNumber = (phone: string) => { if (!phone) return '-'; return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') }
@@ -403,25 +415,8 @@ export default function ContactsListPage() {
                           <span>{formatPhoneNumber(contact.phone)}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-4">
-                        {editingCell?.contactId === contact.id && editingCell?.field === 'status' ? (
-                          <div className="flex items-center space-x-2">
-                            <Select value={editValue} onValueChange={setEditValue}>
-                              <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Lead">Lead</SelectItem>
-                                <SelectItem value="MQL">MQL</SelectItem>
-                                <SelectItem value="Client">Client</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); saveEdit() }}><Check className="h-3 w-3" /></Button>
-                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); cancelEditing() }}><X className="h-3 w-3" /></Button>
-                          </div>
-                        ) : (
-                          <Badge className={`cursor-pointer ${getStatusBadgeStyle(contact.status)}`} onClick={(e) => { e.stopPropagation(); startEditing(contact.id, 'status', contact.status || '') }}>
-                            {contact.status || 'Unknown'}
-                          </Badge>
-                        )}
+                      <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                        <StatusDropdown value={contact.status} onChange={(next) => updateContactStatus(contact.id, next)} />
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex items-center">

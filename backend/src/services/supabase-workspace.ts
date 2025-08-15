@@ -116,6 +116,7 @@ export const db = {
   // ================================================
   
   async getContacts(workspaceId: number, filters: any = {}) {
+    // Fetch base contacts
     let query = supabase
       .from(TABLES.CONTACTS)
       .select('*')
@@ -141,7 +142,40 @@ export const db = {
     const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data;
+
+    // Enrich with last_interaction combining latest conversation or call date
+    const contactIds = (data || []).map(c => c.id);
+    if (contactIds.length === 0) return data;
+
+    // Fetch latest conversation per contact
+    const { data: convs, error: convErr } = await supabase
+      .from(TABLES.CONVERSATIONS)
+      .select('contact_id, created_at')
+      .eq('workspace_id', workspaceId)
+      .in('contact_id', contactIds);
+    if (convErr) throw convErr;
+
+    // Fetch latest call per contact
+    const { data: calls, error: callsErr } = await supabase
+      .from(TABLES.CALLS)
+      .select('contact_id, created_at')
+      .eq('workspace_id', workspaceId)
+      .in('contact_id', contactIds);
+    if (callsErr) throw callsErr;
+
+    const latestByContact: Record<number, string> = {};
+    (convs || []).forEach(row => {
+      if (!row.contact_id || !row.created_at) return;
+      const prev = latestByContact[row.contact_id];
+      if (!prev || new Date(row.created_at) > new Date(prev)) latestByContact[row.contact_id] = row.created_at as unknown as string;
+    });
+    (calls || []).forEach(row => {
+      if (!row.contact_id || !row.created_at) return;
+      const prev = latestByContact[row.contact_id];
+      if (!prev || new Date(row.created_at) > new Date(prev)) latestByContact[row.contact_id] = row.created_at as unknown as string;
+    });
+
+    return (data || []).map(c => ({ ...c, last_interaction: latestByContact[c.id] || c.last_interaction || null }));
   },
   
   async getContact(contactId: number, workspaceId: number) {

@@ -330,7 +330,7 @@ export default function ContactDetailPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6 max-w-5xl mx-auto">
+    <div className="flex flex-1 flex-col gap-6 p-6 max-w-7xl w-full mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -340,9 +340,6 @@ export default function ContactDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{contact.name || 'Unnamed Contact'}</h1>
-            <p className="text-muted-foreground">
-              Contact details and conversation history
-            </p>
           </div>
         </div>
         
