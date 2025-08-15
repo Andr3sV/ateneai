@@ -45,8 +45,14 @@ export default function TasksPage() {
         params.append('to', dateEnd.toISOString().slice(0,10))
       }
       // Note: do not auto-filter by assignee to avoid hiding shared tasks
-      const data = await authenticatedFetch(getApiUrl(`tasks?${params.toString()}`))
-      if (data?.success) setRows(data.data || [])
+      const url = getApiUrl(`tasks?${params.toString()}`)
+      console.log('🔍 Frontend fetching tasks from:', url)
+      const data = await authenticatedFetch(url)
+      console.log('📋 Frontend tasks response:', data)
+      if (data?.success) {
+        setRows(data.data || [])
+        console.log('📋 Frontend set rows:', data.data?.length || 0, 'tasks')
+      }
     } finally {
       setLoading(false)
     }
