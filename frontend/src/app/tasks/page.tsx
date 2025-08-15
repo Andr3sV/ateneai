@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { format, endOfWeek, isToday, differenceInMinutes, differenceInHours, differenceInDays, startOfDay, endOfDay } from 'date-fns'
-import { Plus, Filter, Calendar as CalendarIcon, User, Link2 } from 'lucide-react'
+import { Plus, Filter, Calendar as CalendarIcon, User, Link2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react'
 import Link from 'next/link'
 import { TaskModal } from '@/components/task-modal'
 
@@ -34,11 +34,14 @@ export default function TasksPage() {
   const [dateEnd, setDateEnd] = useState<Date | undefined>()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<TaskRow | null>(null)
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (pageNum = 1) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
+      params.append('page', String(pageNum))
+      params.append('limit', String(pagination.limit))
       if (query) params.append('q', query)
       if (dateStart && dateEnd) {
         params.append('from', dateStart.toISOString().slice(0,10))
@@ -52,14 +55,21 @@ export default function TasksPage() {
       if (data?.success) {
         setRows(data.data || [])
         console.log('📋 Frontend set rows:', data.data?.length || 0, 'tasks')
+        const p = data.pagination || {}
+        setPagination({
+          page: Number(p.page) || pageNum,
+          limit: Number(p.limit) || pagination.limit,
+          total: Number(p.total) || 0,
+          totalPages: Number(p.totalPages) || 0,
+        })
       }
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchTasks() }, [])
-  useEffect(() => { fetchTasks() }, [query, dateStart?.toISOString(), dateEnd?.toISOString()])
+  useEffect(() => { fetchTasks(1) }, [])
+  useEffect(() => { fetchTasks(1) }, [query, dateStart?.toISOString(), dateEnd?.toISOString()])
 
   const parseDueDate = (s?: string | null) => {
     if (!s) return null
@@ -194,6 +204,26 @@ export default function TasksPage() {
               )}
             </TableBody>
           </Table>
+          {/* Pagination inside the same card - match Calls conversations styling */}
+          <div className="flex items-center justify-between pt-4">
+            <div className="text-sm text-gray-500">
+              Page {pagination.page} of {Math.max(1, pagination.totalPages)} • {pagination.total} results
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={() => fetchTasks(1)} disabled={pagination.page <= 1}>
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => fetchTasks(Math.max(1, pagination.page - 1))} disabled={pagination.page <= 1}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => fetchTasks(Math.min(pagination.totalPages || 1, pagination.page + 1))} disabled={pagination.page >= (pagination.totalPages || 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => fetchTasks(pagination.totalPages || 1)} disabled={pagination.page >= (pagination.totalPages || 1)}>
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
