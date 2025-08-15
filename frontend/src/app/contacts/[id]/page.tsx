@@ -575,7 +575,7 @@ export default function ContactDetailPage() {
                         {item.type === 'message' && (
                           <div className="flex items-center gap-2">
                             {getConversationStatusIcon((item.payload as Conversation).status)}
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Message</span>
+                            <span className="px-2 py-0.5 text-[10px] rounded bg-gray-100 text-gray-800">Message</span>
                           </div>
                         )}
                         {item.type === 'call' && (
