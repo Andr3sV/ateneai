@@ -117,18 +117,36 @@ router.get('/by-contact/:contactId', requireWorkspaceContext, async (req, res): 
       res.status(400).json({ success: false, error: 'Invalid contact id' });
       return
     }
-    const { data, error } = await supabase
+    // Prefer server-side filtering using JSONB contains. Try numeric id first.
+    const containsNumeric = [{ id: contactId }]
+    const { data: numericMatches, error: numericErr } = await supabase
       .from('tasks')
       .select('*')
       .eq('workspace_id', ctx.workspaceId)
+      .contains('contacts', containsNumeric as any)
       .order('due_date', { ascending: true })
       .limit(200)
-    if (error) throw error
-    const filtered = (data || []).filter((row: any) => {
-      const arr = Array.isArray(row.contacts) ? row.contacts : []
-      return arr.some((c: any) => String(c?.id) === String(contactId))
+    if (numericErr) throw numericErr
+
+    // Fallback: some rows might have stored the id as a string
+    const containsString = [{ id: String(contactId) }]
+    const { data: stringMatches, error: stringErr } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('workspace_id', ctx.workspaceId)
+      .contains('contacts', containsString as any)
+      .order('due_date', { ascending: true })
+      .limit(200)
+    if (stringErr) throw stringErr
+
+    // Merge unique by id keeping order by due_date asc
+    const seen = new Set<number>()
+    const merged = [...(numericMatches || []), ...(stringMatches || [])].filter((t: any) => {
+      if (seen.has(t.id)) return false
+      seen.add(t.id)
+      return true
     })
-    res.json({ success: true, data: filtered })
+    res.json({ success: true, data: merged })
     return
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message })
