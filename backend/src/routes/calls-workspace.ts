@@ -247,7 +247,9 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       enableMachineDetection = true,
       concurrency = 50,
       // New call type
-      callType = 'bulk'
+      callType = 'bulk',
+      // New time window configuration
+      timeWindow
     } = req.body as {
       campaignName?: string
       campaignId?: string
@@ -259,6 +261,12 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       enableMachineDetection?: boolean
       concurrency?: number
       callType?: 'bulk' | 'priority'
+      timeWindow?: {
+        startTime: string
+        endTime: string
+        timezone: string
+        daysOfWeek: number[]
+      }
     };
 
     if (!agents || !Array.isArray(agents) || agents.length === 0 || !agentPhoneNumberId || !fromNumber || !Array.isArray(calls) || calls.length === 0) {
@@ -275,6 +283,30 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     if (concurrency < 1 || concurrency > 100) {
       res.status(400).json({ success: false, error: 'concurrency must be between 1 and 100' });
       return;
+    }
+
+    // Validate time window configuration
+    if (timeWindow) {
+      if (!timeWindow.startTime || !timeWindow.endTime || !timeWindow.timezone || !Array.isArray(timeWindow.daysOfWeek)) {
+        res.status(400).json({ success: false, error: 'Invalid time window configuration' });
+        return;
+      }
+      
+      if (timeWindow.startTime >= timeWindow.endTime) {
+        res.status(400).json({ success: false, error: 'Start time must be before end time' });
+        return;
+      }
+      
+      if (timeWindow.daysOfWeek.length === 0) {
+        res.status(400).json({ success: false, error: 'At least one day of the week must be selected' });
+        return;
+      }
+      
+      // Validate days are between 1-7
+      if (timeWindow.daysOfWeek.some(day => day < 1 || day > 7)) {
+        res.status(400).json({ success: false, error: 'Days of week must be between 1 (Monday) and 7 (Sunday)' });
+        return;
+      }
     }
 
     // Prepare payload for voice orchestrator
@@ -344,13 +376,15 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
         total_recipients: payload.calls.length,
         processed_recipients: 0,
         campaign_id: orchestratorCampaignId,
-        // Store additional metadata
+        // Store additional metadata in file_url field
         metadata: {
           callType,
           agents: agents.map(a => a.agentId),
           machineDetectionTimeout,
           enableMachineDetection,
-          concurrency
+          concurrency,
+          // Add time window configuration
+          timeWindow
         }
       });
     } catch (persistErr: any) {
