@@ -8,7 +8,11 @@ import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { X, Plus } from "lucide-react"
 
 type Agent = {
   id: number
@@ -20,13 +24,24 @@ type Agent = {
 
 type CsvRow = Record<string, string>
 
+type CallType = 'bulk' | 'priority'
+
 export default function CreateBatchCallPage() {
   usePageTitle("Create a batch call")
   const authenticatedFetch = useAuthenticatedFetch()
 
   const [batchName, setBatchName] = useState("")
-  const [phoneExternalId, setPhoneExternalId] = useState<string>("")
-  const [agentExternalId, setAgentExternalId] = useState<string>("")
+  const [callType, setCallType] = useState<CallType>('bulk')
+  
+  // Multiple agents and phones support
+  const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([])
+  const [selectedPhoneIds, setSelectedPhoneIds] = useState<string[]>([])
+  
+  // AMD Configuration
+  const [enableMachineDetection, setEnableMachineDetection] = useState(true)
+  const [machineDetectionTimeout, setMachineDetectionTimeout] = useState(6)
+  const [concurrency, setConcurrency] = useState(50)
+  
   const [agents, setAgents] = useState<Agent[]>([])
 
   const [rowsPreview, setRowsPreview] = useState<CsvRow[]>([])
@@ -63,10 +78,14 @@ export default function CreateBatchCallPage() {
 
   const phoneOptions = useMemo(() => {
     // Build phone list from agents having phone + phone_external_id
-    const list: { label: string; value: string }[] = []
+    const list: { label: string; value: string; phone: string }[] = []
     agents.forEach(a => {
       if (a.phone && a.phone_external_id) {
-        list.push({ label: `${a.name} (${a.phone})`, value: a.phone_external_id })
+        list.push({ 
+          label: `${a.name} (${a.phone})`, 
+          value: a.phone_external_id,
+          phone: a.phone
+        })
       }
     })
     return list
@@ -77,6 +96,27 @@ export default function CreateBatchCallPage() {
       .filter(a => a.external_id)
       .map(a => ({ label: `${a.name}`, value: String(a.external_id) }))
   }, [agents])
+
+  // Helper functions for multiple selection
+  const addAgent = (agentId: string) => {
+    if (!selectedAgentIds.includes(agentId)) {
+      setSelectedAgentIds(prev => [...prev, agentId])
+    }
+  }
+
+  const removeAgent = (agentId: string) => {
+    setSelectedAgentIds(prev => prev.filter(id => id !== agentId))
+  }
+
+  const addPhone = (phoneId: string) => {
+    if (!selectedPhoneIds.includes(phoneId)) {
+      setSelectedPhoneIds(prev => [...prev, phoneId])
+    }
+  }
+
+  const removePhone = (phoneId: string) => {
+    setSelectedPhoneIds(prev => prev.filter(id => id !== phoneId))
+  }
 
   function detectPhoneHeader(hs: string[]): string | null {
     const candidates = [
@@ -162,11 +202,22 @@ export default function CreateBatchCallPage() {
   }
 
   const hasData = rowsPreview.length > 0
-  const canSubmit = hasData && !!phoneExternalId && !!agentExternalId && !!phoneHeader
+  const canSubmit = hasData && 
+    selectedAgentIds.length > 0 && 
+    selectedPhoneIds.length > 0 && 
+    !!phoneHeader &&
+    machineDetectionTimeout >= 1 && 
+    machineDetectionTimeout <= 30 &&
+    concurrency >= 1 && 
+    concurrency <= 100
 
-  function getFromNumber(): string | undefined {
-    const match = agents.find(a => a.phone_external_id === phoneExternalId)
-    return match?.phone || undefined
+  function getFromNumbers(): string[] {
+    return selectedPhoneIds
+      .map(phoneId => {
+        const match = agents.find(a => a.phone_external_id === phoneId)
+        return match?.phone
+      })
+      .filter(Boolean) as string[]
   }
 
   async function buildAllRows(): Promise<Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>> {
@@ -214,9 +265,9 @@ export default function CreateBatchCallPage() {
 
   async function handleSubmit() {
     if (!canSubmit) return
-    const fromNumber = getFromNumber()
-    if (!fromNumber) {
-      setUploadError("No se pudo resolver el número emisor (fromNumber) para el phone seleccionado.")
+    const fromNumbers = getFromNumbers()
+    if (fromNumbers.length === 0) {
+      setUploadError("No se pudieron resolver los números emisores (fromNumber) para los teléfonos seleccionados.")
       return
     }
     setSubmitting(true)
@@ -227,21 +278,60 @@ export default function CreateBatchCallPage() {
       const rows = await buildAllRows()
       // Filtra filas sin teléfono
       const valid = rows.filter(r => r.toNumber && r.toNumber.length > 0)
+      
+      // Prepare payload based on call type
+      let payload: any
+      
+      if (callType === 'priority') {
+        // Priority calls - send individually
+        payload = {
+          campaignName: batchName || 'Priority Calls',
+          campaignId: cid,
+          agents: selectedAgentIds.map(agentId => ({ agentId })),
+          agentPhoneNumberId: selectedPhoneIds[0], // Use first phone for priority
+          fromNumber: fromNumbers[0],
+          calls: valid.map(row => ({
+            toNumber: row.toNumber,
+            variables: row.variables,
+            metadata: row.metadata,
+            // AMD Configuration for priority calls
+            "x-gate-mode": "twilio_amd_bridge",
+            machineDetectionTimeout,
+            enableMachineDetection,
+            concurrency: Math.min(concurrency, 10) // Limit concurrency for priority calls
+          }))
+        }
+      } else {
+        // Bulk calls
+        payload = {
+          campaignName: batchName || 'Bulk Campaign',
+          campaignId: cid,
+          agents: selectedAgentIds.map(agentId => ({ agentId })),
+          agentPhoneNumberId: selectedPhoneIds[0], // Use first phone for bulk
+          fromNumber: fromNumbers[0],
+          calls: valid.map(row => ({
+            toNumber: row.toNumber,
+            variables: row.variables,
+            metadata: row.metadata
+          })),
+          // AMD Configuration for bulk calls
+          "x-gate-mode": "twilio_amd_bridge",
+          machineDetectionTimeout,
+          enableMachineDetection,
+          concurrency
+        }
+      }
+
       const res = await authenticatedFetch('/api/calls/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campaignName: batchName || 'Untitled Batch',
-          campaignId: cid,
-          agentExternalId,
-          agentPhoneExternalId: phoneExternalId,
-          fromNumber,
-          rows: valid,
-        })
+        body: JSON.stringify(payload)
       })
+      
       if (!res?.success) {
         throw new Error(res?.error || 'Bulk failed')
       }
+      
       // Start polling progress
       if (progressTimerRef.current) clearInterval(progressTimerRef.current)
       progressTimerRef.current = setInterval(async () => {
@@ -277,53 +367,193 @@ export default function CreateBatchCallPage() {
       {/* Left form */}
       <div className="w-full max-w-md space-y-6">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Batch name</label>
-          <Input placeholder="Untitled Batch" value={batchName} onChange={e => setBatchName(e.target.value)} />
+          <label className="text-sm font-medium">Campaign name</label>
+          <Input placeholder="Untitled Campaign" value={batchName} onChange={e => setBatchName(e.target.value)} />
         </div>
 
+        {/* Call Type Selection */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Phone Number</label>
-          <Select value={phoneExternalId} onValueChange={setPhoneExternalId}>
+          <label className="text-sm font-medium">Call Type</label>
+          <Select value={callType} onValueChange={(value: CallType) => setCallType(value)}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a phone number" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {phoneOptions.length > 0 ? (
-                phoneOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))
-              ) : (
-                <SelectItem disabled value="__none">No phone numbers available</SelectItem>
-              )}
+              <SelectItem value="bulk">Bulk Calls (High volume, optimized)</SelectItem>
+              <SelectItem value="priority">Priority Calls (Individual, immediate)</SelectItem>
             </SelectContent>
           </Select>
+          <div className="text-xs text-muted-foreground">
+            {callType === 'bulk' 
+              ? 'Optimized for high-volume campaigns with AMD and concurrency control'
+              : 'Individual calls with immediate processing and limited concurrency'
+            }
+          </div>
         </div>
 
+        {/* Multiple Agents Selection */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Select Agent</label>
-          <Select value={agentExternalId} onValueChange={setAgentExternalId}>
+          <label className="text-sm font-medium">Select Agents</label>
+          <Select onValueChange={addAgent} value="">
             <SelectTrigger>
-              <SelectValue placeholder="Select an agent" />
+              <SelectValue placeholder="Add an agent" />
             </SelectTrigger>
             <SelectContent>
-              {agentOptions.length > 0 ? (
-                agentOptions.map(opt => (
+              {agentOptions
+                .filter(opt => !selectedAgentIds.includes(opt.value))
+                .map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))
-              ) : (
-                <SelectItem disabled value="__none">No agents available</SelectItem>
-              )}
+              }
             </SelectContent>
           </Select>
+          
+          {/* Selected Agents */}
+          {selectedAgentIds.length > 0 && (
+            <div className="space-y-2">
+              {selectedAgentIds.map(agentId => {
+                const agent = agentOptions.find(opt => opt.value === agentId)
+                return (
+                  <div key={agentId} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                    <span className="text-sm">{agent?.label}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAgent(agentId)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          
           {agents.length === 0 && (
             <div className="text-xs text-muted-foreground">No hay agentes de tipo call en este workspace.</div>
           )}
         </div>
 
+        {/* Multiple Phone Numbers Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Select Phone Numbers</label>
+          <Select onValueChange={addPhone} value="">
+            <SelectTrigger>
+              <SelectValue placeholder="Add a phone number" />
+            </SelectTrigger>
+            <SelectContent>
+              {phoneOptions
+                .filter(opt => !selectedPhoneIds.includes(opt.value))
+                .map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))
+              }
+            </SelectContent>
+          </Select>
+          
+          {/* Selected Phone Numbers */}
+          {selectedPhoneIds.length > 0 && (
+            <div className="space-y-2">
+              {selectedPhoneIds.map(phoneId => {
+                const phone = phoneOptions.find(opt => opt.value === phoneId)
+                return (
+                  <div key={phoneId} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                    <span className="text-sm">{phone?.label}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePhone(phoneId)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* AMD Configuration */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">AMD Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Enable Machine Detection */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="enable-amd">Enable Machine Detection</Label>
+                <div className="text-xs text-muted-foreground">
+                  Detect answering machines and hang up automatically
+                </div>
+              </div>
+              <Switch
+                id="enable-amd"
+                checked={enableMachineDetection}
+                onCheckedChange={setEnableMachineDetection}
+              />
+            </div>
+
+            {/* Machine Detection Timeout */}
+            {enableMachineDetection && (
+              <div className="space-y-2">
+                <Label htmlFor="amd-timeout">AMD Timeout (seconds)</Label>
+                <Select value={String(machineDetectionTimeout)} onValueChange={(value) => setMachineDetectionTimeout(Number(value))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30].map(timeout => (
+                      <SelectItem key={timeout} value={String(timeout)}>
+                        {timeout}s {timeout === 6 && '(default)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="text-xs text-muted-foreground">
+                  {machineDetectionTimeout <= 5 
+                    ? 'Fast detection, may have false positives'
+                    : machineDetectionTimeout <= 10
+                    ? 'Balanced detection, recommended for most campaigns'
+                    : 'Conservative detection, fewer false positives but slower'
+                  }
+                </div>
+              </div>
+            )}
+
+            {/* Concurrency */}
+            <div className="space-y-2">
+              <Label htmlFor="concurrency">Concurrency</Label>
+              <Select value={String(concurrency)} onValueChange={(value) => setConcurrency(Number(value))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 75, 100].map(conc => (
+                    <SelectItem key={conc} value={String(conc)}>
+                      {conc} calls {conc === 50 && '(default)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-muted-foreground">
+                {concurrency <= 25 
+                  ? 'Low concurrency, stable but slower'
+                  : concurrency <= 50
+                  ? 'Medium concurrency, balanced performance'
+                  : 'High concurrency, faster but may have delays'
+                }
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Recipients</label>
-            <div className="text-xs text-muted-foreground">CSV</div>
+            <div className="text-xs text-muted-foreground">CSV/XLS/XLSX</div>
           </div>
           <Card className="p-6">
             <div className="flex items-center justify-center">
@@ -351,7 +581,7 @@ export default function CreateBatchCallPage() {
         <div className="flex items-center gap-3">
           <Button variant="outline" disabled>Test call</Button>
           <Button disabled={!canSubmit || !batchName || submitting} onClick={handleSubmit}>
-            {submitting ? 'Submitting…' : 'Submit a Batch Call'}
+            {submitting ? 'Submitting…' : `Submit ${callType === 'priority' ? 'Priority' : 'Bulk'} Calls`}
           </Button>
         </div>
       </div>

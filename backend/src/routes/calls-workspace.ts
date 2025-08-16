@@ -215,11 +215,18 @@ export default router;
 // Bulk calling integration (voice orchestrator)
 // POST /api/calls/bulk
 // Body: {
+//   campaignName?: string,
 //   campaignId?: string,
-//   agentExternalId: string,
-//   agentPhoneExternalId: string,
+//   agents: Array<{ agentId: string }>, // Updated: support multiple agents
+//   agentPhoneNumberId: string, // Updated: renamed from agentPhoneExternalId
 //   fromNumber: string,
-//   rows: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>
+//   calls: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>, // Updated: renamed from rows
+//   // New AMD Configuration
+//   machineDetectionTimeout?: number,
+//   enableMachineDetection?: boolean,
+//   concurrency?: number,
+//   // New call type
+//   callType?: 'bulk' | 'priority'
 // }
 router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
@@ -229,31 +236,63 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     }
 
     const {
+      campaignName,
       campaignId,
-      agentExternalId,
-      agentPhoneExternalId,
+      agents,
+      agentPhoneNumberId,
       fromNumber,
-      rows
+      calls,
+      // New AMD Configuration
+      machineDetectionTimeout = 6,
+      enableMachineDetection = true,
+      concurrency = 50,
+      // New call type
+      callType = 'bulk'
     } = req.body as {
+      campaignName?: string
       campaignId?: string
-      agentExternalId: string
-      agentPhoneExternalId: string
+      agents: Array<{ agentId: string }>
+      agentPhoneNumberId: string
       fromNumber: string
-      rows: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>
+      calls: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>
+      machineDetectionTimeout?: number
+      enableMachineDetection?: boolean
+      concurrency?: number
+      callType?: 'bulk' | 'priority'
     };
 
-    if (!agentExternalId || !agentPhoneExternalId || !fromNumber || !Array.isArray(rows) || rows.length === 0) {
-      res.status(400).json({ success: false, error: 'Missing fields: agentExternalId, agentPhoneExternalId, fromNumber, rows' });
+    if (!agents || !Array.isArray(agents) || agents.length === 0 || !agentPhoneNumberId || !fromNumber || !Array.isArray(calls) || calls.length === 0) {
+      res.status(400).json({ success: false, error: 'Missing fields: agents, agentPhoneNumberId, fromNumber, calls' });
+      return;
+    }
+
+    // Validate AMD configuration
+    if (machineDetectionTimeout < 1 || machineDetectionTimeout > 30) {
+      res.status(400).json({ success: false, error: 'machineDetectionTimeout must be between 1 and 30 seconds' });
+      return;
+    }
+
+    if (concurrency < 1 || concurrency > 100) {
+      res.status(400).json({ success: false, error: 'concurrency must be between 1 and 100' });
       return;
     }
 
     // Prepare payload for voice orchestrator
     const payload = {
       workspaceId: String(req.workspaceContext.workspaceId),
-      agentId: agentExternalId,
-      agentPhoneNumberId: agentPhoneExternalId,
+      agents: agents, // Support multiple agents
+      agentPhoneNumberId,
       fromNumber,
-      calls: rows.map(r => ({ toNumber: r.toNumber, variables: r.variables || {}, metadata: r.metadata || {} }))
+      calls: calls.map(r => ({ 
+        toNumber: r.toNumber, 
+        variables: r.variables || {}, 
+        metadata: r.metadata || {} 
+      })),
+      // AMD Configuration
+      "x-gate-mode": "twilio_amd_bridge",
+      machineDetectionTimeout,
+      enableMachineDetection,
+      concurrency
     };
 
     const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
@@ -269,19 +308,26 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     const CHUNK = 5000;
     let enqueuedTotal = 0;
     let orchestratorCampaignId: string | null = null;
+    
     for (let i = 0; i < payload.calls.length; i += CHUNK) {
       const body = { ...payload, calls: payload.calls.slice(i, i + CHUNK) };
-          console.log('📞 Sending batch call to voice orchestrator:', { 
-      url: `${VOICE_URL}/calls/bulk`, 
-      workspaceId: body.workspaceId,
-      callsCount: body.calls.length 
-    });
+      
+      console.log('📞 Sending batch call to voice orchestrator:', { 
+        url: `${VOICE_URL}/calls/bulk`, 
+        workspaceId: body.workspaceId,
+        callType,
+        callsCount: body.calls.length,
+        machineDetectionTimeout,
+        enableMachineDetection,
+        concurrency
+      });
     
-    const { data } = await axios.post(
-      `${VOICE_URL}/calls/bulk`,
-      body,
-      { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } }
-    );
+      const { data } = await axios.post(
+        `${VOICE_URL}/calls/bulk`,
+        body,
+        { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } }
+      );
+      
       enqueuedTotal += Number(data?.enqueued || 0);
       if (!orchestratorCampaignId) {
         orchestratorCampaignId = (data?.campaignId || data?.campaign_id || data?.id || null) as string | null;
@@ -291,13 +337,21 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     // Best-effort: persist batch metadata for listing
     try {
       await db.createBatchCall(req.workspaceContext.workspaceId, {
-        name: (req.body?.campaignName as string) || 'Untitled Batch',
-        phone_external_id: agentPhoneExternalId,
-        agent_external_id: agentExternalId,
+        name: campaignName || 'Untitled Batch',
+        phone_external_id: agentPhoneNumberId,
+        agent_external_id: agents[0]?.agentId, // Store first agent for backward compatibility
         status: 'processing',
         total_recipients: payload.calls.length,
         processed_recipients: 0,
         campaign_id: orchestratorCampaignId,
+        // Store additional metadata
+        metadata: {
+          callType,
+          agents: agents.map(a => a.agentId),
+          machineDetectionTimeout,
+          enableMachineDetection,
+          concurrency
+        }
       });
     } catch (persistErr: any) {
       console.warn('⚠️ Could not persist batch metadata:', persistErr?.message);

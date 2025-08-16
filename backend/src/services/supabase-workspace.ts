@@ -715,6 +715,8 @@ export const db = {
       processed_recipients?: number
       // We don't have a dedicated column for campaignId; reuse file_url as a flexible text field
       campaign_id?: string | null
+      // New metadata field for additional campaign information
+      metadata?: Record<string, any>
     }
   ) {
     const insertPayload: any = {
@@ -727,6 +729,17 @@ export const db = {
       processed_recipients: payload.processed_recipients ?? 0,
       file_url: payload.campaign_id ? `cid:${payload.campaign_id}` : null,
     };
+
+    // Store metadata in file_url if available, otherwise use a JSON string
+    if (payload.metadata) {
+      const metadataStr = JSON.stringify(payload.metadata);
+      if (!payload.campaign_id) {
+        insertPayload.file_url = `metadata:${metadataStr}`;
+      } else {
+        // If we have both campaign_id and metadata, append metadata
+        insertPayload.file_url = `cid:${payload.campaign_id}|metadata:${metadataStr}`;
+      }
+    }
 
     const { data, error } = await supabase
       .from(TABLES.BATCH_CALLS)
