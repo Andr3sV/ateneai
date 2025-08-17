@@ -11,8 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { X, Plus } from "lucide-react"
+import { X } from "lucide-react"
 
 type Agent = {
   id: number
@@ -41,6 +40,12 @@ export default function CreateBatchCallPage() {
   const [enableMachineDetection, setEnableMachineDetection] = useState(true)
   const [machineDetectionTimeout, setMachineDetectionTimeout] = useState(6)
   const [concurrency, setConcurrency] = useState(50)
+  
+  // Time Window Configuration
+  const [startTime, setStartTime] = useState("09:00")
+  const [endTime, setEndTime] = useState("17:00")
+  const [timezone, setTimezone] = useState("America/New_York")
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]) // Mon-Fri by default
   
   const [agents, setAgents] = useState<Agent[]>([])
 
@@ -142,7 +147,7 @@ export default function CreateBatchCallPage() {
       header: true,
       worker: true,
       skipEmptyLines: true,
-      chunk: (results) => {
+      chunk: (results: Papa.ParseResult<CsvRow>) => {
         if (!headerRef.current) headerRef.current = results.meta.fields || []
         const chunkRows = results.data as CsvRow[]
         total += chunkRows.length
@@ -209,7 +214,9 @@ export default function CreateBatchCallPage() {
     machineDetectionTimeout >= 1 && 
     machineDetectionTimeout <= 30 &&
     concurrency >= 1 && 
-    concurrency <= 100
+    concurrency <= 100 &&
+    startTime < endTime &&
+    selectedDays.length > 0
 
   function getFromNumbers(): string[] {
     return selectedPhoneIds
@@ -220,7 +227,7 @@ export default function CreateBatchCallPage() {
       .filter(Boolean) as string[]
   }
 
-  async function buildAllRows(): Promise<Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>> {
+  async function buildAllRows(): Promise<Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, unknown> }>> {
     if (!selectedFile || !phoneHeader) return []
     const name = selectedFile.name.toLowerCase()
     const toPayload = (row: CsvRow, idx: number) => {
@@ -237,13 +244,13 @@ export default function CreateBatchCallPage() {
 
     if (name.endsWith('.csv')) {
       return await new Promise((resolve) => {
-        const result: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }> = []
+        const result: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, unknown> }> = []
         let idxBase = 0
         Papa.parse(selectedFile, {
           header: true,
           worker: true,
           skipEmptyLines: true,
-          chunk: (res) => {
+          chunk: (res: Papa.ParseResult<CsvRow>) => {
             const chunkRows = res.data as CsvRow[]
             for (let i = 0; i < chunkRows.length; i++) {
               result.push(toPayload(chunkRows[i], idxBase + i))
@@ -280,7 +287,28 @@ export default function CreateBatchCallPage() {
       const valid = rows.filter(r => r.toNumber && r.toNumber.length > 0)
       
       // Prepare payload based on call type
-      let payload: any
+      let payload: {
+        campaignName: string
+        campaignId: string
+        agents: Array<{ agentId: string }>
+        agentPhoneNumberId: string
+        fromNumber: string
+        calls: Array<{
+          toNumber: string
+          variables?: Record<string, string>
+          metadata?: Record<string, unknown>
+        }>
+        timeWindow: {
+          startTime: string
+          endTime: string
+          timezone: string
+          daysOfWeek: number[]
+        }
+        "x-gate-mode"?: string
+        machineDetectionTimeout?: number
+        enableMachineDetection?: boolean
+        concurrency?: number
+      }
       
       if (callType === 'priority') {
         // Priority calls - send individually
@@ -299,7 +327,14 @@ export default function CreateBatchCallPage() {
             machineDetectionTimeout,
             enableMachineDetection,
             concurrency: Math.min(concurrency, 10) // Limit concurrency for priority calls
-          }))
+          })),
+          // Time Window Configuration
+          timeWindow: {
+            startTime,
+            endTime,
+            timezone,
+            daysOfWeek: selectedDays
+          }
         }
       } else {
         // Bulk calls
@@ -318,7 +353,14 @@ export default function CreateBatchCallPage() {
           "x-gate-mode": "twilio_amd_bridge",
           machineDetectionTimeout,
           enableMachineDetection,
-          concurrency
+          concurrency,
+          // Time Window Configuration
+          timeWindow: {
+            startTime,
+            endTime,
+            timezone,
+            daysOfWeek: selectedDays
+          }
         }
       }
 
@@ -355,8 +397,8 @@ export default function CreateBatchCallPage() {
           // ignore
         }
       }, 5000)
-    } catch (e: any) {
-      setUploadError(e?.message || 'Error while submitting batch')
+    } catch (e: unknown) {
+      setUploadError(e instanceof Error ? e.message : 'Error while submitting batch')
     } finally {
       setSubmitting(false)
     }
@@ -366,114 +408,177 @@ export default function CreateBatchCallPage() {
     <div className="flex flex-1 p-6 gap-6">
       {/* Left form */}
       <div className="w-full max-w-md space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Campaign name</label>
-          <Input placeholder="Untitled Campaign" value={batchName} onChange={e => setBatchName(e.target.value)} />
-        </div>
-
-        {/* Call Type Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Call Type</label>
-          <Select value={callType} onValueChange={(value: CallType) => setCallType(value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="bulk">Bulk Calls (High volume, optimized)</SelectItem>
-              <SelectItem value="priority">Priority Calls (Individual, immediate)</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="text-xs text-muted-foreground">
-            {callType === 'bulk' 
-              ? 'Optimized for high-volume campaigns with AMD and concurrency control'
-              : 'Individual calls with immediate processing and limited concurrency'
-            }
+        {/* Recipients Section - Moved to top */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Recipients</label>
+            <div className="text-xs text-muted-foreground">CSV/XLS/XLSX</div>
           </div>
+          <Card className="p-6">
+            <div className="flex items-center justify-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFile(file)
+                }}
+              />
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>Upload</Button>
+            </div>
+            <div className="mt-3 text-xs text-muted-foreground">
+              The phone_number column is required. Any other columns will be saved as dynamic variables.
+            </div>
+            {uploadError && (
+              <div className="mt-3 text-xs text-red-600">{uploadError}</div>
+            )}
+          </Card>
         </div>
 
-        {/* Multiple Agents Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Select Agents</label>
-          <Select onValueChange={addAgent} value="">
-            <SelectTrigger>
-              <SelectValue placeholder="Add an agent" />
-            </SelectTrigger>
-            <SelectContent>
-              {agentOptions
-                .filter(opt => !selectedAgentIds.includes(opt.value))
-                .map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))
-              }
-            </SelectContent>
-          </Select>
-          
-          {/* Selected Agents */}
-          {selectedAgentIds.length > 0 && (
+        {/* Basic Configuration */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Basic Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Campaign Name */}
             <div className="space-y-2">
-              {selectedAgentIds.map(agentId => {
-                const agent = agentOptions.find(opt => opt.value === agentId)
-                return (
-                  <div key={agentId} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                    <span className="text-sm">{agent?.label}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeAgent(agentId)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )
-              })}
+              <label className="text-sm font-medium">Campaign name</label>
+              <Input placeholder="Untitled Campaign" value={batchName} onChange={e => setBatchName(e.target.value)} />
             </div>
-          )}
-          
-          {agents.length === 0 && (
-            <div className="text-xs text-muted-foreground">No hay agentes de tipo call en este workspace.</div>
-          )}
-        </div>
 
-        {/* Multiple Phone Numbers Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Select Phone Numbers</label>
-          <Select onValueChange={addPhone} value="">
-            <SelectTrigger>
-              <SelectValue placeholder="Add a phone number" />
-            </SelectTrigger>
-            <SelectContent>
-              {phoneOptions
-                .filter(opt => !selectedPhoneIds.includes(opt.value))
-                .map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))
-              }
-            </SelectContent>
-          </Select>
-          
-          {/* Selected Phone Numbers */}
-          {selectedPhoneIds.length > 0 && (
+            {/* Call Type Selection */}
             <div className="space-y-2">
-              {selectedPhoneIds.map(phoneId => {
-                const phone = phoneOptions.find(opt => opt.value === phoneId)
-                return (
-                  <div key={phoneId} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                    <span className="text-sm">{phone?.label}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removePhone(phoneId)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )
-              })}
+              <label className="text-sm font-medium">Call Type</label>
+              <Select value={callType} onValueChange={(value: CallType) => setCallType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bulk">Bulk Calls (High volume, optimized)</SelectItem>
+                  <SelectItem value="priority">Priority Calls (Individual, immediate)</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-muted-foreground">
+                {callType === 'bulk' 
+                  ? 'Optimized for high-volume campaigns with AMD and concurrency control'
+                  : 'Individual calls with immediate processing and limited concurrency'
+                }
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Multiple Agents Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Agents</label>
+              <Select onValueChange={addAgent} value="">
+                <SelectTrigger>
+                  <SelectValue placeholder="Add an agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agentOptions
+                    .filter(opt => !selectedAgentIds.includes(opt.value))
+                    .map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+              
+              {/* Selected Agents */}
+              {selectedAgentIds.length > 0 && (
+                <div className="space-y-2">
+                  {selectedAgentIds.map(agentId => {
+                    const agent = agentOptions.find(opt => opt.value === agentId)
+                    return (
+                      <div key={agentId} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                        <span className="text-sm">{agent?.label}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAgent(agentId)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              
+              {agents.length === 0 && (
+                <div className="text-xs text-muted-foreground">No hay agentes de tipo call en este workspace.</div>
+              )}
+            </div>
+
+            {/* Multiple Phone Numbers Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Phone Numbers</label>
+              <Select onValueChange={addPhone} value="">
+                <SelectTrigger>
+                  <SelectValue placeholder="Add a phone number" />
+                </SelectTrigger>
+                <SelectContent>
+                  {phoneOptions
+                    .filter(opt => !selectedPhoneIds.includes(opt.value))
+                    .map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+              
+              {/* Selected Phone Numbers */}
+              {selectedPhoneIds.length > 0 && (
+                <div className="space-y-2">
+                  {selectedPhoneIds.map(phoneId => {
+                    const phone = phoneOptions.find(opt => opt.value === phoneId)
+                    return (
+                      <div key={phoneId} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                        <span className="text-sm">{phone?.label}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removePhone(phoneId)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Concurrency */}
+            <div className="space-y-2">
+              <Label htmlFor="concurrency">Concurrency</Label>
+              <Select value={String(concurrency)} onValueChange={(value) => setConcurrency(Number(value))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 75, 100].map(conc => (
+                    <SelectItem key={conc} value={String(conc)}>
+                      {conc} calls {conc === 50 && '(default)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-muted-foreground">
+                {concurrency <= 25 
+                  ? 'Low concurrency, stable but slower'
+                  : concurrency <= 50
+                  ? 'Medium concurrency, balanced performance'
+                  : 'High concurrency, faster but may have delays'
+                }
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* AMD Configuration */}
         <Card>
@@ -522,61 +627,109 @@ export default function CreateBatchCallPage() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
 
-            {/* Concurrency */}
+        {/* Time Window Configuration */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Time Window Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Start and End Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-time">Start Time</Label>
+                <Input
+                  id="start-time"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-time">End Time</Label>
+                <Input
+                  id="end-time"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Timezone */}
             <div className="space-y-2">
-              <Label htmlFor="concurrency">Concurrency</Label>
-              <Select value={String(concurrency)} onValueChange={(value) => setConcurrency(Number(value))}>
+              <Label htmlFor="timezone">Timezone</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[10, 25, 50, 75, 100].map(conc => (
-                    <SelectItem key={conc} value={String(conc)}>
-                      {conc} calls {conc === 50 && '(default)'}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                  <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                  <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                  <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                  <SelectItem value="Europe/London">London (GMT/BST)</SelectItem>
+                  <SelectItem value="Europe/Paris">Paris (CET/CEST)</SelectItem>
+                  <SelectItem value="Europe/Madrid">Madrid (CET/CEST)</SelectItem>
+                  <SelectItem value="Europe/Berlin">Berlin (CET/CEST)</SelectItem>
+                  <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
+                  <SelectItem value="Asia/Shanghai">Shanghai (CST)</SelectItem>
+                  <SelectItem value="Australia/Sydney">Sydney (AEST/AEDT)</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="text-xs text-muted-foreground">
-                {concurrency <= 25 
-                  ? 'Low concurrency, stable but slower'
-                  : concurrency <= 50
-                  ? 'Medium concurrency, balanced performance'
-                  : 'High concurrency, faster but may have delays'
-                }
+            </div>
+
+            {/* Days of Week - Improved width */}
+            <div className="space-y-2">
+              <Label>Days of Week</Label>
+              <div className="grid grid-cols-7 gap-1">
+                {[
+                  { value: 1, label: 'Mon' },
+                  { value: 2, label: 'Tue' },
+                  { value: 3, label: 'Wed' },
+                  { value: 4, label: 'Thu' },
+                  { value: 5, label: 'Fri' },
+                  { value: 6, label: 'Sat' },
+                  { value: 7, label: 'Sun' }
+                ].map(({ value, label }) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant={selectedDays.includes(value) ? "default" : "outline"}
+                    size="sm"
+                    className="h-10 w-full p-0 text-xs"
+                    onClick={() => {
+                      if (selectedDays.includes(value)) {
+                        setSelectedDays(prev => prev.filter(d => d !== value))
+                      } else {
+                        setSelectedDays(prev => [...prev, value])
+                      }
+                    }}
+                  >
+                    {label}
+                  </Button>
+                ))}
               </div>
             </div>
+
+            {/* Summary */}
+            {startTime && endTime && selectedDays.length > 0 && (
+              <div className="p-3 bg-muted rounded-md">
+                <div className="text-sm font-medium mb-1">Time Window Summary</div>
+                <div className="text-xs text-muted-foreground">
+                  Calls will be made from <span className="font-medium">{startTime}</span> to <span className="font-medium">{endTime}</span> 
+                  on {selectedDays.sort().map(day => {
+                    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    return dayNames[day - 1]
+                  }).join(', ')} 
+                  ({timezone})
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Recipients</label>
-            <div className="text-xs text-muted-foreground">CSV/XLS/XLSX</div>
-          </div>
-          <Card className="p-6">
-            <div className="flex items-center justify-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleFile(file)
-                }}
-              />
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>Upload</Button>
-            </div>
-            <div className="mt-3 text-xs text-muted-foreground">
-              The phone_number column is required. Any other columns will be saved as dynamic variables.
-            </div>
-            {uploadError && (
-              <div className="mt-3 text-xs text-red-600">{uploadError}</div>
-            )}
-          </Card>
-        </div>
 
         <div className="flex items-center gap-3">
           <Button variant="outline" disabled>Test call</Button>
