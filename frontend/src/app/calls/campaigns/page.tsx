@@ -1,13 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { usePageTitle } from "@/hooks/usePageTitle"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch"
+import { CampaignModal } from "@/components/campaign-modal"
 
 type BatchRow = {
   id: number
@@ -19,6 +20,7 @@ type BatchRow = {
   agent_external_id?: string | null
   created_at: string
   campaign_id?: string | null
+  file_url?: string | null
 }
 
 export default function CampaignsPage() {
@@ -29,37 +31,55 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [agentsMap, setAgentsMap] = useState<Record<string, string>>({})
+  const [selectedCampaign, setSelectedCampaign] = useState<BatchRow | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+
+  const fetchCampaigns = useCallback(async () => {
+    try {
+      const res = await authenticatedFetch('/api/calls/bulk/list', { muteErrors: true })
+      if (res?.success && Array.isArray(res.data)) {
+        setItems(res.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch campaigns:', error)
+    }
+  }, [authenticatedFetch])
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null
+    
     const load = async () => {
-      try {
-        const res = await authenticatedFetch('/api/calls/bulk/list', { muteErrors: true })
-        if (res?.success && Array.isArray(res.data)) {
-          setItems(res.data)
-        }
-      } finally {
-        if (loading) setLoading(false)
-      }
+      await fetchCampaigns()
+      if (loading) setLoading(false)
     }
+    
     load()
-    // Auto refresh every 10s to update progress
-    timer = setInterval(load, 10000)
-    return () => { if (timer) clearInterval(timer) }
-  }, [authenticatedFetch])
+    
+    // Auto refresh every 10 seconds to update progress
+    timer = setInterval(fetchCampaigns, 10000)
+    
+    return () => { 
+      if (timer) clearInterval(timer) 
+    }
+  }, [authenticatedFetch, fetchCampaigns, loading])
 
   // Load agents map to resolve external_id -> name
   useEffect(() => {
     authenticatedFetch('/api/v2/agents?type=call', { muteErrors: true }).then((res) => {
       const map: Record<string, string> = {}
       if (res?.success && Array.isArray(res.data)) {
-        res.data.forEach((a: any) => {
+        res.data.forEach((a: { external_id?: string; name?: string }) => {
           if (a?.external_id) map[a.external_id] = a.name || a.external_id
         })
       }
       setAgentsMap(map)
     }).catch(() => {})
   }, [authenticatedFetch])
+
+  const handleCampaignClick = (campaign: BatchRow) => {
+    setSelectedCampaign(campaign)
+    setModalOpen(true)
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -69,31 +89,53 @@ export default function CampaignsPage() {
 
   const cards = useMemo(() => {
     return filtered.map((b) => {
-      const pct = b.total_recipients > 0 ? Math.round(((b.processed_recipients || 0) / b.total_recipients) * 100) : 0
-      const inProgress = pct < 100
+      const progressPercentage = b.total_recipients > 0 
+        ? Math.round((b.processed_recipients / b.total_recipients) * 100) 
+        : 0
+      
+      const isCompleted = progressPercentage >= 100
+      const isInProgress = progressPercentage > 0 && progressPercentage < 100
+      
       const agentName = b.agent_external_id ? (agentsMap[b.agent_external_id] || b.agent_external_id) : ''
+      
       return (
-        <Card key={b.id} className="p-4 flex flex-col gap-3 border-gray-200 shadow-sm">
+        <Card 
+          key={b.id} 
+          className="p-4 flex flex-col gap-3 border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => handleCampaignClick(b)}
+        >
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <div className="text-[15px] font-semibold text-gray-900">{b.name || 'Untitled Batch'}</div>
               <div className="text-xs text-gray-500">
-                {(b.total_recipients || 0)} {(b.total_recipients || 0) === 1 ? 'recipient' : 'recipients'}
+                {b.total_recipients || 0} {(b.total_recipients || 0) === 1 ? 'recipient' : 'recipients'}
                 {agentName ? <> · {agentName}</> : null}
               </div>
             </div>
-            <span className={`text-xs px-2 py-1 rounded-full ${inProgress ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-              {inProgress ? 'In progress' : 'Completed'}
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              isCompleted ? 'bg-emerald-100 text-emerald-800' : 
+              isInProgress ? 'bg-amber-100 text-amber-800' : 
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {isCompleted ? 'Completed' : isInProgress ? 'In progress' : 'Pending'}
             </span>
           </div>
+          
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-gray-600">
               <span>Progress</span>
-              <span className="font-medium text-gray-800">{pct}%</span>
+              <span className="font-medium text-gray-800">{progressPercentage}%</span>
             </div>
-            <Progress value={pct} className="h-1.5" />
+            <Progress value={progressPercentage} className="h-1.5" />
           </div>
-          <div className="text-xs text-gray-500">Started {new Date(b.created_at).toLocaleString()}</div>
+          
+          {/* Contactos llamados */}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500">
+              Contacts called: <span className="font-medium text-blue-600">{b.processed_recipients || 0}</span>
+            </span>
+            <span className="text-gray-500">Started {new Date(b.created_at).toLocaleString()}</span>
+          </div>
         </Card>
       )
     })
@@ -120,6 +162,13 @@ export default function CampaignsPage() {
           {cards}
         </div>
       )}
+
+      {/* Campaign Modal */}
+      <CampaignModal
+        campaign={selectedCampaign}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
     </div>
   )
 }

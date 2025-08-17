@@ -585,7 +585,7 @@ export const db = {
   // AGENTS (workspace-scoped)
   // ================================================
 
-  async getAgents(workspaceId: number, options?: { type?: string }) {
+  async getAgents(workspaceId: number, options?: { type?: string; externalId?: string }) {
     let query = supabase
       .from(TABLES.AGENTS)
       .select('*')
@@ -594,6 +594,10 @@ export const db = {
 
     if (options?.type) {
       query = query.eq('type', options.type);
+    }
+
+    if (options?.externalId) {
+      query = query.eq('external_id', options.externalId);
     }
 
     const { data, error } = await query;
