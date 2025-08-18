@@ -323,6 +323,7 @@ export const db = {
       .select(`
         *,
         contact:contacts_new(*),
+        assigned_user:users_new(id, first_name, last_name, email),
         last_message:messages_new!messages_new_conversation_id_fkey(
           content,
           sender_type,
@@ -397,6 +398,7 @@ export const db = {
       .select(`
         *,
         contact:contacts_new(*),
+        assigned_user:users_new(id, first_name, last_name, email),
         messages:messages_new(*)
       `)
       .eq('id', conversationId)
@@ -427,6 +429,23 @@ export const db = {
       .select()
       .single();
     
+    if (error) throw error;
+    return data;
+  },
+
+  async updateConversationAssignee(conversationId: number, assignedUserId: number | null, workspaceId: number) {
+    const updates: Record<string, any> = { assigned_user_id: assignedUserId };
+    // If assigning to a human user, also reflect that in assigned_to flag when applicable
+    if (assignedUserId && assignedUserId > 0) {
+      updates.assigned_to = 'human';
+    }
+    const { data, error } = await supabase
+      .from(TABLES.CONVERSATIONS)
+      .update(updates)
+      .eq('id', conversationId)
+      .eq('workspace_id', workspaceId)
+      .select('*')
+      .single();
     if (error) throw error;
     return data;
   },
@@ -631,6 +650,8 @@ export const db = {
       contact_id?: number
       start_date?: string
       end_date?: string
+      assigned_user_id?: number
+      unassigned?: boolean
       limit?: number
       offset?: number
     } = {}
@@ -647,6 +668,8 @@ export const db = {
     if (filters.from) countQuery = countQuery.ilike('phone_from', `%${filters.from}%`);
     if (filters.to) countQuery = countQuery.ilike('phone_to', `%${filters.to}%`);
     if (filters.contact_id) countQuery = countQuery.eq('contact_id', filters.contact_id)
+    if (typeof filters.assigned_user_id === 'number') countQuery = countQuery.eq('assigned_user_id', filters.assigned_user_id)
+    if (filters.unassigned) countQuery = countQuery.is('assigned_user_id', null)
     if (filters.start_date && filters.end_date) {
       countQuery = countQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
     }
@@ -661,7 +684,8 @@ export const db = {
         `
         *,
         contact:contacts_new(id, name, phone),
-        agent:agents(id, name)
+        agent:agents(id, name),
+        assigned_user:users_new(id, first_name, last_name, email)
         `
       )
       .eq('workspace_id', workspaceId);
@@ -672,6 +696,8 @@ export const db = {
     if (filters.contact_id) dataQuery = dataQuery.eq('contact_id', filters.contact_id);
     if (filters.from) dataQuery = dataQuery.ilike('phone_from', `%${filters.from}%`);
     if (filters.to) dataQuery = dataQuery.ilike('phone_to', `%${filters.to}%`);
+    if (typeof filters.assigned_user_id === 'number') dataQuery = dataQuery.eq('assigned_user_id', filters.assigned_user_id);
+    if (filters.unassigned) dataQuery = dataQuery.is('assigned_user_id', null);
     if (filters.start_date && filters.end_date) {
       dataQuery = dataQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
     }
@@ -772,11 +798,25 @@ export const db = {
         `
         *,
         contact:contacts_new(id, name, phone),
-        agent:agents(id, name)
+        agent:agents(id, name),
+        assigned_user:users_new(id, first_name, last_name, email)
         `
       )
       .eq('workspace_id', workspaceId)
       .eq('id', callId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCallAssignee(workspaceId: number, callId: number, assignedUserId: number | null) {
+    // Note: This assumes the calls table has an assigned_user_id column
+    const { data, error } = await supabase
+      .from(TABLES.CALLS)
+      .update({ assigned_user_id: assignedUserId })
+      .eq('workspace_id', workspaceId)
+      .eq('id', callId)
+      .select('*')
       .single();
     if (error) throw error;
     return data;

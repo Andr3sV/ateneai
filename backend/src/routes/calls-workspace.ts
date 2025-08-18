@@ -17,7 +17,7 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
 
-    const { from, to, status, interest, type, start_date, end_date, contact_id } = req.query as Record<string, string>;
+    const { from, to, status, interest, type, start_date, end_date, contact_id, assigned_user_id, unassigned } = req.query as Record<string, string>;
 
     const filterPayload = {
       from: from || undefined,
@@ -28,6 +28,8 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
       contact_id: contact_id ? Number(contact_id) : undefined,
       start_date: start_date || undefined,
       end_date: end_date || undefined,
+      assigned_user_id: assigned_user_id ? Number(assigned_user_id) : undefined,
+      unassigned: unassigned === 'true' ? true : undefined,
       limit,
       offset,
     } as const;
@@ -100,6 +102,27 @@ router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<voi
     res.json({ success: true, data: updated })
   } catch (error: any) {
     console.error('❌ Error in PUT /calls/:id/status:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// Assign call to a workspace user
+router.put('/:id/assignee', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const id = parseInt(req.params.id as string)
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ success: false, error: 'Invalid id' })
+      return;
+    }
+    const { assigned_user_id } = req.body as { assigned_user_id?: number | null }
+    const updated = await db.updateCallAssignee(req.workspaceContext.workspaceId, id, assigned_user_id ?? null)
+    res.json({ success: true, data: updated })
+  } catch (error: any) {
+    console.error('❌ Error in PUT /calls/:id/assignee:', error)
     res.status(500).json({ success: false, error: error.message })
   }
 })

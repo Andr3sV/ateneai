@@ -7,6 +7,13 @@ ADD COLUMN IF NOT EXISTS phone TEXT,
 ADD COLUMN IF NOT EXISTS phone_external_id TEXT,
 ADD COLUMN IF NOT EXISTS external_id TEXT;
 
+-- Add assigned_user_id to calls table to support user assignment on calls
+ALTER TABLE public.calls
+  ADD COLUMN IF NOT EXISTS assigned_user_id BIGINT REFERENCES public.users_new(id);
+
+-- Optional index to speed up filtering by assigned user
+CREATE INDEX IF NOT EXISTS idx_calls_assigned_user_id ON public.calls(assigned_user_id);
+
 -- Backfill agents in workspace 1 with sample data if missing
 UPDATE public.agents 
 SET 

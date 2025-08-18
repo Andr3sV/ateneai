@@ -102,7 +102,8 @@ export default function CallsPage() {
   const [toFilter, setToFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [interestFilter, setInterestFilter] = useState<string>('all')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
+  const [members, setMembers] = useState<{ id: number; name: string }[]>([])
   const [dateStart, setDateStart] = useState<Date | undefined>()
   const [dateEnd, setDateEnd] = useState<Date | undefined>()
 
@@ -146,7 +147,8 @@ export default function CallsPage() {
       if (toFilter) params.append('to', toFilter)
       if (statusFilter !== 'all') params.append('status', statusFilter)
       if (interestFilter !== 'all') params.append('interest', interestFilter)
-      if (typeFilter !== 'all') params.append('type', typeFilter)
+      if (assigneeFilter === 'unassigned') params.append('unassigned', 'true')
+      else if (assigneeFilter !== 'all') params.append('assigned_user_id', assigneeFilter)
       if (dateStart && dateEnd) {
         params.append('start_date', dateStart.toISOString())
         params.append('end_date', dateEnd.toISOString())
@@ -204,6 +206,21 @@ export default function CallsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Load members for assignee filter
+  useEffect(() => {
+    let cancelled = false
+    async function loadMembers() {
+      try {
+        const res = await authenticatedFetch(getApiUrl('tasks/helpers/members'), { muteErrors: true } as any)
+        if (!cancelled && res?.success && Array.isArray(res.data)) {
+          setMembers(res.data)
+        }
+      } catch {}
+    }
+    loadMembers()
+    return () => { cancelled = true }
+  }, [authenticatedFetch])
+
   // Auto-open CallModal when URL has ?open=<id>
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -220,7 +237,7 @@ export default function CallsPage() {
     setPagination((prev) => ({ ...prev, page: 1 }))
     fetchCalls(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromFilter, toFilter, statusFilter, interestFilter, typeFilter, dateStart, dateEnd])
+  }, [fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
 
   // Silent background polling to auto-refresh without flicker
   useEffect(() => {
@@ -232,7 +249,7 @@ export default function CallsPage() {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current)
     }
     // Include relevant dependencies so polling respects current page/filters
-  }, [pagination.page, fromFilter, toFilter, statusFilter, interestFilter, typeFilter, dateStart, dateEnd])
+  }, [pagination.page, fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
 
   const applyQuickDateRange = (days: number) => {
     setDateStart(subDays(new Date(), days))
@@ -311,12 +328,15 @@ export default function CallsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Type" /></SelectTrigger>
+          {/* Assignee filter replacing All types */}
+          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+            <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="outbound">Outbound</SelectItem>
-              <SelectItem value="inbound">Inbound</SelectItem>
+              <SelectItem value="all">All assigned</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {members.map(m => (
+                <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

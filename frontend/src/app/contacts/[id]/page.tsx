@@ -194,35 +194,87 @@ export default function ContactDetailPage() {
   const fetchCallsAndTasks = useCallback(async () => {
     try {
       console.log('🔍 Fetching calls and tasks for contact:', contactId)
-      const [callsResp, tasksResp] = await Promise.all([
-        authenticatedFetch(getApiUrl(`calls?contact_id=${contactId}&limit=50`), { muteErrors: true } as any),
-        authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
-      ])
+      
+      // Fetch calls
+      const callsResp = await authenticatedFetch(getApiUrl(`calls?contact_id=${contactId}&limit=50`), { muteErrors: true } as any)
       console.log('📞 Calls response:', callsResp)
-      console.log('📋 Tasks response:', tasksResp)
       setCalls(callsResp?.success ? (callsResp.data || []) : [])
 
-      // Prefer server result; if empty or failed, fall back to fetching all and filtering client-side (handles prod schema quirks)
-      if (tasksResp?.success && Array.isArray(tasksResp.data) && tasksResp.data.length > 0) {
-        setTasks(tasksResp.data)
-      } else {
+      // Fetch tasks with improved logic
+      console.log('🔍 Fetching tasks for contact:', contactId)
+      
+      // Try multiple approaches to get tasks
+      let tasksFound = false
+      
+      // Approach 1: Direct by-contact endpoint
+      try {
+        const tasksResp = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
+        console.log('📋 Direct tasks response:', tasksResp)
+        
+        if (tasksResp?.success && Array.isArray(tasksResp.data) && tasksResp.data.length > 0) {
+          console.log('✅ Found tasks via direct endpoint:', tasksResp.data.length)
+          setTasks(tasksResp.data)
+          tasksFound = true
+        }
+      } catch (err) {
+        console.warn('⚠️ Direct tasks fetch failed:', err)
+      }
+
+      // Approach 2: If no tasks found, try fetching all tasks and filtering
+      if (!tasksFound) {
         try {
-          const allTasksResp = await authenticatedFetch(getApiUrl('tasks?'), { muteErrors: true } as any)
-          const filtered = Array.isArray(allTasksResp?.data)
-            ? allTasksResp.data.filter((t: any) => {
-                const arr = Array.isArray(t.contacts) ? t.contacts : []
-                return arr.some((c: any) => String(c?.id) === String(contactId))
+          console.log('🔍 Trying fallback: fetch all tasks and filter')
+          const allTasksResp = await authenticatedFetch(getApiUrl('tasks?limit=1000'), { muteErrors: true } as any)
+          console.log('📋 All tasks response:', allTasksResp)
+          
+          if (allTasksResp?.success && Array.isArray(allTasksResp.data)) {
+            const filtered = allTasksResp.data.filter((t: any) => {
+              console.log('📋 Checking task:', t.id, 'contacts:', t.contacts)
+              const arr = Array.isArray(t.contacts) ? t.contacts : []
+              const hasContact = arr.some((c: any) => {
+                const contactMatch = String(c?.id) === String(contactId)
+                console.log('📋 Contact match check:', c?.id, 'vs', contactId, '=', contactMatch)
+                return contactMatch
               })
-            : []
-          setTasks(filtered)
+              return hasContact
+            })
+            console.log('✅ Filtered tasks found:', filtered.length)
+            setTasks(filtered)
+            tasksFound = true
+          }
         } catch (fallbackErr) {
           console.warn('⚠️ Fallback tasks fetch failed:', fallbackErr)
+        }
+      }
+
+      // Approach 3: If still no tasks, try with different pagination
+      if (!tasksFound) {
+        try {
+          console.log('🔍 Trying with different pagination')
+          const paginatedResp = await authenticatedFetch(getApiUrl('tasks?page=1&limit=500'), { muteErrors: true } as any)
+          console.log('📋 Paginated tasks response:', paginatedResp)
+          
+          if (paginatedResp?.success && Array.isArray(paginatedResp.data)) {
+            const filtered = paginatedResp.data.filter((t: any) => {
+              const arr = Array.isArray(t.contacts) ? t.contacts : []
+              return arr.some((c: any) => String(c?.id) === String(contactId))
+            })
+            console.log('✅ Paginated filtered tasks found:', filtered.length)
+            setTasks(filtered)
+          } else {
+            console.log('📋 No tasks found, setting empty array')
+            setTasks([])
+          }
+        } catch (paginatedErr) {
+          console.warn('⚠️ Paginated tasks fetch failed:', paginatedErr)
           setTasks([])
         }
       }
+      
     } catch (error) {
       console.error('❌ Error fetching calls/tasks:', error)
-      setCalls([]); setTasks([])
+      setCalls([])
+      setTasks([])
     }
   }, [contactId, authenticatedFetch])
 
