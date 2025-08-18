@@ -17,7 +17,7 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
 
-    const { from, to, status, interest, type, start_date, end_date, contact_id } = req.query as Record<string, string>;
+    const { from, to, status, interest, type, start_date, end_date, contact_id, assigned_user_id, unassigned } = req.query as Record<string, string>;
 
     const filterPayload = {
       from: from || undefined,
@@ -28,6 +28,8 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
       contact_id: contact_id ? Number(contact_id) : undefined,
       start_date: start_date || undefined,
       end_date: end_date || undefined,
+      assigned_user_id: assigned_user_id ? Number(assigned_user_id) : undefined,
+      unassigned: unassigned === 'true' ? true : undefined,
       limit,
       offset,
     } as const;
