@@ -6,6 +6,7 @@ import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { getApiUrl, logMigrationEvent } from '@/config/features'
 import { Input } from '@/components/ui/input'
+import { useWorkspaceContext } from '@/hooks/useWorkspaceContext'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
@@ -88,6 +89,7 @@ export default function CallsPage() {
   // Header title in layout
   usePageTitle('Conversations')
   const authenticatedFetch = useAuthenticatedFetch()
+  const { role } = useWorkspaceContext()
 
   const [calls, setCalls] = useState<CallItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -336,17 +338,19 @@ export default function CallsPage() {
             </SelectContent>
           </Select>
 
-          {/* Assignee filter replacing All types */}
-          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-            <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All assigned</SelectItem>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {members.map(m => (
-                <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Assignee filter only for admin/owner */}
+          {(role !== 'member' && role !== 'viewer') && (
+            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+              <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All assigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {members.map(m => (
+                  <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Date range - use Contacts dashboard style: single button shows current range, popover with start/end calendars */}
           <div className="flex items-center gap-2">

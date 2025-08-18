@@ -11,6 +11,8 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
     const { q, assignee_id, from, to, page = '1', limit = '20', show_all, unassigned } = req.query as any
     console.log('🔍 Tasks API - ctx:', { workspaceId: ctx.workspaceId, userId: ctx.userId, q, assignee_id, from, to, page, limit, show_all, unassigned })
     const search = q as string | undefined
+    // RBAC: resolve role
+    const role = await db.getUserRole(ctx.workspaceId, ctx.userId!)
     const showAll = show_all === 'true' || show_all === '1'
     const unassignedOnly = unassigned === 'true' || unassigned === '1'
     const p = Math.max(1, parseInt(page));
@@ -108,22 +110,69 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
       rows = data || []
       console.log('📋 Tasks query result (show_all):', { totalCount, returned: rows.length, workspaceId: ctx.workspaceId, firstFew: rows.slice(0, 3).map(r => ({ id: r.id, workspace_id: r.workspace_id, title: r.title, assigneesLen: Array.isArray(r.assignees) ? r.assignees.length : null })) })
     } else {
-      // Default: show all tasks (frontend controls assignee filter explicitly)
-      let countQuery = baseFilter(
-        supabase.from('tasks').select('id', { count: 'exact', head: true })
-      )
-      const { count, error: countError } = await countQuery
-      if (countError) throw countError
-      totalCount = count || 0
+      // Default behavior depends on role
+      if (role === 'member' || role === 'viewer') {
+        // Restrict to current user
+        try {
+          const numericQuery = baseFilter(
+            supabase.from('tasks').select('*').order('due_date', { ascending: true })
+          ).contains('assignees', [{ id: ctx.userId }] as any)
 
-      let query = baseFilter(
-        supabase.from('tasks').select('*').order('due_date', { ascending: true })
-      )
-      if (offset || l) query = query.range(offset, offset + l - 1)
-      const { data, error } = await query
-      if (error) throw error
-      rows = data || []
-      console.log('📋 Tasks query result (default all):', { totalCount, returned: rows.length, workspaceId: ctx.workspaceId })
+          const stringQuery = baseFilter(
+            supabase.from('tasks').select('*').order('due_date', { ascending: true })
+          ).contains('assignees', [{ id: String(ctx.userId) }] as any)
+
+          const [{ data: numData }, { data: strData }] = await Promise.all([
+            numericQuery,
+            stringQuery
+          ])
+          const merged: any[] = []
+          const seen = new Set<number>()
+          for (const r of [...(numData || []), ...(strData || [])]) {
+            if (seen.has(r.id)) continue
+            seen.add(r.id)
+            merged.push(r)
+          }
+          // Fallback: if nothing matched via JSONB contains (schema variance), fetch and filter in-memory
+          if (merged.length === 0) {
+            console.warn('⚠️ No tasks matched via JSONB contains; falling back to in-memory filter for member/viewer')
+            const { data: allData, error: allErr } = await baseFilter(
+              supabase.from('tasks').select('*').order('due_date', { ascending: true })
+            ).limit(1000)
+            if (allErr) throw allErr
+            const all = Array.isArray(allData) ? allData : []
+            const filtered = all.filter((t: any) => {
+              const arr = Array.isArray(t.assignees) ? t.assignees : []
+              return arr.some((a: any) => String(a?.id) === String(ctx.userId))
+            })
+            totalCount = filtered.length
+            rows = filtered.slice(offset, offset + l)
+          } else {
+            totalCount = merged.length
+            rows = merged.slice(offset, offset + l)
+          }
+        } catch (err) {
+          console.warn('⚠️ member/viewer default filter failed:', (err as any)?.message)
+          rows = []
+          totalCount = 0
+        }
+      } else {
+        // admin/owner: show all (frontend controls filters)
+        let countQuery = baseFilter(
+          supabase.from('tasks').select('id', { count: 'exact', head: true })
+        )
+        const { count, error: countError } = await countQuery
+        if (countError) throw countError
+        totalCount = count || 0
+
+        let query = baseFilter(
+          supabase.from('tasks').select('*').order('due_date', { ascending: true })
+        )
+        if (offset || l) query = query.range(offset, offset + l - 1)
+        const { data, error } = await query
+        if (error) throw error
+        rows = data || []
+      }
     }
 
     res.json({ success: true, data: rows, pagination: { page: p, limit: l, total: totalCount, totalPages: Math.ceil((totalCount) / l) } })

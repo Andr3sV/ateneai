@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { useWorkspaceContext } from '@/hooks/useWorkspaceContext'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { getApiUrl } from '@/config/features'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ type TaskRow = {
 export default function TasksPage() {
   usePageTitle('Tasks')
   const authenticatedFetch = useAuthenticatedFetch()
+  const { role, userId } = useWorkspaceContext()
 
   const [rows, setRows] = useState<TaskRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -249,20 +251,22 @@ export default function TasksPage() {
           <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
         )}
         {/* Assignee filter */}
-        <div className="flex items-center">
-          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder="All assigned" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All assigned</SelectItem>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {members.map(m => (
-                <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {(role !== 'member' && role !== 'viewer') && (
+          <div className="flex items-center">
+            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="All assigned" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All assigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {members.map(m => (
+                  <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         
         <Button className="ml-auto" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus className="h-4 w-4 mr-2" /> New task

@@ -34,7 +34,14 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
       offset,
     } as const;
 
-    const result = await db.getCalls(req.workspaceContext.workspaceId, filterPayload);
+    // RBAC: member/viewer restricted to own assigned calls
+    const role = await db.getUserRole(req.workspaceContext.workspaceId, req.workspaceContext.userId!)
+    const effectiveFilters = { ...filterPayload } as any
+    if (role === 'member' || role === 'viewer') {
+      effectiveFilters.assigned_user_id = req.workspaceContext.userId
+      delete effectiveFilters.unassigned
+    }
+    const result = await db.getCalls(req.workspaceContext.workspaceId, effectiveFilters);
 
     console.log(`📞 Calls list for workspace ${req.workspaceContext.workspaceId}: ${result.data.length} of ${result.total} (page ${page})`, filterPayload);
 

@@ -26,15 +26,17 @@ router.get('/user', requireWorkspaceContext, async (req, res): Promise<void> => 
 
     const user = await db.getUserByClerkId(req.clerkUserId);
     const workspace = await db.getWorkspace(req.workspaceContext.workspaceId);
+    const role = await db.getUserRole(req.workspaceContext.workspaceId, req.workspaceContext.userId!);
     
     res.json({ 
       success: true, 
       data: {
-        user,
+        user: { ...user, role },
         workspace,
         context: {
           workspaceId: req.workspaceContext.workspaceId,
-          userId: req.workspaceContext.userId
+          userId: req.workspaceContext.userId,
+          role,
         }
       }
     });

@@ -99,6 +99,17 @@ export const db = {
     if (error) throw error;
     return data;
   },
+
+  async getUserRole(workspaceId: number, userId: number): Promise<'owner' | 'admin' | 'member' | 'viewer' | null> {
+    const { data, error } = await supabase
+      .from(TABLES.WORKSPACE_USERS)
+      .select('role')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return (data?.role as any) || null;
+  },
   
   async createUser(userData: Partial<any>) {
     const { data, error } = await supabase
@@ -294,6 +305,9 @@ export const db = {
     if (filters.contact_id) {
       countQuery = countQuery.eq('contact_id', filters.contact_id);
     }
+    if (typeof filters.assigned_user_id === 'number') {
+      countQuery = countQuery.eq('assigned_user_id', filters.assigned_user_id)
+    }
 
     if (filters.search) {
       // For count query, we need to search by contact name or phone using a subquery approach
@@ -342,6 +356,9 @@ export const db = {
 
     if (filters.contact_id) {
       query = query.eq('contact_id', filters.contact_id);
+    }
+    if (typeof filters.assigned_user_id === 'number') {
+      query = query.eq('assigned_user_id', filters.assigned_user_id)
     }
 
     if (filters.search) {

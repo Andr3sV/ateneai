@@ -13,6 +13,7 @@ export interface WorkspaceUser {
   created_at: string
   updated_at: string
   is_active: boolean
+  role?: 'owner' | 'admin' | 'member' | 'viewer'
 }
 
 export interface Workspace {
@@ -31,6 +32,7 @@ export interface WorkspaceContextData {
   workspace: Workspace | null
   workspaceId: number | null
   userId: number | null
+  role: 'owner' | 'admin' | 'member' | 'viewer' | null
   loading: boolean
   error: string | null
   refetch: () => Promise<void>
@@ -61,9 +63,10 @@ export const useWorkspaceApi = () => {
       }
 
       // Use v2 API endpoints for workspace-based calls
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
       const apiUrl = url.startsWith('/api/') 
-        ? `${process.env.NEXT_PUBLIC_API_URL}${url.replace('/api/', '/api/v2/')}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/v2${url}`
+        ? `${base}${url.replace('/api/', '/api/v2/')}`
+        : `${base}/api/v2${url}`
 
       const authHeaders = {
         'Authorization': `Bearer ${token}`,
@@ -106,6 +109,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [role, setRole] = useState<'owner' | 'admin' | 'member' | 'viewer' | null>(null)
 
   const fetchWorkspaceContext = useCallback(async () => {
     if (!isLoaded || !isSignedIn || !clerkUser) {
@@ -125,9 +129,12 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (response.success) {
         setUser(response.data.user)
         setWorkspace(response.data.workspace)
+        const r = response.data?.context?.role || response.data?.user?.role || null
+        setRole(r)
         console.log('✅ Workspace context loaded:', {
           workspaceId: response.data.workspace.id,
-          userId: response.data.user.id
+          userId: response.data.user.id,
+          role: r,
         })
       } else {
         throw new Error(response.error || 'Failed to load workspace context')
@@ -149,6 +156,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     workspace,
     workspaceId: workspace?.id || null,
     userId: user?.id || null,
+    role,
     loading,
     error,
     refetch: fetchWorkspaceContext,
@@ -172,3 +180,5 @@ export const useWorkspaceUserId = (): number | null => {
   const { userId } = useWorkspaceContext()
   return userId
 }
+
+

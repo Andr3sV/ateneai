@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
+import { useWorkspaceContext } from '@/hooks/useWorkspaceContext'
 import { useMemo, useState } from "react"
 
 import {
@@ -29,6 +30,7 @@ import { cn } from "@/lib/utils"
 export function AppSidebar() {
   const pathname = usePathname()
   const { user } = useUser()
+  const { role } = useWorkspaceContext()
 
   const isMessagesActive = useMemo(
     () => pathname.startsWith("/messages") || pathname.startsWith("/conversations") || pathname.startsWith("/social-connections"),
@@ -171,13 +173,15 @@ export function AppSidebar() {
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/calls/campaigns")}>
-                        <Link href="/calls/campaigns">
-                          <span>Campaigns</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    {(role !== 'member' && role !== 'viewer') && (
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild isActive={pathname.startsWith("/calls/campaigns")}>
+                          <Link href="/calls/campaigns">
+                            <span>Campaigns</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    )}
                   </SidebarMenuSub>
                 )}
               </SidebarMenuItem>

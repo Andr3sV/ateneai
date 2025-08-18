@@ -26,12 +26,15 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
 
     const searchTerm = req.query.search as string;
 
+    // RBAC: if member/viewer, restrict by assigned_user_id
+    const role = await db.getUserRole(req.workspaceContext.workspaceId, req.workspaceContext.userId!)
     const result = await db.getConversations(req.workspaceContext.workspaceId, {
       limit,
       offset,
       status: statusFilter,
       assigned_to: assignedToFilter,
-      search: searchTerm
+      search: searchTerm,
+      ...(role === 'member' || role === 'viewer' ? { assigned_user_id: req.workspaceContext.userId } as any : {})
     });
     
     console.log(`📊 Conversaciones encontradas para workspace ${req.workspaceContext.workspaceId}: ${result.data.length} de ${result.total} (página ${page})`);
