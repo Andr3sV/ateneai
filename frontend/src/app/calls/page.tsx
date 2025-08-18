@@ -330,7 +330,7 @@ export default function CallsPage() {
 
           {/* Assignee filter replacing All types */}
           <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="All assigned" /></SelectTrigger>
+            <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All assigned</SelectItem>
               <SelectItem value="unassigned">Unassigned</SelectItem>
