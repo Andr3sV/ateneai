@@ -239,14 +239,13 @@ export default function TasksPage() {
           <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
         )}
         {/* Assignee filter */}
-        <div className="flex items-center space-x-2">
-          <Label className="text-sm">Assignee</Label>
+        <div className="flex items-center">
           <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
             <SelectTrigger className="w-56">
-              <SelectValue placeholder="Assignee" />
+              <SelectValue placeholder="All assigned" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All assigned</SelectItem>
               <SelectItem value="unassigned">Unassigned</SelectItem>
               {members.map(m => (
                 <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
@@ -318,7 +317,7 @@ export default function TasksPage() {
           {/* Summary info */}
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="text-sm text-gray-500">
-              {rows.length} tasks loaded {assigneeFilter === 'all' ? '(all)' : assigneeFilter === 'unassigned' ? '(unassigned)' : '(filtered)'} {hasMore && '• Scroll down for more'}
+              {rows.length} tasks loaded {assigneeFilter === 'all' ? '(all assigned)' : assigneeFilter === 'unassigned' ? '(unassigned)' : '(filtered)'} {hasMore && '• Scroll down for more'}
             </div>
             {hasMore && !loadingMore && (
               <Button variant="outline" size="sm" onClick={loadMore}>
