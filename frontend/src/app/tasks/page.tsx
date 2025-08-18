@@ -44,6 +44,8 @@ export default function TasksPage() {
   const limit = 30 // Fixed limit for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+  const inflightRef = useRef<AbortController | null>(null)
+
   const fetchTasks = useCallback(async (pageNum = 1, append = false) => {
     if (append) {
       setLoadingMore(true)
@@ -52,6 +54,13 @@ export default function TasksPage() {
     }
     
     try {
+      // Cancel any in-flight request to avoid bursts and 429
+      if (inflightRef.current) {
+        inflightRef.current.abort()
+      }
+      const ctrl = new AbortController()
+      inflightRef.current = ctrl
+
       const params = new URLSearchParams()
       params.append('page', String(pageNum))
       params.append('limit', String(limit))
@@ -71,7 +80,7 @@ export default function TasksPage() {
       
       const url = getApiUrl(`tasks?${params.toString()}`)
       console.log('🔍 Frontend fetching tasks from:', url)
-      const data = await authenticatedFetch(url)
+      const data = await authenticatedFetch(url, { signal: ctrl.signal, retries: 3 } as any)
       console.log('📋 Frontend tasks response:', data)
       
       if (data?.success) {
@@ -91,6 +100,7 @@ export default function TasksPage() {
         setCurrentPage(pageNum)
       }
     } finally {
+      inflightRef.current = null
       if (append) {
         setLoadingMore(false)
       } else {
