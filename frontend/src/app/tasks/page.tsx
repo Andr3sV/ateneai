@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { format, endOfWeek, isToday, differenceInMinutes, differenceInHours, differenceInDays, startOfDay, endOfDay } from 'date-fns'
 import { Plus, Filter, Calendar as CalendarIcon, User, Link2, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -39,7 +39,8 @@ export default function TasksPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<TaskRow | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [showAllTasks, setShowAllTasks] = useState(false)
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
+  const [members, setMembers] = useState<{ id: number; name: string }[]>([])
   const limit = 30 // Fixed limit for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -59,8 +60,13 @@ export default function TasksPage() {
         params.append('from', dateStart.toISOString().slice(0,10))
         params.append('to', dateEnd.toISOString().slice(0,10))
       }
-      if (showAllTasks) {
-        params.append('show_all', 'true')
+      // Assignee filter
+      if (assigneeFilter === 'all') {
+        // nothing
+      } else if (assigneeFilter === 'unassigned') {
+        params.append('unassigned', 'true')
+      } else {
+        params.append('assignee_id', assigneeFilter)
       }
       
       const url = getApiUrl(`tasks?${params.toString()}`)
@@ -91,7 +97,7 @@ export default function TasksPage() {
         setLoading(false)
       }
     }
-  }, [authenticatedFetch, query, dateStart, dateEnd, limit, showAllTasks])
+  }, [authenticatedFetch, query, dateStart, dateEnd, limit, assigneeFilter])
 
   // Load more data when reaching the bottom
   const loadMore = useCallback(() => {
@@ -118,7 +124,22 @@ export default function TasksPage() {
     setCurrentPage(1)
     setHasMore(true)
     fetchTasks(1, false) 
-  }, [query, dateStart?.toISOString(), dateEnd?.toISOString(), showAllTasks])
+  }, [query, dateStart?.toISOString(), dateEnd?.toISOString(), assigneeFilter])
+
+  // Load workspace members
+  useEffect(() => {
+    let cancelled = false
+    async function loadMembers() {
+      try {
+        const res = await authenticatedFetch(getApiUrl('tasks/helpers/members'), { muteErrors: true } as any)
+        if (!cancelled && res?.success && Array.isArray(res.data)) {
+          setMembers(res.data)
+        }
+      } catch { /* ignore */ }
+    }
+    loadMembers()
+    return () => { cancelled = true }
+  }, [authenticatedFetch])
 
   const parseDueDate = (s?: string | null) => {
     if (!s) return null
@@ -217,17 +238,21 @@ export default function TasksPage() {
         {(dateStart || dateEnd) && (
           <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
         )}
-        
-        {/* Show All Tasks Toggle */}
-        <div className="flex items-center space-x-2 px-3 py-2 border rounded-md">
-          <Switch 
-            id="show-all-tasks" 
-            checked={showAllTasks} 
-            onCheckedChange={setShowAllTasks}
-          />
-          <Label htmlFor="show-all-tasks" className="text-sm font-medium">
-            Show all workspace tasks
-          </Label>
+        {/* Assignee filter */}
+        <div className="flex items-center space-x-2">
+          <Label className="text-sm">Assignee</Label>
+          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {members.map(m => (
+                <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         
         <Button className="ml-auto" onClick={() => { setEditing(null); setModalOpen(true) }}>
@@ -293,7 +318,7 @@ export default function TasksPage() {
           {/* Summary info */}
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="text-sm text-gray-500">
-              {rows.length} tasks loaded {showAllTasks ? '(all workspace tasks)' : '(assigned to you)'} {hasMore && '• Scroll down for more'}
+              {rows.length} tasks loaded {assigneeFilter === 'all' ? '(all)' : assigneeFilter === 'unassigned' ? '(unassigned)' : '(filtered)'} {hasMore && '• Scroll down for more'}
             </div>
             {hasMore && !loadingMore && (
               <Button variant="outline" size="sm" onClick={loadMore}>
