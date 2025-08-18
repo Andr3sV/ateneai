@@ -104,6 +104,27 @@ router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<voi
   }
 })
 
+// Assign call to a workspace user
+router.put('/:id/assignee', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const id = parseInt(req.params.id as string)
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ success: false, error: 'Invalid id' })
+      return;
+    }
+    const { assigned_user_id } = req.body as { assigned_user_id?: number | null }
+    const updated = await db.updateCallAssignee(req.workspaceContext.workspaceId, id, assigned_user_id ?? null)
+    res.json({ success: true, data: updated })
+  } catch (error: any) {
+    console.error('❌ Error in PUT /calls/:id/assignee:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 // Dashboard stats for calls
 router.get('/dashboard/stats', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {

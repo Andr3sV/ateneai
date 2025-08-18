@@ -323,6 +323,7 @@ export const db = {
       .select(`
         *,
         contact:contacts_new(*),
+        assigned_user:users_new(id, first_name, last_name, email),
         last_message:messages_new!messages_new_conversation_id_fkey(
           content,
           sender_type,
@@ -397,6 +398,7 @@ export const db = {
       .select(`
         *,
         contact:contacts_new(*),
+        assigned_user:users_new(id, first_name, last_name, email),
         messages:messages_new(*)
       `)
       .eq('id', conversationId)
@@ -427,6 +429,23 @@ export const db = {
       .select()
       .single();
     
+    if (error) throw error;
+    return data;
+  },
+
+  async updateConversationAssignee(conversationId: number, assignedUserId: number | null, workspaceId: number) {
+    const updates: Record<string, any> = { assigned_user_id: assignedUserId };
+    // If assigning to a human user, also reflect that in assigned_to flag when applicable
+    if (assignedUserId && assignedUserId > 0) {
+      updates.assigned_to = 'human';
+    }
+    const { data, error } = await supabase
+      .from(TABLES.CONVERSATIONS)
+      .update(updates)
+      .eq('id', conversationId)
+      .eq('workspace_id', workspaceId)
+      .select('*')
+      .single();
     if (error) throw error;
     return data;
   },
@@ -661,7 +680,8 @@ export const db = {
         `
         *,
         contact:contacts_new(id, name, phone),
-        agent:agents(id, name)
+        agent:agents(id, name),
+        assigned_user:users_new(id, first_name, last_name, email)
         `
       )
       .eq('workspace_id', workspaceId);
@@ -772,11 +792,25 @@ export const db = {
         `
         *,
         contact:contacts_new(id, name, phone),
-        agent:agents(id, name)
+        agent:agents(id, name),
+        assigned_user:users_new(id, first_name, last_name, email)
         `
       )
       .eq('workspace_id', workspaceId)
       .eq('id', callId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCallAssignee(workspaceId: number, callId: number, assignedUserId: number | null) {
+    // Note: This assumes the calls table has an assigned_user_id column
+    const { data, error } = await supabase
+      .from(TABLES.CALLS)
+      .update({ assigned_user_id: assignedUserId })
+      .eq('workspace_id', workspaceId)
+      .eq('id', callId)
+      .select('*')
       .single();
     if (error) throw error;
     return data;

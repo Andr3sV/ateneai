@@ -26,6 +26,8 @@ type CallDetail = {
   criteria_evaluation?: string[] | null
   duration?: number | null
   dinamic_variables?: string[] | null
+  assigned_user_id?: number | null
+  assigned_user?: { id: number; first_name?: string | null; last_name?: string | null; email?: string | null } | null
 }
 
 interface CallModalProps {
@@ -41,6 +43,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   const [copied, setCopied] = useState(false)
   const [taskModalOpen, setTaskModalOpen] = useState(false)
   const [existingTask, setExistingTask] = useState<any | null>(null)
+  const [members, setMembers] = useState<{ id: number; name: string }[]>([])
   // Force v2 endpoints for tasks to avoid env flag mismatch in production
   const apiV2 = (path: string) => `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v2/${path}`
   
@@ -70,6 +73,53 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
     }
     fetchCall()
   }, [open, callId, authenticatedFetch])
+
+  // Load members to allow assignment
+  useEffect(() => {
+    async function fetchMembers() {
+      if (!open) return
+      try {
+        const res = await authenticatedFetch(getApiUrl('tasks/helpers/members'), { muteErrors: true } as any)
+        if (res?.success && Array.isArray(res.data)) {
+          setMembers(res.data)
+        } else {
+          setMembers([])
+        }
+      } catch {
+        setMembers([])
+      }
+    }
+    fetchMembers()
+  }, [open, authenticatedFetch])
+
+  const assignedUserName = (() => {
+    const u = call?.assigned_user
+    if (u) {
+      const fn = u.first_name || ''
+      const ln = u.last_name || ''
+      const full = `${fn} ${ln}`.trim()
+      return full || u.email || `User ${u.id}`
+    }
+    const id = call?.assigned_user_id ?? null
+    const found = members.find(m => m.id === id)
+    return found?.name || 'Unassigned'
+  })()
+
+  const assignToUser = async (userId: number | null) => {
+    if (!call) return
+    try {
+      const res = await authenticatedFetch(getApiUrl(`calls/${call.id}/assignee`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assigned_user_id: userId })
+      })
+      if (res?.success) {
+        setCall({ ...call, assigned_user_id: userId })
+      }
+    } catch (e) {
+      console.error('Failed assigning call assignee', e)
+    }
+  }
 
   // Fetch tasks when the modal opens and whenever call/contact changes
   useEffect(() => {
@@ -175,6 +225,19 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                       }}
                     />
                     {renderInterestBadge(call?.interest || null)}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Badge className="bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200">{assignedUserName}</Badge>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => assignToUser(null)}>Unassigned</DropdownMenuItem>
+                        {members.map(m => (
+                          <DropdownMenuItem key={m.id} onClick={() => assignToUser(m.id)}>
+                            {m.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Badge
                       className="bg-black text-white cursor-pointer hover:bg-neutral-900"
                       onClick={(e) => { e.stopPropagation(); setTaskModalOpen(true) }}

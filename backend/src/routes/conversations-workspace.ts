@@ -274,6 +274,35 @@ router.put('/:id/assigned-to', requireWorkspaceContext, async (req, res): Promis
   }
 });
 
+// Asignar conversación a un usuario del workspace (assigned_user_id)
+router.put('/:id/assignee', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ 
+        success: false, 
+        error: 'No workspace context available' 
+      });
+      return;
+    }
+
+    const conversationId = parseInt(req.params.id);
+    if (isNaN(conversationId)) {
+      res.status(400).json({ 
+        success: false, 
+        error: 'Invalid conversation ID' 
+      });
+      return;
+    }
+
+    const { assigned_user_id } = req.body as { assigned_user_id?: number | null };
+    const updated = await db.updateConversationAssignee(conversationId, assigned_user_id ?? null, req.workspaceContext.workspaceId);
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('❌ Error updating conversation assignee:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Crear mensaje en una conversación
 router.post('/:id/messages', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {

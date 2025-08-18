@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { getApiUrl } from '@/config/features'
@@ -10,8 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { format, endOfWeek, isToday, differenceInMinutes, differenceInHours, differenceInDays, startOfDay, endOfDay } from 'date-fns'
-import { Plus, Filter, Calendar as CalendarIcon, User, Link2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react'
+import { Plus, Filter, Calendar as CalendarIcon, User, Link2, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { TaskModal } from '@/components/task-modal'
 
@@ -29,47 +31,94 @@ export default function TasksPage() {
 
   const [rows, setRows] = useState<TaskRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [query, setQuery] = useState('')
   const [dateStart, setDateStart] = useState<Date | undefined>()
   const [dateEnd, setDateEnd] = useState<Date | undefined>()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<TaskRow | null>(null)
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [showAllTasks, setShowAllTasks] = useState(false)
+  const limit = 30 // Fixed limit for infinite scroll
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  const fetchTasks = async (pageNum = 1) => {
-    setLoading(true)
+  const fetchTasks = useCallback(async (pageNum = 1, append = false) => {
+    if (append) {
+      setLoadingMore(true)
+    } else {
+      setLoading(true)
+    }
+    
     try {
       const params = new URLSearchParams()
       params.append('page', String(pageNum))
-      params.append('limit', String(pagination.limit))
+      params.append('limit', String(limit))
       if (query) params.append('q', query)
       if (dateStart && dateEnd) {
         params.append('from', dateStart.toISOString().slice(0,10))
         params.append('to', dateEnd.toISOString().slice(0,10))
       }
-      // Note: do not auto-filter by assignee to avoid hiding shared tasks
+      if (showAllTasks) {
+        params.append('show_all', 'true')
+      }
+      
       const url = getApiUrl(`tasks?${params.toString()}`)
       console.log('🔍 Frontend fetching tasks from:', url)
       const data = await authenticatedFetch(url)
       console.log('📋 Frontend tasks response:', data)
+      
       if (data?.success) {
-        setRows(data.data || [])
-        console.log('📋 Frontend set rows:', data.data?.length || 0, 'tasks')
+        const newTasks = data.data || []
+        console.log('📋 Frontend new tasks:', newTasks.length)
+        
+        if (append) {
+          setRows(prev => [...prev, ...newTasks])
+        } else {
+          setRows(newTasks)
+        }
+        
+        // Check if there are more items to load
         const p = data.pagination || {}
-        setPagination({
-          page: Number(p.page) || pageNum,
-          limit: Number(p.limit) || pagination.limit,
-          total: Number(p.total) || 0,
-          totalPages: Number(p.totalPages) || 0,
-        })
+        const totalPages = Number(p.totalPages) || 0
+        setHasMore(pageNum < totalPages)
+        setCurrentPage(pageNum)
       }
     } finally {
-      setLoading(false)
+      if (append) {
+        setLoadingMore(false)
+      } else {
+        setLoading(false)
+      }
     }
-  }
+  }, [authenticatedFetch, query, dateStart, dateEnd, limit, showAllTasks])
 
-  useEffect(() => { fetchTasks(1) }, [])
-  useEffect(() => { fetchTasks(1) }, [query, dateStart?.toISOString(), dateEnd?.toISOString()])
+  // Load more data when reaching the bottom
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchTasks(currentPage + 1, true)
+    }
+  }, [loadingMore, hasMore, currentPage, fetchTasks])
+
+  // Scroll event handler for infinite scroll
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const { scrollTop, scrollHeight, clientHeight } = container
+    const threshold = 100 // Load more when 100px from bottom
+    
+    if (scrollHeight - scrollTop - clientHeight < threshold) {
+      loadMore()
+    }
+  }, [loadMore])
+
+  // Initial load and search changes
+  useEffect(() => { 
+    setCurrentPage(1)
+    setHasMore(true)
+    fetchTasks(1, false) 
+  }, [query, dateStart?.toISOString(), dateEnd?.toISOString(), showAllTasks])
 
   const parseDueDate = (s?: string | null) => {
     if (!s) return null
@@ -168,6 +217,19 @@ export default function TasksPage() {
         {(dateStart || dateEnd) && (
           <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
         )}
+        
+        {/* Show All Tasks Toggle */}
+        <div className="flex items-center space-x-2 px-3 py-2 border rounded-md">
+          <Switch 
+            id="show-all-tasks" 
+            checked={showAllTasks} 
+            onCheckedChange={setShowAllTasks}
+          />
+          <Label htmlFor="show-all-tasks" className="text-sm font-medium">
+            Show all workspace tasks
+          </Label>
+        </div>
+        
         <Button className="ml-auto" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus className="h-4 w-4 mr-2" /> New task
         </Button>
@@ -175,54 +237,69 @@ export default function TasksPage() {
 
       <Card className="border shadow-sm">
         <CardContent className="p-4">
-          <Table className="hidden sm:table">
-            <TableHeader>
-              <TableRow className="border-b border-gray-200">
-                <TableHead className="text-left font-semibold text-gray-900 w-1/2">Task</TableHead>
-                <TableHead className="text-left font-semibold text-gray-900 w-1/6">
-                  <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Due date</div>
-                </TableHead>
-                <TableHead className="text-left font-semibold text-gray-900 w-1/6">
-                  <div className="flex items-center gap-2"><User className="h-4 w-4" /> Assigned to</div>
-                </TableHead>
-                <TableHead className="text-left font-semibold text-gray-900 w-1/6">
-                  <div className="flex items-center gap-2"><Link2 className="h-4 w-4" /> Contact</div>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">Loading…</TableCell></TableRow>
-              ) : rows.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">No tasks</TableCell></TableRow>
-              ) : (
-                <>
-                  {renderSection('Today', todayRows, 'today')}
-                  {renderSection('This week', weekRows, 'week')}
-                  {renderSection('Upcoming', upcomingRows, 'upcoming')}
-                </>
-              )}
-            </TableBody>
-          </Table>
-          {/* Pagination inside the same card - match Calls conversations styling */}
-          <div className="flex items-center justify-between pt-4">
+          <div 
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="max-h-[800px] overflow-y-auto"
+          >
+            <Table className="hidden sm:table">
+              <TableHeader className="sticky top-0 bg-white z-10">
+                <TableRow className="border-b border-gray-200">
+                  <TableHead className="text-left font-semibold text-gray-900 w-1/2">Task</TableHead>
+                  <TableHead className="text-left font-semibold text-gray-900 w-1/6">
+                    <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4" /> Due date</div>
+                  </TableHead>
+                  <TableHead className="text-left font-semibold text-gray-900 w-1/6">
+                    <div className="flex items-center gap-2"><User className="h-4 w-4" /> Assigned to</div>
+                  </TableHead>
+                  <TableHead className="text-left font-semibold text-gray-900 w-1/6">
+                    <div className="flex items-center gap-2"><Link2 className="h-4 w-4" /> Contact</div>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">Loading…</TableCell></TableRow>
+                ) : rows.length === 0 ? (
+                  <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">No tasks</TableCell></TableRow>
+                ) : (
+                  <>
+                    {renderSection('Today', todayRows, 'today')}
+                    {renderSection('This week', weekRows, 'week')}
+                    {renderSection('Upcoming', upcomingRows, 'upcoming')}
+                  </>
+                )}
+                {loadingMore && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm text-muted-foreground">Loading more tasks...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!hasMore && rows.length > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-4 text-center">
+                      <span className="text-sm text-muted-foreground">All tasks loaded</span>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          
+          {/* Summary info */}
+          <div className="flex items-center justify-between pt-4 border-t">
             <div className="text-sm text-gray-500">
-              Page {pagination.page} of {Math.max(1, pagination.totalPages)} • {pagination.total} results
+              {rows.length} tasks loaded {showAllTasks ? '(all workspace tasks)' : '(assigned to you)'} {hasMore && '• Scroll down for more'}
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => fetchTasks(1)} disabled={pagination.page <= 1}>
-                <ChevronsLeft className="h-4 w-4" />
+            {hasMore && !loadingMore && (
+              <Button variant="outline" size="sm" onClick={loadMore}>
+                Load more
               </Button>
-              <Button variant="outline" size="icon" onClick={() => fetchTasks(Math.max(1, pagination.page - 1))} disabled={pagination.page <= 1}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => fetchTasks(Math.min(pagination.totalPages || 1, pagination.page + 1))} disabled={pagination.page >= (pagination.totalPages || 1)}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => fetchTasks(pagination.totalPages || 1)} disabled={pagination.page >= (pagination.totalPages || 1)}>
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -231,7 +308,11 @@ export default function TasksPage() {
         open={modalOpen}
         onOpenChange={(o) => setModalOpen(o)}
         task={editing}
-        onSaved={() => fetchTasks()}
+        onSaved={() => {
+          setCurrentPage(1)
+          setHasMore(true)
+          fetchTasks(1, false)
+        }}
       />
     </div>
   )

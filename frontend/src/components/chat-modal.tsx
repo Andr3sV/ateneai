@@ -29,6 +29,8 @@ interface Conversation {
   id: number
   status: string
   assigned_to: string
+  assigned_user_id?: number | null
+  assigned_user?: { id: number; first_name?: string | null; last_name?: string | null; email?: string | null } | null
   contact: {
     id: number
     name: string
@@ -55,6 +57,18 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
   const { getToken } = useAuth()
   const messagesContainerRef = useRef<HTMLDivElement | null>(null)
   const [copied, setCopied] = useState(false)
+  const [members, setMembers] = useState<{ id: number; name: string }[]>([])
+  const [assignedUserId, setAssignedUserId] = useState<number | null | undefined>(conversation?.assigned_user_id)
+  const assignedUserName = (() => {
+    if (conversation?.assigned_user) {
+      const fn = conversation.assigned_user.first_name || ''
+      const ln = conversation.assigned_user.last_name || ''
+      const full = `${fn} ${ln}`.trim()
+      return full || conversation.assigned_user.email || `User ${conversation.assigned_user.id}`
+    }
+    const found = members.find(m => m.id === assignedUserId)
+    return found?.name || 'Unassigned'
+  })()
 
   const handleShare = async () => {
     try {
@@ -105,6 +119,24 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
       return () => clearTimeout(t)
     }
   }, [messages.length, open, conversation?.id])
+
+  // Load workspace members for assignment
+  useEffect(() => {
+    async function fetchMembers() {
+      if (!open) return
+      try {
+        const res = await authenticatedFetch(getApiUrl('tasks/helpers/members'), { muteErrors: true } as any)
+        if (res?.success && Array.isArray(res.data)) {
+          setMembers(res.data)
+        } else {
+          setMembers([])
+        }
+      } catch {
+        setMembers([])
+      }
+    }
+    fetchMembers()
+  }, [open, authenticatedFetch])
 
   // SSE live updates
   useEffect(() => {
@@ -252,6 +284,25 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
     )
   }
 
+  const assignToUser = async (userId: number | null) => {
+    if (!conversation) return
+    try {
+      const data = await authenticatedFetch(
+        getApiUrl(`conversations/${conversation.id}/assignee`),
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assigned_user_id: userId })
+        }
+      )
+      if (data?.success) {
+        setAssignedUserId(userId)
+      }
+    } catch (e) {
+      console.error('Error assigning user:', e)
+    }
+  }
+
   const getAssignedBadge = (assignedTo: string) => {
     const getAssignedColor = (assignedTo: string) => {
       if (assignedTo === 'human') {
@@ -394,9 +445,22 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
                   >
                     {conversation.contact?.name || 'Sin nombre'}
                   </SheetTitle>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center flex-wrap">
                     {getStatusBadge(conversation.status)}
                     {getAssignedBadge(conversation.assigned_to)}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Badge className="bg-gray-100 text-gray-800 cursor-pointer hover:bg-gray-200">👤 {assignedUserName}</Badge>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => assignToUser(null)}>Unassigned</DropdownMenuItem>
+                        {members.map(m => (
+                          <DropdownMenuItem key={m.id} onClick={() => assignToUser(m.id)}>
+                            {m.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">

@@ -8,9 +8,10 @@ const router = Router()
 router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
-    const { q, assignee_id, from, to, page = '1', limit = '20' } = req.query as any
-    console.log('🔍 Tasks API - ctx:', { workspaceId: ctx.workspaceId, userId: ctx.userId, q, assignee_id, from, to, page, limit })
+    const { q, assignee_id, from, to, page = '1', limit = '20', show_all } = req.query as any
+    console.log('🔍 Tasks API - ctx:', { workspaceId: ctx.workspaceId, userId: ctx.userId, q, assignee_id, from, to, page, limit, show_all })
     const search = q as string | undefined
+    const showAll = show_all === 'true' || show_all === '1'
     const p = Math.max(1, parseInt(page));
     const l = Math.min(100, Math.max(1, parseInt(limit)));
     const offset = (p - 1) * l;
@@ -27,7 +28,7 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
     let rows: any[] = []
 
     if (assignee_id) {
-      // When filtering by assignee, support numeric and string ids
+      // When filtering by specific assignee, support numeric and string ids
       const assigneeNum = Number(assignee_id)
       const numericQuery = baseFilter(
         supabase.from('tasks').select('*').order('due_date', { ascending: true })
@@ -55,8 +56,8 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
       totalCount = merged.length
       // Apply pagination after merge
       rows = rows.slice(offset, offset + l)
-    } else {
-      // No assignee filter: normal count + list
+    } else if (showAll) {
+      // Show all tasks in workspace (admin view)
       let countQuery = baseFilter(
         supabase.from('tasks').select('id', { count: 'exact', head: true })
       )
@@ -71,7 +72,38 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
       const { data, error } = await query
       if (error) throw error
       rows = data || []
-      console.log('📋 Tasks query result:', { totalCount, returned: rows.length, workspaceId: ctx.workspaceId, firstFew: rows.slice(0, 3).map(r => ({ id: r.id, workspace_id: r.workspace_id, title: r.title, assigneesLen: Array.isArray(r.assignees) ? r.assignees.length : null })) })
+      console.log('📋 Tasks query result (show_all):', { totalCount, returned: rows.length, workspaceId: ctx.workspaceId, firstFew: rows.slice(0, 3).map(r => ({ id: r.id, workspace_id: r.workspace_id, title: r.title, assigneesLen: Array.isArray(r.assignees) ? r.assignees.length : null })) })
+    } else {
+      // Default behavior: show only tasks assigned to current user
+      console.log('🔒 Filtering tasks for user:', ctx.userId)
+      
+      // Try both numeric and string user IDs for assignment checking
+      const numericQuery = baseFilter(
+        supabase.from('tasks').select('*').order('due_date', { ascending: true })
+      ).contains('assignees', [{ id: ctx.userId }] as any)
+
+      const stringQuery = baseFilter(
+        supabase.from('tasks').select('*').order('due_date', { ascending: true })
+      ).contains('assignees', [{ id: String(ctx.userId) }] as any)
+
+      const [{ data: numData, error: numErr }, { data: strData, error: strErr }] = await Promise.all([
+        numericQuery,
+        stringQuery
+      ])
+      if (numErr) throw numErr
+      if (strErr) throw strErr
+
+      const merged: any[] = []
+      const seen = new Set<number>()
+      for (const r of [...(numData || []), ...(strData || [])]) {
+        if (seen.has(r.id)) continue
+        seen.add(r.id)
+        merged.push(r)
+      }
+      totalCount = merged.length
+      // Apply pagination after merge
+      rows = merged.slice(offset, offset + l)
+      console.log('📋 Tasks query result (user filtered):', { totalCount, returned: rows.length, workspaceId: ctx.workspaceId, userId: ctx.userId, firstFew: rows.slice(0, 3).map(r => ({ id: r.id, workspace_id: r.workspace_id, title: r.title, assigneesLen: Array.isArray(r.assignees) ? r.assignees.length : null })) })
     }
 
     res.json({ success: true, data: rows, pagination: { page: p, limit: l, total: totalCount, totalPages: Math.ceil((totalCount) / l) } })
