@@ -139,9 +139,16 @@ export default function CallsPage() {
     return n.length > 14 ? `${n.slice(0, 14)}...` : n
   }
 
+  const inflightRefCalls = useRef<AbortController | null>(null)
+
   const fetchCalls = async (pageNum = 1, silent = false) => {
     try {
       if (!silent) setLoading(true)
+      if (inflightRefCalls.current) {
+        inflightRefCalls.current.abort()
+      }
+      const ctrl = new AbortController()
+      inflightRefCalls.current = ctrl
       const params = new URLSearchParams({ page: String(pageNum), limit: String(pagination.limit) })
       if (fromFilter) params.append('from', fromFilter)
       if (toFilter) params.append('to', toFilter)
@@ -158,7 +165,7 @@ export default function CallsPage() {
       if (!silent) console.log('🔍 Calls API URL:', apiUrl)
       
       if (!silent) logMigrationEvent('Calls fetch', { page: pageNum })
-      const data = await authenticatedFetch(apiUrl)
+      const data = await authenticatedFetch(apiUrl, { signal: ctrl.signal, retries: 3 } as any)
       if (!silent) console.log('📞 Calls API response:', data)
       
       if (data.success) {
@@ -197,6 +204,7 @@ export default function CallsPage() {
       console.error('❌ Error fetching calls:', e)
       if (!silent) setCalls([])
     } finally {
+      inflightRefCalls.current = null
       if (!silent) setLoading(false)
     }
   }
