@@ -1,13 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Be tolerant during build/prerender when env might be absent
+export const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : (null as any);
 
 // Database tables
 export const TABLES = {
@@ -15,6 +14,9 @@ export const TABLES = {
   CONTACTS: 'contacts',
   CONVERSATIONS: 'conversations',
   MESSAGES: 'messages',
+  // Workspace-based schema (v2)
+  CONVERSATIONS_NEW: 'conversations_new',
+  MESSAGES_NEW: 'messages_new',
   ANALYTICS: 'analytics',
 } as const;
 
@@ -167,6 +169,7 @@ export const db = {
 
 // Real-time subscriptions
 export const subscribeToConversation = (conversationId: string, callback: (payload: any) => void) => {
+  if (!supabase) return { unsubscribe: () => {} } as any
   return supabase
     .channel(`conversation:${conversationId}`)
     .on(
@@ -183,6 +186,7 @@ export const subscribeToConversation = (conversationId: string, callback: (paylo
 };
 
 export const subscribeToClientConversations = (clientId: string, callback: (payload: any) => void) => {
+  if (!supabase) return { unsubscribe: () => {} } as any
   return supabase
     .channel(`client:${clientId}:conversations`)
     .on(
@@ -192,6 +196,41 @@ export const subscribeToClientConversations = (clientId: string, callback: (payl
         schema: 'public',
         table: 'conversations',
         filter: `client_id=eq.${clientId}`,
+      },
+      callback
+    )
+    .subscribe();
+};
+
+// Workspace-based realtime helpers (v2)
+export const subscribeToWorkspaceConversations = (workspaceId: number, callback: (payload: any) => void) => {
+  if (!supabase) return { unsubscribe: () => {} } as any
+  return supabase
+    .channel(`workspace:${workspaceId}:conversations_new`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: TABLES.CONVERSATIONS_NEW,
+        filter: `workspace_id=eq.${workspaceId}`,
+      },
+      callback
+    )
+    .subscribe();
+};
+
+export const subscribeToWorkspaceMessages = (workspaceId: number, callback: (payload: any) => void) => {
+  if (!supabase) return { unsubscribe: () => {} } as any
+  return supabase
+    .channel(`workspace:${workspaceId}:messages_new`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: TABLES.MESSAGES_NEW,
+        filter: `workspace_id=eq.${workspaceId}`,
       },
       callback
     )

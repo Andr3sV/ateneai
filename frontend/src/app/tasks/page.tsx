@@ -131,12 +131,15 @@ export default function TasksPage() {
     }
   }, [loadMore])
 
-  // Initial load and search changes
-  useEffect(() => { 
+  // Initial load and search changes, debounced to avoid bursts
+  useEffect(() => {
     setCurrentPage(1)
     setHasMore(true)
-    fetchTasks(1, false) 
-  }, [query, dateStart?.toISOString(), dateEnd?.toISOString(), assigneeFilter])
+    const handle = setTimeout(() => {
+      fetchTasks(1, false)
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [query, dateStart?.toISOString(), dateEnd?.toISOString(), assigneeFilter, fetchTasks])
 
   // Load workspace members
   useEffect(() => {

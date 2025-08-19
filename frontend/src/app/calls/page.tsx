@@ -273,24 +273,36 @@ export default function CallsPage() {
     const s = (value || '').toString().toLowerCase()
     const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
     const label = s ? (s === 'lead' ? 'No interesado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
+    const isMemberOrViewer = role === 'member' || role === 'viewer'
+    
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
           <Badge className={`${badgeColor} cursor-pointer`}>{label}</Badge>
         </DropdownMenuTrigger>
         <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-          <DropdownMenuItem onClick={() => onChange('mql')}> 
-            <span className="text-red-600">●</span>
-            <span className="ml-2 text-red-600 font-medium">Mql</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange('client')}>
-            <span className="text-green-600">●</span>
-            <span className="ml-2 text-green-700 font-medium">Client</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange('lead')}>
-            <span className="text-gray-500">●</span>
-            <span className="ml-2 text-gray-700 font-medium">No interesado</span>
-          </DropdownMenuItem>
+          {/* Member/viewer can only change TO 'client' */}
+          {isMemberOrViewer ? (
+            <DropdownMenuItem onClick={() => onChange('client')}>
+              <span className="text-green-600">●</span>
+              <span className="ml-2 text-green-700 font-medium">Client</span>
+            </DropdownMenuItem>
+          ) : (
+            <>
+              <DropdownMenuItem onClick={() => onChange('mql')}> 
+                <span className="text-red-600">●</span>
+                <span className="ml-2 text-red-600 font-medium">Mql</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChange('client')}>
+                <span className="text-green-600">●</span>
+                <span className="ml-2 text-green-700 font-medium">Client</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChange('lead')}>
+                <span className="text-gray-500">●</span>
+                <span className="ml-2 text-gray-700 font-medium">No interesado</span>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     )

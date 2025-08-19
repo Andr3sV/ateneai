@@ -26,7 +26,7 @@ type TaskRow = {
 
 export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }: { open: boolean; onOpenChange: (o: boolean) => void; task: TaskRow | null; onSaved: (saved?: TaskRow | null) => void; initialContacts?: { id: number; name: string }[] }) {
   const authenticatedFetch = useAuthenticatedFetch()
-  const { user } = useWorkspaceContext()
+  const { user, role } = useWorkspaceContext()
   const [title, setTitle] = useState('')
   const [due, setDue] = useState<Date | undefined>()
   const [assignees, setAssignees] = useState<{ id: number; name: string }[]>([])
@@ -41,6 +41,9 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
   const [memberResults, setMemberResults] = useState<{ id: number; name: string }[]>([])
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [timeStr, setTimeStr] = useState<string>('12:00')
+
+  // Check if user can edit assignees
+  const canEditAssignees = role !== 'member' && role !== 'viewer'
 
   useEffect(() => {
     if (task) {
@@ -174,31 +177,39 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
 
           <div className="space-y-2">
             <div className="flex items-center gap-4">
-              <Popover open={memberPickerOpen} onOpenChange={setMemberPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="link" className="px-0 flex items-center gap-1"><UserPlus className="h-4 w-4" /> Select member</Button>
-                </PopoverTrigger>
-              <PopoverContent side="bottom" align="start" className="w-80 p-3">
-                <Input autoFocus placeholder="Search member..." value={memberQuery} onChange={(e) => setMemberQuery(e.target.value)} />
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {assignees.length === 0 ? (
-                    <div className="text-sm text-gray-500">Type to search members</div>
-                  ) : assignees.map((a) => (
-                    <span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
-                      {a.name}
-                      <button className="ml-1 text-gray-500 hover:text-gray-700" onClick={() => setAssignees(prev => prev.filter(x => x.id !== a.id))}>×</button>
-                    </span>
-                  ))}
+              {/* Member picker - only for admin/owner */}
+              {canEditAssignees ? (
+                <Popover open={memberPickerOpen} onOpenChange={setMemberPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="link" className="px-0 flex items-center gap-1"><UserPlus className="h-4 w-4" /> Select member</Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="bottom" align="start" className="w-80 p-3">
+                    <Input autoFocus placeholder="Search member..." value={memberQuery} onChange={(e) => setMemberQuery(e.target.value)} />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {assignees.length === 0 ? (
+                        <div className="text-sm text-gray-500">Type to search members</div>
+                      ) : assignees.map((a) => (
+                        <span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
+                          {a.name}
+                          <button className="ml-1 text-gray-500 hover:text-gray-700" onClick={() => setAssignees(prev => prev.filter(x => x.id !== a.id))}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                                         <div className="mt-2 max-h-52 overflow-auto divide-y">
+                       {(memberResults.length ? memberResults : members).map(m => (
+                         <button key={m.id} className="w-full text-left px-2 py-2 hover:bg-gray-50" onClick={() => setAssignees(prev => prev.find(a => a.id === m.id) ? prev : [...prev, m])}>
+                           {m.name}
+                         </button>
+                       ))}
+                     </div>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <div className="text-sm text-gray-500 flex items-center gap-1">
+                  <UserPlus className="h-4 w-4" />
+                  Assigned to (read-only)
                 </div>
-                <div className="mt-2 max-h-52 overflow-auto divide-y">
-                  {(memberResults.length ? memberResults : members).map(m => (
-                    <button key={m.id} className="w-full text-left px-2 py-2 hover:bg-gray-50" onClick={() => setAssignees(prev => prev.find(a => a.id === m.id) ? prev : [...prev, m])}>
-                      {m.name}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-              </Popover>
+              )}
               <Popover open={recordPickerOpen} onOpenChange={setRecordPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="link" className="px-0 flex items-center gap-1"><Link2 className="h-4 w-4" /> Add contact</Button>
@@ -229,9 +240,11 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
             </div>
             <div className="flex flex-wrap gap-2">
               {assignees.map((a) => (
-                <span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
+                <span key={a.id} className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${canEditAssignees ? 'bg-gray-100 text-gray-700' : 'bg-gray-200 text-gray-600'}`}>
                   {a.name}
-                  <button className="ml-1 text-gray-500 hover:text-gray-700" onClick={() => setAssignees(prev => prev.filter(x => x.id !== a.id))}>×</button>
+                  {canEditAssignees && (
+                    <button className="ml-1 text-gray-500 hover:text-gray-700" onClick={() => setAssignees(prev => prev.filter(x => x.id !== a.id))}>×</button>
+                  )}
                 </span>
               ))}
             </div>

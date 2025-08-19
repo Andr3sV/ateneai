@@ -3,6 +3,8 @@
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
+import { subscribeToWorkspaceConversations, subscribeToWorkspaceMessages } from '@/lib/supabase'
+import { useWorkspaceContext } from '@/hooks/useWorkspaceContext'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,6 +54,7 @@ export default function ConversationsPage() {
   const { user } = useUser()
   const { getToken } = useAuth()
   const authenticatedFetch = useAuthenticatedFetch()
+  const { workspaceId } = useWorkspaceContext()
   
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +71,8 @@ export default function ConversationsPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [chatModalOpen, setChatModalOpen] = useState(false)
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const realtimeConvRef = useRef<any | null>(null)
+  const realtimeMsgRef = useRef<any | null>(null)
   
   // Filtros
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -116,6 +121,24 @@ export default function ConversationsPage() {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current)
     }
   }, [pagination.page, statusFilter, assignedToFilter, debouncedSearchTerm])
+
+  // Realtime (workspace v2): refresh silently on INSERT/UPDATE of conversations/messages
+  useEffect(() => {
+    if (!workspaceId) return
+    const convSub = subscribeToWorkspaceConversations(workspaceId, () => {
+      fetchConversations(pagination.page, true)
+    })
+    const msgSub = subscribeToWorkspaceMessages(workspaceId, () => {
+      fetchConversations(pagination.page, true)
+    })
+    realtimeConvRef.current = convSub
+    realtimeMsgRef.current = msgSub
+    return () => {
+      try { convSub.unsubscribe() } catch {}
+      try { msgSub.unsubscribe() } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId, pagination.page])
 
   // Helper: open conversation by id using direct fetch if not in current page
   const openConversationById = useCallback(async (conversationId: number) => {

@@ -98,13 +98,27 @@ router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<voi
       res.status(400).json({ success: false, error: 'Invalid id' })
       return;
     }
+    
+    // RBAC: Check user role for status restrictions
+    const role = await db.getUserRole(req.workspaceContext.workspaceId, req.workspaceContext.userId!)
     const body = req.body as { status?: string }
-    const allowed = ['mql','client','lead']
     const next = (body.status || '').toLowerCase()
+    
+    // Member/viewer can only change to 'client'
+    if ((role === 'member' || role === 'viewer') && next !== 'client') {
+      res.status(403).json({ 
+        success: false, 
+        error: 'Member/Viewer can only change status to "client"' 
+      })
+      return;
+    }
+    
+    const allowed = ['mql','client','lead']
     if (!allowed.includes(next)) {
       res.status(400).json({ success: false, error: `Invalid status. Allowed: ${allowed.join(', ')}` })
       return;
     }
+    
     const updated = await db.updateCallStatus(req.workspaceContext.workspaceId, id, next as any)
     res.json({ success: true, data: updated })
   } catch (error: any) {
@@ -120,6 +134,17 @@ router.put('/:id/assignee', requireWorkspaceContext, async (req, res): Promise<v
       res.status(401).json({ success: false, error: 'No workspace context available' });
       return;
     }
+    
+    // RBAC: Only admin/owner can change assignees
+    const role = await db.getUserRole(req.workspaceContext.workspaceId, req.workspaceContext.userId!)
+    if (role === 'member' || role === 'viewer') {
+      res.status(403).json({ 
+        success: false, 
+        error: 'Member/Viewer cannot change call assignees' 
+      })
+      return;
+    }
+    
     const id = parseInt(req.params.id as string)
     if (!Number.isFinite(id)) {
       res.status(400).json({ success: false, error: 'Invalid id' })

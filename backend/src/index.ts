@@ -57,11 +57,39 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Rate limiting - Higher limit for development
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 10000, // 100 for production, 10,000 for development
-  message: 'Too many requests from this IP, please try again later.',
+// Trust proxy to get correct client IPs behind Railway/NGINX
+app.set('trust proxy', 1);
+
+// Rate limiting
+// NOTE: We apply separate limiters for authenticated (workspace) routes and public routes
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: process.env.NODE_ENV === 'production' ? 300 : 10000, // allow higher burst for authenticated users
+  standardHeaders: true, // include RateLimit-* headers
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Please slow down.' },
+  skip: (req) => req.method === 'OPTIONS',
+  keyGenerator: (req) => {
+    // Prefer a stable per-user key when Authorization header is present
+    const authHeader = req.headers['authorization'];
+    if (typeof authHeader === 'string' && authHeader.length > 0) {
+      // Use a prefix + first 32 chars to avoid storing full tokens
+      return `auth:${authHeader.slice(0, 32)}`;
+    }
+    // Fallback to IP address
+    const forwarded = (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim();
+    const ip = req.ip || forwarded || (Array.isArray((req as any).ips) ? (req as any).ips[0] : undefined) || (req.socket && req.socket.remoteAddress) || 'unknown';
+    return ip as string;
+  },
+});
+
+const publicLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: process.env.NODE_ENV === 'production' ? 120 : 10000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests from this IP.' },
+  skip: (req) => req.method === 'OPTIONS',
 });
 
 // Middleware
@@ -73,13 +101,12 @@ app.use(cors({
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(limiter);
 
 // API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', publicLimiter, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', publicLimiter, (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
@@ -101,6 +128,7 @@ logMigrationEvent('Server startup', {
   fallbackEnabled: MIGRATION_CONFIG.FALLBACK_TO_OLD_SYSTEM
 });
 
+app.use('/api/v2', authLimiter);
 app.use('/api/v2/auth', authWorkspaceRoutes);
 app.use('/api/v2/conversations', conversationsWorkspaceRoutes);
 app.use('/api/v2/calls', callsWorkspaceRoutes);
@@ -111,21 +139,23 @@ app.use('/api/v2/agents', agentsWorkspaceRoutes);
 app.use('/api/v2/tasks', tasksWorkspaceRoutes);
 
 // Social webhooks (sin autenticación, verificación interna)
-app.use('/api/webhooks', webhooksSocialRoutes);
+app.use('/api/webhooks', publicLimiter, webhooksSocialRoutes);
 
 // Public routes (no auth) for automation tools like n8n
+app.use('/api/public', publicLimiter);
 app.use('/api/public/conversations', conversationsPublicRoutes);
 
 // Conditional routing based on migration config
 if (MIGRATION_CONFIG.ENABLE_WORKSPACE_ROUTES) {
   // Primary routes use workspace system
+  app.use('/api', authLimiter);
   app.use('/api/auth', authWorkspaceRoutes);
   app.use('/api/conversations', conversationsWorkspaceRoutes);
   app.use('/api/contacts', contactsWorkspaceRoutes);
   app.use('/api/analytics', analyticsWorkspaceRoutes);
   app.use('/api/social-connections', socialConnectionsWorkspaceRoutes);
   app.use('/api/agents', agentsWorkspaceRoutes);
-    app.use('/api/calls', callsWorkspaceRoutes);
+  app.use('/api/calls', callsWorkspaceRoutes);
   app.use('/api/tasks', tasksWorkspaceRoutes);
   console.log('🚀 Using NEW workspace-based routes as primary');
 } else {

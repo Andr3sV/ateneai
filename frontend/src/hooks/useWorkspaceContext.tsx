@@ -54,7 +54,7 @@ export const useWorkspaceContext = (): WorkspaceContextData => {
 export const useWorkspaceApi = () => {
   const { getToken } = useAuth()
 
-  const workspaceApiFetch = useCallback(async (url: string, options: RequestInit = {}) => {
+  const workspaceApiFetch = useCallback(async (url: string, options: RequestInit & { retries?: number; signal?: AbortSignal } = {}) => {
     try {
       const token = await getToken()
       
@@ -76,20 +76,35 @@ export const useWorkspaceApi = () => {
 
       console.log(`🏢 Workspace API call: ${apiUrl}`)
 
-      const response = await fetch(apiUrl, {
-        ...options,
-        headers: authHeaders,
-      })
+      // Basic retry with backoff for 429/5xx
+      const retries = (options as any).retries ?? 2
+      let attempt = 0
+      while (true) {
+        const response = await fetch(apiUrl, {
+          ...options,
+          headers: authHeaders,
+        })
 
-      if (!response.ok) {
+        if (response.ok) {
+          const result = await response.json()
+          console.log(`✅ Workspace API success:`, result.success !== false)
+          return result
+        }
+
+        const status = response.status
+        const retriable = status === 429 || (status >= 500 && status < 600)
+        if (attempt < retries && retriable) {
+          const retryAfter = Number(response.headers.get('retry-after'))
+          const delayMs = !Number.isNaN(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : Math.min(2000 * Math.pow(2, attempt), 8000)
+          await new Promise(r => setTimeout(r, delayMs))
+          attempt += 1
+          continue
+        }
+
         const errorData = await response.json().catch(() => ({}))
         console.error(`❌ Workspace API error:`, errorData)
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
       }
-
-      const result = await response.json()
-      console.log(`✅ Workspace API success:`, result.success !== false)
-      return result
     } catch (error) {
       console.error('Workspace API fetch error:', error)
       throw error

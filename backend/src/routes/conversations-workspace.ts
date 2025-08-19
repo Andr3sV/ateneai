@@ -288,6 +288,16 @@ router.put('/:id/assignee', requireWorkspaceContext, async (req, res): Promise<v
       return;
     }
 
+    // RBAC: Only admin/owner can change assignees
+    const role = await db.getUserRole(req.workspaceContext.workspaceId, req.workspaceContext.userId!)
+    if (role === 'member' || role === 'viewer') {
+      res.status(403).json({ 
+        success: false, 
+        error: 'Member/Viewer cannot change conversation assignees' 
+      })
+      return;
+    }
+
     const conversationId = parseInt(req.params.id);
     if (isNaN(conversationId)) {
       res.status(400).json({ 
