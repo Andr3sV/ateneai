@@ -99,19 +99,8 @@ router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<voi
       return;
     }
     
-    // RBAC: Check user role for status restrictions
-    const role = await db.getUserRole(req.workspaceContext.workspaceId, req.workspaceContext.userId!)
     const body = req.body as { status?: string }
     const next = (body.status || '').toLowerCase()
-    
-    // Member/viewer can only change to 'client'
-    if ((role === 'member' || role === 'viewer') && next !== 'client') {
-      res.status(403).json({ 
-        success: false, 
-        error: 'Member/Viewer can only change status to "client"' 
-      })
-      return;
-    }
     
     const allowed = ['mql','client','lead']
     if (!allowed.includes(next)) {
