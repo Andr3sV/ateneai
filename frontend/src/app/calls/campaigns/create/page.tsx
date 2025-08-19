@@ -207,9 +207,11 @@ export default function CreateBatchCallPage() {
   }
 
   const hasData = rowsPreview.length > 0
+  const isPriority = callType === 'priority'
   const canSubmit = hasData && 
-    selectedAgentIds.length > 0 && 
-    selectedPhoneIds.length > 0 && 
+    // Agents/phones: bulk allows many; priority requires exactly one
+    (isPriority ? selectedAgentIds.length === 1 : selectedAgentIds.length > 0) &&
+    (isPriority ? selectedPhoneIds.length === 1 : selectedPhoneIds.length > 0) &&
     !!phoneHeader &&
     machineDetectionTimeout >= 1 && 
     machineDetectionTimeout <= 30 &&
@@ -290,9 +292,7 @@ export default function CreateBatchCallPage() {
       let payload: {
         campaignName: string
         campaignId: string
-        agents: Array<{ agentId: string }>
-        agentPhoneNumberId: string
-        fromNumber: string
+        agents: Array<{ agentId: string; agentPhoneNumberId: string; fromNumber: string }>
         calls: Array<{
           toNumber: string
           variables?: Record<string, string>
@@ -304,55 +304,50 @@ export default function CreateBatchCallPage() {
           timezone: string
           daysOfWeek: number[]
         }
-        "x-gate-mode"?: string
-        machineDetectionTimeout?: number
-        enableMachineDetection?: boolean
         concurrency?: number
       }
       
       if (callType === 'priority') {
-        // Priority calls - send individually
-        payload = {
-          campaignName: batchName || 'Priority Calls',
-          campaignId: cid,
-          agents: selectedAgentIds.map(agentId => ({ agentId })),
-          agentPhoneNumberId: selectedPhoneIds[0], // Use first phone for priority
-          fromNumber: fromNumbers[0],
-          calls: valid.map(row => ({
-            toNumber: row.toNumber,
-            variables: row.variables,
-            metadata: row.metadata,
-            // AMD Configuration for priority calls
-            "x-gate-mode": "twilio_amd_bridge",
-            machineDetectionTimeout,
-            enableMachineDetection,
-            concurrency: Math.min(concurrency, 10) // Limit concurrency for priority calls
-          })),
-          // Time Window Configuration
-          timeWindow: {
-            startTime,
-            endTime,
-            timezone,
-            daysOfWeek: selectedDays
-          }
+        // Priority: immediately place a single 1:1 call using first recipient
+        const first = valid[0]
+        if (!first) {
+          throw new Error('No valid recipients found for priority call')
         }
+        const priorityBody = {
+          agentId: selectedAgentIds[0],
+          agentPhoneNumberId: selectedPhoneIds[0],
+          fromNumber: fromNumbers[0],
+          toNumber: first.toNumber,
+          variables: first.variables,
+          campaignId: cid,
+          concurrency: Math.min(concurrency, 100)
+        }
+        const res = await authenticatedFetch('/api/calls/priority', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(priorityBody)
+        })
+        if (!res?.success) {
+          throw new Error(res?.error || 'Priority call failed')
+        }
+        // Do not proceed with bulk flow after priority
+        setSubmitting(false)
+        return
       } else {
         // Bulk calls
         payload = {
           campaignName: batchName || 'Bulk Campaign',
           campaignId: cid,
-          agents: selectedAgentIds.map(agentId => ({ agentId })),
-          agentPhoneNumberId: selectedPhoneIds[0], // Use first phone for bulk
-          fromNumber: fromNumbers[0],
+          agents: selectedAgentIds.map(agentId => ({
+            agentId,
+            agentPhoneNumberId: selectedPhoneIds[0],
+            fromNumber: fromNumbers[0],
+          })),
           calls: valid.map(row => ({
             toNumber: row.toNumber,
             variables: row.variables,
             metadata: row.metadata
           })),
-          // AMD Configuration for bulk calls
-          "x-gate-mode": "twilio_amd_bridge",
-          machineDetectionTimeout,
-          enableMachineDetection,
           concurrency,
           // Time Window Configuration
           timeWindow: {

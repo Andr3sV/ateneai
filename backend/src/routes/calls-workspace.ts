@@ -313,8 +313,8 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       }
     };
 
-    if (!agents || !Array.isArray(agents) || agents.length === 0 || !agentPhoneNumberId || !fromNumber || !Array.isArray(calls) || calls.length === 0) {
-      res.status(400).json({ success: false, error: 'Missing fields: agents, agentPhoneNumberId, fromNumber, calls' });
+    if (!agents || !Array.isArray(agents) || agents.length === 0 || !Array.isArray(calls) || calls.length === 0) {
+      res.status(400).json({ success: false, error: 'Missing fields: agents, calls' });
       return;
     }
 
@@ -353,23 +353,32 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       }
     }
 
-    // Prepare payload for voice orchestrator
+    // Normalize agents to include phone configuration per new orchestrator contract
+    const normalizedAgents = agents.map((a: any) => ({
+      agentId: a.agentId,
+      agentPhoneNumberId: a.agentPhoneNumberId ?? agentPhoneNumberId,
+      fromNumber: a.fromNumber ?? fromNumber,
+    }));
+
+    // Validate that each agent has required phone configuration
+    const invalidAgent = normalizedAgents.find(a => !a.agentId || !a.agentPhoneNumberId || !a.fromNumber);
+    if (invalidAgent) {
+      res.status(400).json({ success: false, error: 'Each agent must include agentId, agentPhoneNumberId and fromNumber (either per agent or via top-level agentPhoneNumberId/fromNumber)' });
+      return;
+    }
+
+    // Prepare payload for voice orchestrator (trunking mode)
     const payload = {
       workspaceId: String(req.workspaceContext.workspaceId),
-      agents: agents, // Support multiple agents
-      agentPhoneNumberId,
-      fromNumber,
-      calls: calls.map(r => ({ 
-        toNumber: r.toNumber, 
-        variables: r.variables || {}, 
-        metadata: r.metadata || {} 
+      agents: normalizedAgents,
+      campaignId: campaignId || undefined,
+      concurrency,
+      calls: calls.map(r => ({
+        toNumber: r.toNumber,
+        variables: r.variables || {},
+        metadata: r.metadata || {}
       })),
-      // AMD Configuration
-      "x-gate-mode": "twilio_amd_bridge",
-      machineDetectionTimeout,
-      enableMachineDetection,
-      concurrency
-    };
+    } as any;
 
     const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
     // Per workspace API key with env fallback
@@ -391,17 +400,14 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       console.log('📞 Sending batch call to voice orchestrator:', { 
         url: `${VOICE_URL}/calls/bulk`, 
         workspaceId: body.workspaceId,
-        callType,
         callsCount: body.calls.length,
-        machineDetectionTimeout,
-        enableMachineDetection,
         concurrency
       });
     
       const { data } = await axios.post(
         `${VOICE_URL}/calls/bulk`,
         body,
-        { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } }
+        { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json', 'x-gate-mode': 'elevenlabs_direct' } }
       );
       
       enqueuedTotal += Number(data?.enqueued || 0);
@@ -423,11 +429,10 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
         // Store additional metadata in file_url field
         metadata: {
           callType,
-          agents: agents.map(a => a.agentId),
-          machineDetectionTimeout,
-          enableMachineDetection,
+          agents: normalizedAgents.map(a => a.agentId),
           concurrency,
-          // Add time window configuration
+          gateMode: 'elevenlabs_direct',
+          // Add time window configuration (local metadata only)
           timeWindow
         }
       });
@@ -438,6 +443,77 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     res.json({ success: true, enqueued: enqueuedTotal, campaignId: orchestratorCampaignId });
   } catch (error: any) {
     console.error('❌ Error in POST /calls/bulk:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({ success: false, error: error.response?.data || error.message });
+  }
+});
+
+// Priority call (immediate 1:1) per new orchestrator contract
+router.post('/priority', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const {
+      agentId,
+      agentPhoneNumberId,
+      fromNumber,
+      toNumber,
+      variables,
+      campaignId,
+      concurrency
+    } = req.body as {
+      agentId: string
+      agentPhoneNumberId: string
+      fromNumber: string
+      toNumber: string
+      variables?: Record<string, string>
+      campaignId?: string
+      concurrency?: number
+    };
+
+    if (!agentId || !agentPhoneNumberId || !fromNumber || !toNumber) {
+      res.status(400).json({ success: false, error: 'Missing required fields: agentId, agentPhoneNumberId, fromNumber, toNumber' });
+      return;
+    }
+
+    const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
+    const workspaceApiKey = await db.getWorkspaceVoiceApiKey(req.workspaceContext.workspaceId).catch(() => null);
+    const API_KEY = workspaceApiKey || process.env.VOICE_ORCHESTRATOR_API_KEY;
+    if (!API_KEY) {
+      res.status(500).json({ success: false, error: 'Missing voice API key (workspace.voice_api_key or VOICE_ORCHESTRATOR_API_KEY)' });
+      return;
+    }
+
+    const body = {
+      workspaceId: String(req.workspaceContext.workspaceId),
+      agentId,
+      agentPhoneNumberId,
+      fromNumber,
+      toNumber,
+      variables: variables || {},
+      campaignId,
+      concurrency
+    } as any;
+
+    console.log('📞 Sending priority call to voice orchestrator:', {
+      url: `${VOICE_URL}/calls/priority`,
+      workspaceId: body.workspaceId,
+      agentId,
+      toNumber,
+    });
+
+    const { data } = await axios.post(
+      `${VOICE_URL}/calls/priority`,
+      body,
+      { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json', 'x-gate-mode': 'elevenlabs_direct' } }
+    );
+
+    res.status(201).json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error in POST /calls/priority:', error.response?.data || error.message);
     const status = error.response?.status || 500;
     res.status(status).json({ success: false, error: error.response?.data || error.message });
   }
