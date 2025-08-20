@@ -660,4 +660,39 @@ router.get('/vo/report', requireWorkspaceContext, async (req, res): Promise<void
   }
 });
 
+// Cancel a campaign in voice orchestrator
+router.post('/vo/cancel', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const { campaignId } = req.body as { campaignId?: string }
+    if (!campaignId) {
+      res.status(400).json({ success: false, error: 'campaignId is required' });
+      return;
+    }
+
+    const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
+    const workspaceApiKey = await db.getWorkspaceVoiceApiKey(req.workspaceContext.workspaceId).catch(() => null);
+    const API_KEY = workspaceApiKey || process.env.VOICE_ORCHESTRATOR_API_KEY;
+    if (!API_KEY) {
+      res.status(500).json({ success: false, error: 'Missing voice API key (workspace.voice_api_key or VOICE_ORCHESTRATOR_API_KEY)' });
+      return;
+    }
+
+    const { data } = await axios.post(
+      `${VOICE_URL}/campaigns/${encodeURIComponent(campaignId)}/cancel`,
+      { workspaceId: String(req.workspaceContext.workspaceId) },
+      { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } }
+    );
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error in POST /calls/vo/cancel:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({ success: false, error: error.response?.data || error.message });
+  }
+});
+
 
