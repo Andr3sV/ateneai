@@ -22,6 +22,7 @@ export const TABLES = {
   MESSAGES: 'messages_new',
   CALLS: 'calls',
   AGENTS: 'agents',
+  PHONE_NUMBERS: 'phone_numbers',
   BATCH_CALLS: 'batch_calls',
   BATCH_CALL_RECIPIENTS: 'batch_call_recipients',
   // Keep old tables for gradual migration
@@ -87,6 +88,19 @@ export const db = {
       .single();
     if (error) throw error;
     return (data?.voice_api_key as string | null) || null;
+  },
+
+  // ================================================
+  // PHONE NUMBERS (catalog)
+  // ================================================
+  async listPhoneNumbers(workspaceId: number) {
+    const { data, error } = await supabase
+      .from(TABLES.PHONE_NUMBERS)
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   },
   
   async getUserByClerkId(clerkUserId: string) {

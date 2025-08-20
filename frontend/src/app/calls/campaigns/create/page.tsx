@@ -21,6 +21,13 @@ type Agent = {
   phone_external_id?: string | null
 }
 
+type PhoneCatalog = {
+  id: number
+  external_id: string
+  phone: string
+  label?: string | null
+}
+
 type CsvRow = Record<string, string>
 
 type CallType = 'bulk' | 'priority'
@@ -34,7 +41,8 @@ export default function CreateBatchCallPage() {
   
   // Multiple agents and phones support
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([])
-  const [selectedPhoneIds, setSelectedPhoneIds] = useState<string[]>([])
+  // Map agentId -> phone_external_id chosen for that agent
+  const [agentPhoneMap, setAgentPhoneMap] = useState<Record<string, string>>({})
   
   // AMD Configuration
   const [enableMachineDetection, setEnableMachineDetection] = useState(true)
@@ -48,6 +56,7 @@ export default function CreateBatchCallPage() {
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]) // Mon-Fri by default
   
   const [agents, setAgents] = useState<Agent[]>([])
+  const [phones, setPhones] = useState<PhoneCatalog[]>([])
 
   const [rowsPreview, setRowsPreview] = useState<CsvRow[]>([])
   const [rowCount, setRowCount] = useState<number>(0)
@@ -72,6 +81,14 @@ export default function CreateBatchCallPage() {
     }).catch(() => {
       setAgents([])
     })
+    // Load phone numbers catalog for current workspace
+    authenticatedFetch(`/api/calls/phones`).then((res) => {
+      if (res?.success && Array.isArray(res.data)) {
+        setPhones(res.data as PhoneCatalog[])
+      } else {
+        setPhones([])
+      }
+    }).catch(() => setPhones([]))
   }, [authenticatedFetch])
 
   // Clear polling when unmounting
@@ -82,19 +99,9 @@ export default function CreateBatchCallPage() {
   }, [])
 
   const phoneOptions = useMemo(() => {
-    // Build phone list from agents having phone + phone_external_id
-    const list: { label: string; value: string; phone: string }[] = []
-    agents.forEach(a => {
-      if (a.phone && a.phone_external_id) {
-        list.push({ 
-          label: `${a.name} (${a.phone})`, 
-          value: a.phone_external_id,
-          phone: a.phone
-        })
-      }
-    })
-    return list
-  }, [agents])
+    // Build phone list from phone_numbers catalog
+    return (phones || []).map(p => ({ label: p.label ? `${p.label} (${p.phone})` : p.phone, value: p.external_id, phone: p.phone }))
+  }, [phones])
 
   const agentOptions = useMemo(() => {
     return agents
@@ -113,14 +120,16 @@ export default function CreateBatchCallPage() {
     setSelectedAgentIds(prev => prev.filter(id => id !== agentId))
   }
 
-  const addPhone = (phoneId: string) => {
-    if (!selectedPhoneIds.includes(phoneId)) {
-      setSelectedPhoneIds(prev => [...prev, phoneId])
-    }
+  const addPhoneForAgent = (agentId: string, phoneId: string) => {
+    setAgentPhoneMap(prev => ({ ...prev, [agentId]: phoneId }))
   }
 
-  const removePhone = (phoneId: string) => {
-    setSelectedPhoneIds(prev => prev.filter(id => id !== phoneId))
+  const removePhoneForAgent = (agentId: string) => {
+    setAgentPhoneMap(prev => {
+      const next = { ...prev }
+      delete next[agentId]
+      return next
+    })
   }
 
   function detectPhoneHeader(hs: string[]): string | null {
@@ -208,10 +217,10 @@ export default function CreateBatchCallPage() {
 
   const hasData = rowsPreview.length > 0
   const isPriority = callType === 'priority'
+  const allAgentsHavePhone = selectedAgentIds.length > 0 && selectedAgentIds.every(id => !!agentPhoneMap[id])
   const canSubmit = hasData && 
-    // Agents/phones: bulk allows many; priority requires exactly one
-    (isPriority ? selectedAgentIds.length === 1 : selectedAgentIds.length > 0) &&
-    (isPriority ? selectedPhoneIds.length === 1 : selectedPhoneIds.length > 0) &&
+    // Agents/phones: bulk allows many; priority requires exactly one with phone
+    (isPriority ? (selectedAgentIds.length === 1 && !!agentPhoneMap[selectedAgentIds[0]]) : allAgentsHavePhone) &&
     !!phoneHeader &&
     machineDetectionTimeout >= 1 && 
     machineDetectionTimeout <= 30 &&
@@ -220,13 +229,10 @@ export default function CreateBatchCallPage() {
     startTime < endTime &&
     selectedDays.length > 0
 
-  function getFromNumbers(): string[] {
-    return selectedPhoneIds
-      .map(phoneId => {
-        const match = agents.find(a => a.phone_external_id === phoneId)
-        return match?.phone
-      })
-      .filter(Boolean) as string[]
+  function resolveFromNumber(phoneExternalId?: string): string | undefined {
+    if (!phoneExternalId) return undefined
+    const match = phones.find(p => p.external_id === phoneExternalId)
+    return match?.phone || undefined
   }
 
   async function buildAllRows(): Promise<Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, unknown> }>> {
@@ -274,10 +280,12 @@ export default function CreateBatchCallPage() {
 
   async function handleSubmit() {
     if (!canSubmit) return
-    const fromNumbers = getFromNumbers()
-    if (fromNumbers.length === 0) {
-      setUploadError("No se pudieron resolver los números emisores (fromNumber) para los teléfonos seleccionados.")
-      return
+    // validate phone per agent
+    for (const agentId of selectedAgentIds) {
+      if (!agentPhoneMap[agentId]) {
+        setUploadError('Selecciona un teléfono para cada agente agregado.')
+        return
+      }
     }
     setSubmitting(true)
     setUploadError("")
@@ -313,10 +321,11 @@ export default function CreateBatchCallPage() {
         if (!first) {
           throw new Error('No valid recipients found for priority call')
         }
+        const phoneId = agentPhoneMap[selectedAgentIds[0]]
         const priorityBody = {
           agentId: selectedAgentIds[0],
-          agentPhoneNumberId: selectedPhoneIds[0],
-          fromNumber: fromNumbers[0],
+          agentPhoneNumberId: phoneId,
+          fromNumber: resolveFromNumber(phoneId),
           toNumber: first.toNumber,
           variables: first.variables,
           campaignId: cid,
@@ -338,11 +347,14 @@ export default function CreateBatchCallPage() {
         payload = {
           campaignName: batchName || 'Bulk Campaign',
           campaignId: cid,
-          agents: selectedAgentIds.map(agentId => ({
-            agentId,
-            agentPhoneNumberId: selectedPhoneIds[0],
-            fromNumber: fromNumbers[0],
-          })),
+          agents: selectedAgentIds.map(agentId => {
+            const phoneId = agentPhoneMap[agentId]
+            return {
+              agentId,
+              agentPhoneNumberId: phoneId,
+              fromNumber: resolveFromNumber(phoneId) as string,
+            }
+          }),
           calls: valid.map(row => ({
             toNumber: row.toNumber,
             variables: row.variables,
@@ -481,22 +493,32 @@ export default function CreateBatchCallPage() {
                 </SelectContent>
               </Select>
               
-              {/* Selected Agents */}
+              {/* Selected Agents with per-agent phone selection */}
               {selectedAgentIds.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {selectedAgentIds.map(agentId => {
                     const agent = agentOptions.find(opt => opt.value === agentId)
+                    // For now, allow choosing ANY phone from catalog regardless of agent
+                    const phonesForAgent = phoneOptions
                     return (
-                      <div key={agentId} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                        <span className="text-sm">{agent?.label}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeAgent(agentId)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                      <div key={agentId} className="p-3 bg-muted rounded-md space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{agent?.label}</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => { removeAgent(agentId); removePhoneForAgent(agentId) }}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="text-xs text-muted-foreground">Select phone for this agent</div>
+                        <Select value={agentPhoneMap[agentId] || ''} onValueChange={(val) => addPhoneForAgent(agentId, val)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose phone" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {phonesForAgent.map(p => (
+                              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     )
                   })}
@@ -508,45 +530,7 @@ export default function CreateBatchCallPage() {
               )}
             </div>
 
-            {/* Multiple Phone Numbers Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select Phone Numbers</label>
-              <Select onValueChange={addPhone} value="">
-                <SelectTrigger>
-                  <SelectValue placeholder="Add a phone number" />
-                </SelectTrigger>
-                <SelectContent>
-                  {phoneOptions
-                    .filter(opt => !selectedPhoneIds.includes(opt.value))
-                    .map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
-              
-              {/* Selected Phone Numbers */}
-              {selectedPhoneIds.length > 0 && (
-                <div className="space-y-2">
-                  {selectedPhoneIds.map(phoneId => {
-                    const phone = phoneOptions.find(opt => opt.value === phoneId)
-                    return (
-                      <div key={phoneId} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                        <span className="text-sm">{phone?.label}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removePhone(phoneId)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+            {/* Removed global phone selector; now phone is selected per agent */}
 
             {/* Concurrency */}
             <div className="space-y-2">

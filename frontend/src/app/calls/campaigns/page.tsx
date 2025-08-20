@@ -33,6 +33,8 @@ export default function CampaignsPage() {
   const [agentsMap, setAgentsMap] = useState<Record<string, string>>({})
   const [selectedCampaign, setSelectedCampaign] = useState<BatchRow | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  // VO stats grouped by campaignId
+  const [voByCampaign, setVoByCampaign] = useState<Record<string, { total: number; queued: number; progressPct: number }>>({})
 
   const fetchCampaigns = useCallback(async () => {
     try {
@@ -63,6 +65,47 @@ export default function CampaignsPage() {
     }
   }, [authenticatedFetch, fetchCampaigns, loading])
 
+  // Fetch VO report per campaign (avoids heavy grouped query that may 500)
+  useEffect(() => {
+    let aborted = false
+    setVoByCampaign((prev) => prev) // keep existing while updating
+    const run = async () => {
+      for (const b of items) {
+        if (aborted) return
+        if (!b.campaign_id) continue
+        try {
+          const from = new Date(b.created_at)
+          from.setUTCHours(0,0,0,0)
+          const to = new Date()
+          to.setUTCHours(23,59,59,999)
+          const params = new URLSearchParams({
+            from: from.toISOString(),
+            to: to.toISOString(),
+            groupBy: 'campaign',
+            campaignId: String(b.campaign_id)
+          })
+          const report = await authenticatedFetch(`/api/calls/vo/report?${params.toString()}`, { muteErrors: true })
+          const groups: Array<any> = Array.isArray(report?.data?.groups) ? report.data.groups : []
+          const g = groups.find((x: any) => String(x.key) === String(b.campaign_id)) || groups[0]
+          if (!g) continue
+          const queued = Number(g.queued || 0)
+          const in_progress = Number(g.in_progress || 0)
+          const completed = Number(g.completed || 0)
+          const failed = Number(g.failed || 0)
+          const total = queued + in_progress + completed + failed
+          const processed = Math.max(total - queued, 0)
+          const pct = total > 0 ? Math.round((processed / total) * 100) : 0
+          if (aborted) return
+          setVoByCampaign(prev => ({ ...prev, [b.campaign_id as string]: { total, queued, progressPct: pct } }))
+        } catch (e) {
+          // ignore this campaign
+        }
+      }
+    }
+    run()
+    return () => { aborted = true }
+  }, [items, authenticatedFetch])
+
   // Load agents map to resolve external_id -> name
   useEffect(() => {
     authenticatedFetch('/api/v2/agents?type=call', { muteErrors: true }).then((res) => {
@@ -89,9 +132,10 @@ export default function CampaignsPage() {
 
   const cards = useMemo(() => {
     return filtered.map((b) => {
-      const progressPercentage = b.total_recipients > 0 
+      const vo = b.campaign_id ? voByCampaign[b.campaign_id] : undefined
+      const progressPercentage = vo ? vo.progressPct : (b.total_recipients > 0 
         ? Math.round((b.processed_recipients / b.total_recipients) * 100) 
-        : 0
+        : 0)
       
       const isCompleted = progressPercentage >= 100
       const isInProgress = progressPercentage > 0 && progressPercentage < 100
@@ -129,17 +173,17 @@ export default function CampaignsPage() {
             <Progress value={progressPercentage} className="h-1.5" />
           </div>
           
-          {/* Contactos llamados */}
+          {/* VO totals */}
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-500">
-              Contacts called: <span className="font-medium text-blue-600">{b.processed_recipients || 0}</span>
+              Total calls (VO): <span className="font-medium text-blue-600">{vo?.total ?? 0}</span>
             </span>
             <span className="text-gray-500">Started {new Date(b.created_at).toLocaleString()}</span>
           </div>
         </Card>
       )
     })
-  }, [filtered, agentsMap])
+  }, [filtered, agentsMap, voByCampaign])
 
   return (
     <div className="flex flex-1 flex-col p-6 gap-6">

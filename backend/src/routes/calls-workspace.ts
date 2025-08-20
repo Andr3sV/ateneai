@@ -63,7 +63,7 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
 });
 
 // Get single call by id with transcript and criteria_evaluation
-router.get('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
+router.get('/:id(\\d+)', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     if (!req.workspaceContext) {
       res.status(401).json({ success: false, error: 'No workspace context available' });
@@ -87,7 +87,7 @@ router.get('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
 })
 
 // Update call status
-router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<void> => {
+router.put('/:id(\\d+)/status', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     if (!req.workspaceContext) {
       res.status(401).json({ success: false, error: 'No workspace context available' });
@@ -117,7 +117,7 @@ router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<voi
 })
 
 // Assign call to a workspace user
-router.put('/:id/assignee', requireWorkspaceContext, async (req, res): Promise<void> => {
+router.put('/:id(\\d+)/assignee', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     if (!req.workspaceContext) {
       res.status(401).json({ success: false, error: 'No workspace context available' });
@@ -297,9 +297,9 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     } = req.body as {
       campaignName?: string
       campaignId?: string
-      agents: Array<{ agentId: string }>
-      agentPhoneNumberId: string
-      fromNumber: string
+      agents: Array<{ agentId: string; agentPhoneNumberId?: string; fromNumber?: string }>
+      agentPhoneNumberId?: string
+      fromNumber?: string
       calls: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, any> }>
       machineDetectionTimeout?: number
       enableMachineDetection?: boolean
@@ -420,7 +420,7 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     try {
       await db.createBatchCall(req.workspaceContext.workspaceId, {
         name: campaignName || 'Untitled Batch',
-        phone_external_id: agentPhoneNumberId,
+        phone_external_id: normalizedAgents[0]?.agentPhoneNumberId ?? agentPhoneNumberId ?? null,
         agent_external_id: agents[0]?.agentId, // Store first agent for backward compatibility
         status: 'processing',
         total_recipients: payload.calls.length,
@@ -570,6 +570,21 @@ router.get('/bulk/list', requireWorkspaceContext, async (req, res): Promise<void
   }
 });
 
+// List phone numbers for current workspace
+router.get('/phones', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const items = await db.listPhoneNumbers(req.workspaceContext.workspaceId);
+    res.json({ success: true, data: items });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/phones:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Usage proxy (minutes/seconds consumed) from voice orchestrator
 router.get('/bulk/usage', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
@@ -640,6 +655,41 @@ router.get('/vo/report', requireWorkspaceContext, async (req, res): Promise<void
     res.json({ success: true, data });
   } catch (error: any) {
     console.error('❌ Error in GET /calls/vo/report:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({ success: false, error: error.response?.data || error.message });
+  }
+});
+
+// Cancel a campaign in voice orchestrator
+router.post('/vo/cancel', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const { campaignId } = req.body as { campaignId?: string }
+    if (!campaignId) {
+      res.status(400).json({ success: false, error: 'campaignId is required' });
+      return;
+    }
+
+    const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
+    const workspaceApiKey = await db.getWorkspaceVoiceApiKey(req.workspaceContext.workspaceId).catch(() => null);
+    const API_KEY = workspaceApiKey || process.env.VOICE_ORCHESTRATOR_API_KEY;
+    if (!API_KEY) {
+      res.status(500).json({ success: false, error: 'Missing voice API key (workspace.voice_api_key or VOICE_ORCHESTRATOR_API_KEY)' });
+      return;
+    }
+
+    const { data } = await axios.post(
+      `${VOICE_URL}/campaigns/${encodeURIComponent(campaignId)}/cancel`,
+      { workspaceId: String(req.workspaceContext.workspaceId) },
+      { headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } }
+    );
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error in POST /calls/vo/cancel:', error.response?.data || error.message);
     const status = error.response?.status || 500;
     res.status(status).json({ success: false, error: error.response?.data || error.message });
   }

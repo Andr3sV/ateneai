@@ -7,7 +7,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { X, Phone, User, Clock, Calendar, Settings } from 'lucide-react'
+import { Phone, User, Clock, Calendar, Settings } from 'lucide-react'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 type CampaignDetail = {
   id: number
@@ -45,6 +46,8 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
   const [agent, setAgent] = useState<Agent | null>(null)
   const [loading, setLoading] = useState(false)
   const [metadata, setMetadata] = useState<any>(null)
+  const [canceling, setCanceling] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   // Voice Orchestrator per-campaign metrics
   const [voCreatedTotal, setVoCreatedTotal] = useState<number>(0)
   const [voBreakdown, setVoBreakdown] = useState<Record<string, number>>({})
@@ -155,20 +158,34 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
     return 'Pending'
   }
 
+  async function cancelCampaign() {
+    if (!campaign?.campaign_id) return
+    try {
+      setCanceling(true)
+      // Backend proxy: reuse our existing /calls/vo/report auth header pattern
+      const res = await authenticatedFetch(`/api/calls/vo/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: String(campaign.campaign_id) })
+      })
+      if (!res?.success) {
+        throw new Error(res?.error || 'Cancel failed')
+      }
+      onOpenChange(false)
+    } catch (e) {
+      console.error('Cancel campaign error:', e)
+      alert('Could not cancel campaign. Please try again.')
+    } finally {
+      setCanceling(false)
+    }
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[600px] sm:w-[700px] overflow-y-auto p-6">
+      <SheetContent className="w-[900px] sm:w-[1050px] overflow-y-auto p-6">
         <SheetHeader className="pb-6">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-xl font-semibold">{campaign.name || 'Untitled Campaign'}</SheetTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
           <div className="flex items-center gap-2">
             <Badge className={getStatusColor()}>
@@ -201,8 +218,7 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                 </div>
               </div>
 
-              {/* Progress bar (operational) */}
-              
+              {/* Progress bar using VO when available */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Progress</span>
@@ -238,7 +254,7 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                     <Phone className="h-4 w-4" />
                     <span>Phone Number</span>
                   </div>
-                  <div className="font-medium">
+                  <div className="font-medium break-all">
                     {campaign.phone_external_id || 'Not specified'}
                   </div>
                 </div>
@@ -291,7 +307,7 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                         </div>
                         <div>
                           <span className="text-gray-600">Timezone:</span>
-                          <span className="ml-2 font-medium">{metadata.timeWindow.timezone}</span>
+                          <span className="ml-2 font-medium break-all">{metadata.timeWindow.timezone}</span>
                         </div>
                         <div className="col-span-2">
                           <span className="text-gray-600">Days:</span>
@@ -317,29 +333,49 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                 <CardTitle className="text-base">Desglose por estado (VO)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {Object.entries(voBreakdown).map(([k, v]) => (
+                {['queued','in_progress','completed','failed'].map((k) => (
                   <div key={k} className="flex justify-between">
                     <span className="text-gray-600 capitalize">{k.replace('_',' ')}:</span>
-                    <span className="font-semibold">{v as number}</span>
+                    <span className="font-semibold">{voBreakdown[k] || 0}</span>
                   </div>
                 ))}
               </CardContent>
             </Card>
           )}
 
-          {/* Campaign ID */}
-          {campaign.campaign_id && (
+          {/* Campaign ID + Cancel button */}
+          {campaign.campaign_id && !isCompleted && (
             <Card>
-              <CardContent className="pt-4">
+              <CardContent className="pt-4 flex items-center justify-between gap-3">
                 <div className="text-sm">
                   <span className="text-gray-600">Campaign ID:</span>
                   <span className="ml-2 font-mono text-xs bg-gray-100 px-2 py-1 rounded">
                     {campaign.campaign_id}
                   </span>
                 </div>
+                <Button variant="destructive" onClick={() => setConfirmOpen(true)} disabled={canceling}>
+                  {canceling ? 'Cancelling…' : 'Cancel Campaign'}
+                </Button>
               </CardContent>
             </Card>
           )}
+          {/* Confirm cancel dialog */}
+          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Cancel this campaign?</DialogTitle>
+              </DialogHeader>
+              <div className="text-sm text-gray-600">
+                This will cancel all queued calls in this campaign. In-progress calls may continue.
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={canceling}>No, keep campaign</Button>
+                <Button variant="destructive" onClick={async () => { setConfirmOpen(false); await cancelCampaign(); }} disabled={canceling}>
+                  {canceling ? 'Cancelling…' : 'Yes, cancel campaign'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </SheetContent>
     </Sheet>
