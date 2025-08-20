@@ -774,12 +774,25 @@ export const db = {
       status?: 'pending' | 'processing' | 'completed' | 'failed'
       total_recipients?: number
       processed_recipients?: number
-      // We don't have a dedicated column for campaignId; reuse file_url as a flexible text field
+      // Store campaign_id directly in its dedicated column
       campaign_id?: string | null
-      // New metadata field for additional campaign information
+      // Optional campaign metadata (we will store it in file_url for backward-compat)
       metadata?: Record<string, any>
     }
   ) {
+    // Compose legacy-compatible file_url while also storing campaign_id
+    let fileUrl: string | null = null;
+    if (payload.metadata) {
+      const metadataStr = JSON.stringify(payload.metadata);
+      if (payload.campaign_id) {
+        fileUrl = `cid:${payload.campaign_id}|metadata:${metadataStr}`;
+      } else {
+        fileUrl = `metadata:${metadataStr}`;
+      }
+    } else if (payload.campaign_id) {
+      fileUrl = `cid:${payload.campaign_id}`;
+    }
+
     const insertPayload: any = {
       workspace_id: workspaceId,
       name: payload.name,
@@ -788,19 +801,9 @@ export const db = {
       status: payload.status ?? 'processing',
       total_recipients: payload.total_recipients ?? 0,
       processed_recipients: payload.processed_recipients ?? 0,
-      file_url: payload.campaign_id ? `cid:${payload.campaign_id}` : null,
+      campaign_id: payload.campaign_id ?? null,
+      file_url: fileUrl,
     };
-
-    // Store metadata in file_url if available, otherwise use a JSON string
-    if (payload.metadata) {
-      const metadataStr = JSON.stringify(payload.metadata);
-      if (!payload.campaign_id) {
-        insertPayload.file_url = `metadata:${metadataStr}`;
-      } else {
-        // If we have both campaign_id and metadata, append metadata
-        insertPayload.file_url = `cid:${payload.campaign_id}|metadata:${metadataStr}`;
-      }
-    }
 
     const { data, error } = await supabase
       .from(TABLES.BATCH_CALLS)

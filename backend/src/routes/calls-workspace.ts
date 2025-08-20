@@ -558,12 +558,7 @@ router.get('/bulk/list', requireWorkspaceContext, async (req, res): Promise<void
       return;
     }
     const items = await db.listBatchCalls(req.workspaceContext.workspaceId, { limit: 100 });
-    // expose campaignId parsed from file_url if stored as cid:<id>
-    const data = items.map((row: any) => ({
-      ...row,
-      campaign_id: typeof row.file_url === 'string' && row.file_url.startsWith('cid:') ? row.file_url.slice(4) : null,
-    }));
-    res.json({ success: true, data });
+    res.json({ success: true, data: items });
   } catch (error: any) {
     console.error('❌ Error in GET /calls/bulk/list:', error);
     res.status(500).json({ success: false, error: error.message });
