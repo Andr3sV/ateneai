@@ -540,9 +540,9 @@ export default function CreateBatchCallPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[10, 25, 50, 75, 100].map(conc => (
+                  {Array.from({ length: 25 }, (_, i) => i + 1).map(conc => (
                     <SelectItem key={conc} value={String(conc)}>
-                      {conc} calls {conc === 50 && '(default)'}
+                      {conc} {conc === 1 ? 'call' : 'calls'}
                     </SelectItem>
                   ))}
                 </SelectContent>
