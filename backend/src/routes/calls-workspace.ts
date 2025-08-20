@@ -367,11 +367,15 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       return;
     }
 
+    // Ensure we use our own campaignId (provided or generated)
+    const finalCampaignId = campaignId || `batch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    console.log(`📞 Using campaignId: ${finalCampaignId} (${campaignId ? 'provided' : 'generated'})`)
+
     // Prepare payload for voice orchestrator (trunking mode)
     const payload = {
       workspaceId: String(req.workspaceContext.workspaceId),
       agents: normalizedAgents,
-      campaignId: campaignId || undefined,
+      campaignId: finalCampaignId,
       concurrency,
       calls: calls.map(r => ({
         toNumber: r.toNumber,
@@ -392,7 +396,6 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
     // Batch in chunks of up to 5000
     const CHUNK = 5000;
     let enqueuedTotal = 0;
-    let orchestratorCampaignId: string | null = null;
     
     for (let i = 0; i < payload.calls.length; i += CHUNK) {
       const body = { ...payload, calls: payload.calls.slice(i, i + CHUNK) };
@@ -411,9 +414,6 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       );
       
       enqueuedTotal += Number(data?.enqueued || 0);
-      if (!orchestratorCampaignId) {
-        orchestratorCampaignId = (data?.campaignId || data?.campaign_id || data?.id || null) as string | null;
-      }
     }
 
     // Best-effort: persist batch metadata for listing
@@ -425,7 +425,7 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
         status: 'processing',
         total_recipients: payload.calls.length,
         processed_recipients: 0,
-        campaign_id: orchestratorCampaignId,
+        campaign_id: finalCampaignId,
         // Store additional metadata in file_url field
         metadata: {
           callType,
@@ -440,7 +440,7 @@ router.post('/bulk', requireWorkspaceContext, async (req, res): Promise<void> =>
       console.warn('⚠️ Could not persist batch metadata:', persistErr?.message);
     }
 
-    res.json({ success: true, enqueued: enqueuedTotal, campaignId: orchestratorCampaignId });
+    res.json({ success: true, enqueued: enqueuedTotal, campaignId: finalCampaignId });
   } catch (error: any) {
     console.error('❌ Error in POST /calls/bulk:', error.response?.data || error.message);
     const status = error.response?.status || 500;
