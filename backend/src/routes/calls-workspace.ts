@@ -602,3 +602,47 @@ router.get('/bulk/usage', requireWorkspaceContext, async (req, res): Promise<voi
 });
 
 
+// Voice Orchestrator: Report proxy (totals and grouped stats)
+router.get('/vo/report', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const { from, to, groupBy, campaignId } = req.query as { from?: string; to?: string; groupBy?: string; campaignId?: string };
+    if (!from || !to) {
+      res.status(400).json({ success: false, error: 'from and to are required (YYYY-MM-DD)' });
+      return;
+    }
+
+    const VOICE_URL = process.env.VOICE_ORCHESTRATOR_URL || 'https://voice.ateneai.com';
+    const workspaceApiKey = await db.getWorkspaceVoiceApiKey(req.workspaceContext.workspaceId).catch(() => null);
+    const API_KEY = workspaceApiKey || process.env.VOICE_ORCHESTRATOR_API_KEY;
+    if (!API_KEY) {
+      res.status(500).json({ success: false, error: 'Missing voice API key (workspace.voice_api_key or VOICE_ORCHESTRATOR_API_KEY)' });
+      return;
+    }
+
+    const params: Record<string, string> = {
+      workspaceId: String(req.workspaceContext.workspaceId),
+      from,
+      to,
+    };
+    if (groupBy) params.groupBy = String(groupBy);
+    if (campaignId) params.campaignId = String(campaignId);
+
+    const { data } = await axios.get(`${VOICE_URL}/calls/report`, {
+      params,
+      headers: { Authorization: `Bearer ${API_KEY}` },
+    });
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/vo/report:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({ success: false, error: error.response?.data || error.message });
+  }
+});
+
+
