@@ -47,7 +47,7 @@ export default function CreateBatchCallPage() {
   // AMD Configuration
   const [enableMachineDetection, setEnableMachineDetection] = useState(true)
   const [machineDetectionTimeout, setMachineDetectionTimeout] = useState(6)
-  const [concurrency, setConcurrency] = useState(50)
+  const [concurrency, setConcurrency] = useState(10)
   
   // Time Window Configuration
   const [startTime, setStartTime] = useState("09:00")
@@ -545,6 +545,7 @@ export default function CreateBatchCallPage() {
                       {conc} {conc === 1 ? 'call' : 'calls'}
                     </SelectItem>
                   ))}
+                  <SelectItem value="50">50 calls</SelectItem>
                 </SelectContent>
               </Select>
               <div className="text-xs text-muted-foreground">
