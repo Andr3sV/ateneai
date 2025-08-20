@@ -45,6 +45,10 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
   const [agent, setAgent] = useState<Agent | null>(null)
   const [loading, setLoading] = useState(false)
   const [metadata, setMetadata] = useState<any>(null)
+  // Voice Orchestrator per-campaign metrics
+  const [voCreatedTotal, setVoCreatedTotal] = useState<number>(0)
+  const [voBreakdown, setVoBreakdown] = useState<Record<string, number>>({})
+  const [voProgressPct, setVoProgressPct] = useState<number | null>(null)
 
   useEffect(() => {
     async function fetchDetails() {
@@ -74,6 +78,53 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
           }
         }
         
+        // Fetch Voice Orchestrator per-campaign report
+        try {
+          const campaignIdentifier = campaign.campaign_id
+          if (campaignIdentifier) {
+            const fromDate = new Date(campaign.created_at)
+            fromDate.setUTCHours(0, 0, 0, 0)
+            const toDate = new Date()
+            toDate.setUTCHours(23, 59, 59, 999)
+            const params = new URLSearchParams({
+              from: fromDate.toISOString(),
+              to: toDate.toISOString(),
+              groupBy: 'campaign',
+              campaignId: String(campaignIdentifier)
+            })
+            const voRes = await authenticatedFetch(`/api/calls/vo/report?${params.toString()}`, { muteErrors: true })
+            if (voRes?.success) {
+              // Find this campaign's group
+              const groups: Array<any> = Array.isArray(voRes.data?.groups) ? voRes.data.groups : []
+              const group = groups.find(g => g.key === campaignIdentifier) || groups[0]
+              if (group) {
+                const tally: Record<string, number> = {}
+                let total = 0
+                for (const key of Object.keys(group)) {
+                  if (key === 'key') continue
+                  const v = group[key]
+                  if (typeof v === 'number') {
+                    total += v
+                    tally[key] = (tally[key] || 0) + v
+                  }
+                }
+                setVoCreatedTotal(total)
+                setVoBreakdown(tally)
+                const queued = tally['queued'] || 0
+                const processed = Math.max(total - queued, 0)
+                const pct = total > 0 ? Math.round((processed / total) * 100) : 0
+                setVoProgressPct(pct)
+              } else {
+                setVoCreatedTotal(0)
+                setVoBreakdown({})
+                setVoProgressPct(null)
+              }
+            }
+          }
+        } catch (err) {
+          // ignore VO errors to avoid breaking modal
+        }
+
       } finally {
         setLoading(false)
       }
@@ -106,7 +157,7 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[600px] sm:w-[700px] overflow-y-auto">
+      <SheetContent className="w-[600px] sm:w-[700px] overflow-y-auto p-6">
         <SheetHeader className="pb-6">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-xl font-semibold">{campaign.name || 'Untitled Campaign'}</SheetTitle>
@@ -139,27 +190,25 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <div className="text-2xl font-bold text-gray-900">{campaign.total_recipients}</div>
                   <div className="text-xs text-gray-500">Total Recipients</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-600">{campaign.processed_recipients}</div>
-                  <div className="text-xs text-gray-500">Contacts Called</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">{progressPercentage}%</div>
-                  <div className="text-xs text-gray-500">Completion</div>
+                  <div className="text-2xl font-bold text-blue-600">{voCreatedTotal}</div>
+                  <div className="text-xs text-gray-500">Total Calls (VO)</div>
                 </div>
               </div>
+
+              {/* Progress bar (operational) */}
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Progress</span>
-                  <span className="font-medium">{progressPercentage}%</span>
+                  <span className="font-medium">{voProgressPct ?? progressPercentage}%</span>
                 </div>
-                <Progress value={progressPercentage} className="h-2" />
+                <Progress value={voProgressPct ?? progressPercentage} className="h-2" />
               </div>
             </CardContent>
           </Card>
@@ -260,6 +309,23 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
               )}
             </CardContent>
           </Card>
+
+          {/* VO Breakdown by status */}
+          {Object.keys(voBreakdown).length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Desglose por estado (VO)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {Object.entries(voBreakdown).map(([k, v]) => (
+                  <div key={k} className="flex justify-between">
+                    <span className="text-gray-600 capitalize">{k.replace('_',' ')}:</span>
+                    <span className="font-semibold">{v as number}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Campaign ID */}
           {campaign.campaign_id && (

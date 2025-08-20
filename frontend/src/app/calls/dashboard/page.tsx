@@ -43,6 +43,13 @@ export default function CallsDashboardPage() {
   const [mqlsByCity, setMqlsByCity] = useState<{ city: string; count: number }[]>([])
   const [contactRep, setContactRep] = useState<{ avgCallsToMql: number; avgCallsToClient: number; topContacts: { contact_name: string; calls: number }[] } | null>(null)
 
+  // Voice Orchestrator metrics
+  const [voTotalCalls, setVoTotalCalls] = useState<number>(0)
+  const [voStatusBreakdown, setVoStatusBreakdown] = useState<Array<{ status: string; count: number }>>([])
+  const [voDailyStates, setVoDailyStates] = useState<Array<{ date: string; queued?: number; in_progress?: number; completed?: number; failed?: number }>>([])
+  const [voAgentStats, setVoAgentStats] = useState<Array<{ agent: string; total: number; failed: number; failure_rate: number }>>([])
+  const [voCampaignStats, setVoCampaignStats] = useState<Array<{ campaign: string; total: number; completed: number; failed: number }>>([])
+
   const formattedRange = useMemo(() => {
     return `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`
   }, [startDate, endDate])
@@ -52,11 +59,22 @@ export default function CallsDashboardPage() {
     try {
       const start_date = startDate.toISOString()
       const end_date = endDate.toISOString()
+      // Voice Orchestrator expects full ISO datetimes (with time and Z)
+      const fromDate = new Date(startDate)
+      fromDate.setUTCHours(0, 0, 0, 0)
+      const toDate = new Date(endDate)
+      toDate.setUTCHours(23, 59, 59, 999)
+      const from = fromDate.toISOString()
+      const to = toDate.toISOString()
       const evoParams = new URLSearchParams({ period: chartPeriod, start_date, end_date })
       const mqlEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'mql' })
       const clientsEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'client' })
       const statsParams = new URLSearchParams({ start_date, end_date })
-      const [evoRes, mqlEvoRes, clientsEvoRes, statsRes, agentsRes, cityRes, repRes] = await Promise.all([
+      const reportDayParams = new URLSearchParams({ from, to, groupBy: 'day' })
+      const reportAgentParams = new URLSearchParams({ from, to, groupBy: 'agent' })
+      const reportCampaignParams = new URLSearchParams({ from, to, groupBy: 'campaign' })
+
+      const [evoRes, mqlEvoRes, clientsEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes] = await Promise.all([
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${evoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${mqlEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${clientsEvoParams}`)),
@@ -64,6 +82,9 @@ export default function CallsDashboardPage() {
         authenticatedFetch(getApiUrl(`calls/dashboard/agents?${statsParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/mqls-by-city?${statsParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/contact-repetition?${statsParams}`)),
+        authenticatedFetch(`/api/calls/vo/report?${reportDayParams.toString()}`),
+        authenticatedFetch(`/api/calls/vo/report?${reportAgentParams.toString()}`),
+        authenticatedFetch(`/api/calls/vo/report?${reportCampaignParams.toString()}`),
       ])
       if (evoRes.success) setEvolution(evoRes.data)
       if (mqlEvoRes.success) setMqlEvolution(mqlEvoRes.data)
@@ -72,8 +93,102 @@ export default function CallsDashboardPage() {
       if (agentsRes.success) setAgentLeaderboard((agentsRes.data || []).map((a: any) => ({ agent_name: a.agent_name, mqls: a.mqls, win_rate: a.win_rate })))
       if (cityRes.success) setMqlsByCity(cityRes.data || [])
       if (repRes.success) setContactRep(repRes.data)
+
+      // Process VO: totals and status breakdown (aggregate by campaign groups)
+      if (voCampaignRes?.success && Array.isArray(voCampaignRes?.data?.groups)) {
+        const groups = voCampaignRes.data.groups as Array<Record<string, any>>
+        const agg: Record<string, number> = { queued: 0, in_progress: 0, completed: 0, failed: 0 }
+        let totalCalls = Number(voCampaignRes?.data?.totals?.count || 0)
+        for (const g of groups) {
+          for (const key of Object.keys(g)) {
+            if (['key', 'campaign', 'campaignId'].includes(key)) continue
+            const val = g[key]
+            if (typeof val === 'number') {
+              totalCalls += val
+              if (key in agg) agg[key] += val
+            }
+          }
+        }
+        setVoTotalCalls(totalCalls)
+        const breakdown = Object.entries(agg)
+          .filter(([, v]) => (v as number) > 0)
+          .map(([status, count]) => ({ status: status.replace('_', ' '), count: count as number }))
+        setVoStatusBreakdown(breakdown)
+      } else {
+        setVoTotalCalls(0)
+        setVoStatusBreakdown([])
+      }
+
+      // Process VO: daily evolution of states
+      if (voDayRes?.success && Array.isArray(voDayRes?.data?.groups)) {
+        const dayGroups = voDayRes.data.groups as Array<Record<string, any>>
+        const series = dayGroups.map((g) => {
+          const entry: any = { date: String(g.key) }
+          for (const key of Object.keys(g)) {
+            if (key === 'key') continue
+            const val = g[key]
+            if (typeof val === 'number') entry[key] = val
+          }
+          return entry
+        })
+        setVoDailyStates(series)
+      } else {
+        setVoDailyStates([])
+      }
+
+      // Process VO: top agents
+      if (voAgentRes?.success && Array.isArray(voAgentRes?.data?.groups)) {
+        const agentGroups = voAgentRes.data.groups as Array<Record<string, any>>
+        const list = agentGroups.map((g) => {
+          const name = (g.agentId || g.agent || g.key || 'Unknown') as string
+          let total = 0
+          let failed = 0
+          for (const key of Object.keys(g)) {
+            if (['key', 'agent', 'agentId'].includes(key)) continue
+            const val = g[key]
+            if (typeof val === 'number') {
+              total += val
+              if (key === 'failed') failed += val
+            }
+          }
+          const failure_rate = total > 0 ? Math.round((failed / total) * 100) : 0
+          return { agent: name, total, failed, failure_rate }
+        }).filter(a => a.total > 0).sort((a, b) => b.total - a.total)
+        setVoAgentStats(list)
+      } else {
+        setVoAgentStats([])
+      }
+
+      // Process VO: distribution by campaign
+      if (voCampaignRes?.success && Array.isArray(voCampaignRes?.data?.groups)) {
+        const campaignGroups = voCampaignRes.data.groups as Array<Record<string, any>>
+        const list = campaignGroups.map((g) => {
+          const campaign = (g.campaignId || g.key || 'Unknown') as string
+          let total = 0
+          let completed = 0
+          let failed = 0
+          for (const key of Object.keys(g)) {
+            if (['key', 'campaign', 'campaignId'].includes(key)) continue
+            const val = g[key]
+            if (typeof val === 'number') {
+              total += val
+              if (key === 'completed') completed += val
+              if (key === 'failed') failed += val
+            }
+          }
+          return { campaign, total, completed, failed }
+        }).filter(c => c.total > 0).sort((a, b) => b.total - a.total)
+        setVoCampaignStats(list)
+      } else {
+        setVoCampaignStats([])
+      }
     } catch (e) {
       console.error('Error fetching calls dashboard:', e)
+      setVoTotalCalls(0)
+      setVoStatusBreakdown([])
+      setVoDailyStates([])
+      setVoAgentStats([])
+      setVoCampaignStats([])
     } finally {
       setLoading(false)
     }
@@ -136,6 +251,11 @@ export default function CallsDashboardPage() {
     return String(value)
   }
 
+  const truncateLabel = (value: string) => {
+    const s = String(value || '')
+    return s.length > 8 ? `${s.slice(0, 8)}...` : s
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Date Filters */}
@@ -188,7 +308,7 @@ export default function CallsDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Calls" value={stats?.total ?? 0} description="All calls in range" />
+        <StatCard title="Total Calls (VO)" value={voTotalCalls} description="Created in range (VO)" />
         <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Total MQLs in range" />
         <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Total clientes en el periodo" />
         <StatCard title="Lead → Client %" value={(() => {
@@ -197,6 +317,47 @@ export default function CallsDashboardPage() {
           return leads > 0 ? `${Math.round((clients / leads) * 100)}%` : '0%'
         })()} description="Conversion within period" />
       </div>
+
+      {/* Desglose por estado (VO) */}
+      {voStatusBreakdown.length > 0 && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Desglose por estado (Voice Orchestrator)</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={voStatusBreakdown}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="status" tickFormatter={truncateLabel} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="count" name="Total" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Evolución diaria de estados (VO) */}
+      {voDailyStates.length > 0 && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Evolución diaria de estados (Voice Orchestrator)</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={voDailyStates}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="queued" name="Queued" stroke="#94a3b8" dot={false} />
+                <Line type="monotone" dataKey="in_progress" name="In progress" stroke="#f59e0b" dot={false} />
+                <Line type="monotone" dataKey="completed" name="Completed" stroke="#10b981" dot={false} />
+                <Line type="monotone" dataKey="failed" name="Failed" stroke="#ef4444" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Chart and Pie Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -329,39 +490,46 @@ export default function CallsDashboardPage() {
         </div>
       </div>
 
-      {/* Agent Leaderboard and MQLs by City */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* VO Top agents (full width) */}
+      {voAgentStats.length > 0 && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Top Agentes (MQLs / Win rate)</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Top agentes por volumen y tasa de fallo (VO)</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={agentLeaderboard} layout="vertical">
+              <BarChart data={voAgentStats} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
-                <YAxis type="category" dataKey="agent_name" width={120} />
+                <YAxis type="category" dataKey="agent" width={120} tickFormatter={truncateLabel} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="mqls" name="MQLs" fill="#3b82f6" />
-                <Bar dataKey="win_rate" name="Win %" fill="#10b981" />
+                <Bar dataKey="total" name="Total" fill="#3b82f6" />
+                <Bar dataKey="failure_rate" name="Failure %" fill="#ef4444" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
+      )}
+
+      {/* VO Distribution by campaign (full width) */}
+      {voCampaignStats.length > 0 && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">MQLs por ciudad</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Distribución por campaña (VO)</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mqlsByCity}>
+              <BarChart data={voCampaignStats} layout="vertical" barCategoryGap="10%">
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="city" interval={0} angle={-20} textAnchor="end" height={60} />
-                <YAxis />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="campaign" width={120} tickFormatter={truncateLabel} />
                 <Tooltip />
-                <Bar dataKey="count" name="MQLs" fill="#8b5cf6" />
+                <Legend />
+                <Bar dataKey="total" name="Total" fill="#10b981" barSize={22} />
+                <Bar dataKey="completed" name="Completed" fill="#059669" barSize={22} />
+                <Bar dataKey="failed" name="Failed" fill="#dc2626" barSize={22} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Contact repetition */}
       <div className="bg-white shadow rounded-lg p-6">
