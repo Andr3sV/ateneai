@@ -132,7 +132,7 @@ export default function CampaignsPage() {
           {/* Contactos llamados */}
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-500">
-              Contacts called: <span className="font-medium text-blue-600">{b.processed_recipients || 0}</span>
+              Total calls (VO): <span className="font-medium text-blue-600">{b.processed_recipients || 0}</span>
             </span>
             <span className="text-gray-500">Started {new Date(b.created_at).toLocaleString()}</span>
           </div>
