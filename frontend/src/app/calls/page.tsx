@@ -113,6 +113,16 @@ export default function CallsPage() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const [celebrateEnabled, setCelebrateEnabled] = useState<boolean>(true)
 
+  // Detect desktop to avoid double render issues with CSS-only breakpoints
+  const [isDesktop, setIsDesktop] = useState<boolean>(false)
+  useEffect(() => {
+    const mq = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null
+    const handler = () => setIsDesktop(!!mq?.matches)
+    handler()
+    mq?.addEventListener('change', handler)
+    return () => mq?.removeEventListener('change', handler)
+  }, [])
+
   const callsSignature = (list: CallItem[]) =>
     list
       .map(c => [
@@ -387,10 +397,71 @@ export default function CallsPage() {
         </div>
       </div>
 
-      {/* Table inside Card with pagination footer — match Conversations table styling */}
-      <Card>
+      {/* Mobile cards list (Attio-inspired) */}
+      <Card className="block md:hidden" hidden={isDesktop}>
         <CardContent className="p-4">
-          <Table className="hidden sm:table">
+          {loading ? (
+            <div className="text-center text-muted-foreground py-8">Loading...</div>
+          ) : calls.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">No results</div>
+          ) : (
+            <div className="grid gap-3">
+              {calls.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-lg border p-3 shadow-xs active:bg-accent/30 transition-colors"
+                  onClick={() => { setSelectedCallId(c.id); setModalOpen(true) }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[15px] font-semibold text-gray-900" title={c.contact?.name || 'Sin nombre'}>
+                        {shortName(c.contact?.name)}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-600 flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3.5 w-3.5 text-gray-400" />
+                          <span className="truncate">{c.phone_to || c.phone_from || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 whitespace-nowrap">{format(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}</div>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getInterestBadge(c.interest)}
+                      {getCallTypeBadge(c.call_type || null)}
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <StatusDropdown
+                        value={c.status}
+                        onChange={async (next) => {
+                          try {
+                            await authenticatedFetch(getApiUrl(`calls/${c.id}/status`), {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: next }),
+                            })
+                            setCalls((prev) => prev.map((row) => row.id === c.id ? { ...row, status: next } : row))
+                          } catch (e) {
+                            console.error('Failed updating call status', e)
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Table inside Card with pagination footer — desktop only */}
+      <Card hidden={!isDesktop}>
+        <CardContent className="p-4">
+          <div className="overflow-x-auto">
+          <Table className="min-w-[900px] table">
           <TableHeader>
               <TableRow className="border-b border-gray-200">
                 <TableHead className="text-left font-semibold text-gray-900">Name</TableHead>
@@ -506,6 +577,7 @@ export default function CallsPage() {
             )}
           </TableBody>
           </Table>
+          </div>
           {/* Pagination inside the same card - inset like Messages */}
           <div className="flex items-center justify-between pt-4">
             <div className="text-sm text-muted-foreground">

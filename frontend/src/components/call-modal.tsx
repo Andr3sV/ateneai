@@ -192,7 +192,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   return (
     <>
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-full sm:w-[90vw] sm:max-w-[640px] md:w-[70vw] md:max-w-[800px] h-[100dvh] sm:h-screen sm:max-h-screen sm:rounded-none sm:overflow-hidden p-0 flex flex-col">
+      <SheetContent className="w-full max-w-full sm:w-[92vw] sm:max-w-[700px] md:w-[70vw] md:max-w-[800px] h-[100dvh] sm:h-screen sm:max-h-screen sm:rounded-none sm:overflow-hidden p-0 flex flex-col">
         <div className="flex flex-col h-full">
           {/* Header */}
           <SheetHeader className="space-y-3 px-4 py-3 sticky top-0 bg-white z-10 border-b">
@@ -211,7 +211,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                         <span>• ⏱️ {Math.floor((call.duration || 0) / 60)}m {Math.floor((call.duration || 0) % 60)}s</span>
                       )}
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <StatusDropdown
                       value={call?.status || null}
                       onChange={async (next) => {
