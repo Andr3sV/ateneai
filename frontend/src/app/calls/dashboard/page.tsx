@@ -46,6 +46,7 @@ export default function CallsDashboardPage() {
 
   // Voice Orchestrator metrics
   const [voTotalCalls, setVoTotalCalls] = useState<number>(0)
+  const [batchTotalCalls, setBatchTotalCalls] = useState<number>(0)
   const [voStatusBreakdown, setVoStatusBreakdown] = useState<Array<{ status: string; count: number }>>([])
   const [voDailyStates, setVoDailyStates] = useState<Array<{ date: string; queued?: number; in_progress?: number; completed?: number; failed?: number }>>([])
   const [voAgentStats, setVoAgentStats] = useState<Array<{ agent: string; total: number; failed: number; failure_rate: number }>>([])
@@ -76,7 +77,7 @@ export default function CallsDashboardPage() {
       const reportAgentParams = new URLSearchParams({ from, to, groupBy: 'agent' })
       const reportCampaignParams = new URLSearchParams({ from, to, groupBy: 'campaign' })
 
-      const [evoRes, mqlEvoRes, clientsEvoRes, leadEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes] = await Promise.all([
+      const [evoRes, mqlEvoRes, clientsEvoRes, leadEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes, batchTotalsRes] = await Promise.all([
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${evoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${mqlEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${clientsEvoParams}`)),
@@ -88,6 +89,7 @@ export default function CallsDashboardPage() {
         authenticatedFetch(`/api/calls/vo/report?${reportDayParams.toString()}`),
         authenticatedFetch(`/api/calls/vo/report?${reportAgentParams.toString()}`),
         authenticatedFetch(`/api/calls/vo/report?${reportCampaignParams.toString()}`),
+        authenticatedFetch(getApiUrl(`calls/dashboard/batch-totals?${statsParams}`)),
       ])
       if (evoRes.success) setEvolution(evoRes.data)
       if (mqlEvoRes.success) setMqlEvolution(mqlEvoRes.data)
@@ -97,6 +99,7 @@ export default function CallsDashboardPage() {
       if (agentsRes.success) setAgentLeaderboard((agentsRes.data || []).map((a: any) => ({ agent_name: a.agent_name, mqls: a.mqls, win_rate: a.win_rate })))
       if (cityRes.success) setMqlsByCity(cityRes.data || [])
       if (repRes.success) setContactRep(repRes.data)
+      if (batchTotalsRes?.success) setBatchTotalCalls(Number(batchTotalsRes?.data?.total_recipients || 0))
 
       // Process VO: totals and status breakdown (aggregate by campaign groups)
       if (voCampaignRes?.success && Array.isArray(voCampaignRes?.data?.groups)) {
@@ -311,7 +314,7 @@ export default function CallsDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Calls (VO)" value={voTotalCalls} description="Created in range (VO)" />
+        <StatCard title="Total Calls" value={batchTotalCalls} description="Lanzadas en el rango (batch_calls)" />
         <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Total MQLs in range" />
         <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Total clientes en el periodo" />
         <StatCard title="No interesados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Total 'lead' (no interesado)" />

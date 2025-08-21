@@ -825,6 +825,26 @@ export const db = {
     return data || [];
   },
 
+  async getBatchCallsTotalRecipients(
+    workspaceId: number,
+    startDate?: string,
+    endDate?: string
+  ): Promise<number> {
+    let query = supabase
+      .from(TABLES.BATCH_CALLS)
+      .select('total_recipients, created_at')
+      .eq('workspace_id', workspaceId);
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    const total = (data || []).reduce((sum: number, row: any) => sum + (Number(row.total_recipients) || 0), 0);
+    return total;
+  },
+
   async getCallById(workspaceId: number, callId: number) {
     const { data, error } = await supabase
       .from(TABLES.CALLS)

@@ -166,6 +166,23 @@ router.get('/dashboard/stats', requireWorkspaceContext, async (req, res): Promis
   }
 });
 
+// Batch totals: sum of total_recipients in batch_calls within range
+router.get('/dashboard/batch-totals', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const { start_date, end_date } = req.query as Record<string, string>;
+    const total = await db.getBatchCallsTotalRecipients(req.workspaceContext.workspaceId, start_date, end_date);
+    res.json({ success: true, data: { total_recipients: total } });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/dashboard/batch-totals:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Evolution data for calls (supports optional status filter e.g., mql)
 router.get('/dashboard/evolution', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
