@@ -209,6 +209,29 @@ router.get('/dashboard/evolution', requireWorkspaceContext, async (req, res): Pr
   }
 });
 
+// Evolution data for batch calls (sum of total_recipients)
+router.get('/dashboard/batch-evolution', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const { period, start_date, end_date } = req.query as Record<string, string>;
+    const resolvedPeriod = (period === 'monthly' || period === 'yearly') ? period : 'daily';
+    const evo = await db.getBatchCallsEvolution(
+      req.workspaceContext.workspaceId,
+      resolvedPeriod,
+      start_date,
+      end_date
+    );
+    res.json({ success: true, data: evo });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/dashboard/batch-evolution:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Agent leaderboard
 router.get('/dashboard/agents', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
@@ -226,6 +249,27 @@ router.get('/dashboard/agents', requireWorkspaceContext, async (req, res): Promi
     res.json({ success: true, data: result });
   } catch (error: any) {
     console.error('Error fetching agent leaderboard:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Top 5 campaigns by MQL (uses calls.status = 'mql' grouped by campaign_id and resolves name from batch_calls)
+router.get('/dashboard/top-campaigns-by-mql', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const { start_date, end_date, limit } = req.query as Record<string, string>;
+    const result = await db.getTopCampaignsByMql(
+      req.workspaceContext.workspaceId,
+      start_date,
+      end_date,
+      limit ? parseInt(limit, 10) : 5
+    );
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error fetching top campaigns by MQL:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

@@ -845,6 +845,46 @@ export const db = {
     return total;
   },
 
+  async getBatchCallsEvolution(
+    workspaceId: number,
+    period: 'daily' | 'monthly' | 'yearly',
+    startDate?: string,
+    endDate?: string
+  ) {
+    let query = supabase
+      .from(TABLES.BATCH_CALLS)
+      .select('created_at, total_recipients')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: true });
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const evolutionMap: Record<string, number> = {};
+    (data || []).forEach((row: any) => {
+      if (!row.created_at) return;
+      const date = new Date(row.created_at);
+      let key: string;
+      if (period === 'daily') {
+        key = date.toISOString().split('T')[0];
+      } else if (period === 'monthly') {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      } else {
+        key = date.getFullYear().toString();
+      }
+      const count = Number(row.total_recipients) || 0;
+      evolutionMap[key] = (evolutionMap[key] || 0) + count;
+    });
+
+    return Object.entries(evolutionMap)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  },
+
   async getCallById(workspaceId: number, callId: number) {
     const { data, error } = await supabase
       .from(TABLES.CALLS)
@@ -1046,6 +1086,39 @@ export const db = {
     return Object.entries(cityCounts)
       .map(([city, count]) => ({ city, count }))
       .sort((a, b) => b.count - a.count);
+  },
+
+  async getTopCampaignsByMql(
+    workspaceId: number,
+    startDate?: string,
+    endDate?: string,
+    limit: number = 5
+  ) {
+    // Derivar por ahora desde batch_calls: usamos processed_recipients como proxy de resultados,
+    // ya que la tabla calls no tiene campaign_id. Más adelante podremos cruzar con recipients.
+    let query = supabase
+      .from(TABLES.BATCH_CALLS)
+      .select('campaign_id, name, created_at, processed_recipients')
+      .eq('workspace_id', workspaceId)
+      .not('campaign_id', 'is', null);
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const list = (data || []).map((row: any) => ({
+      campaign_id: row.campaign_id as string,
+      campaign_name: (row.name as string) || (row.campaign_id as string),
+      // Proxy: usamos processed_recipients para ranking (MQLs aprox. hasta integrar mapping exacto)
+      mqls: Number(row.processed_recipients) || 0,
+    }));
+
+    return list
+      .sort((a, b) => b.mqls - a.mqls)
+      .slice(0, Math.max(0, limit));
   },
 
   async getContactRepetition(

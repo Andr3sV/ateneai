@@ -42,6 +42,7 @@ export default function CallsDashboardPage() {
   const [clientsEvolution, setClientsEvolution] = useState<EvolutionData[]>([])
   const [agentLeaderboard, setAgentLeaderboard] = useState<{ agent_name: string; mqls: number; win_rate: number }[]>([])
   const [mqlsByCity, setMqlsByCity] = useState<{ city: string; count: number }[]>([])
+  const [topCampaignsByMql, setTopCampaignsByMql] = useState<Array<{ campaign_id: string; campaign_name: string; mqls: number }>>([])
   const [contactRep, setContactRep] = useState<{ avgCallsToMql: number; avgCallsToClient: number; topContacts: { contact_name: string; calls: number }[] } | null>(null)
 
   // Voice Orchestrator metrics
@@ -77,8 +78,8 @@ export default function CallsDashboardPage() {
       const reportAgentParams = new URLSearchParams({ from, to, groupBy: 'agent' })
       const reportCampaignParams = new URLSearchParams({ from, to, groupBy: 'campaign' })
 
-      const [evoRes, mqlEvoRes, clientsEvoRes, leadEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes, batchTotalsRes] = await Promise.all([
-        authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${evoParams}`)),
+      const [evoRes, mqlEvoRes, clientsEvoRes, leadEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes, batchTotalsRes, topCampaignsRes] = await Promise.all([
+        authenticatedFetch(getApiUrl(`calls/dashboard/batch-evolution?${evoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${mqlEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${clientsEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${leadEvoParams}`)),
@@ -90,6 +91,7 @@ export default function CallsDashboardPage() {
         authenticatedFetch(`/api/calls/vo/report?${reportAgentParams.toString()}`),
         authenticatedFetch(`/api/calls/vo/report?${reportCampaignParams.toString()}`),
         authenticatedFetch(getApiUrl(`calls/dashboard/batch-totals?${statsParams}`)),
+        authenticatedFetch(getApiUrl(`calls/dashboard/top-campaigns-by-mql?${statsParams}&limit=5`)),
       ])
       if (evoRes.success) setEvolution(evoRes.data)
       if (mqlEvoRes.success) setMqlEvolution(mqlEvoRes.data)
@@ -99,6 +101,7 @@ export default function CallsDashboardPage() {
       if (agentsRes.success) setAgentLeaderboard((agentsRes.data || []).map((a: any) => ({ agent_name: a.agent_name, mqls: a.mqls, win_rate: a.win_rate })))
       if (cityRes.success) setMqlsByCity(cityRes.data || [])
       if (repRes.success) setContactRep(repRes.data)
+      if (topCampaignsRes?.success) setTopCampaignsByMql(Array.isArray(topCampaignsRes.data) ? topCampaignsRes.data : [])
       if (batchTotalsRes?.success) setBatchTotalCalls(Number(batchTotalsRes?.data?.total_recipients || 0))
 
       // Process VO: totals and status breakdown (aggregate by campaign groups)
@@ -317,12 +320,26 @@ export default function CallsDashboardPage() {
         <StatCard title="Total Calls" value={batchTotalCalls} description="Lanzadas en el rango (batch_calls)" />
         <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Total MQLs in range" />
         <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Total clientes en el periodo" />
-        <StatCard title="No interesados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Total 'lead' (no interesado)" />
-        <StatCard title="Lead → Client %" value={(() => {
-          const leads = stats?.statusBreakdown?.['lead'] ?? 0
+        <StatCard title="Mal cualificados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Total 'lead'" />
+      </div>
+
+      {/* Conversion boxes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard title="Calls → MQL %" value={(() => {
+          const calls = batchTotalCalls || 0
+          const mqls = stats?.statusBreakdown?.['mql'] ?? 0
+          return calls > 0 ? `${Math.round((mqls / calls) * 100)}%` : '0%'
+        })()} description="Dentro del rango" />
+        <StatCard title="Calls → Client %" value={(() => {
+          const calls = batchTotalCalls || 0
           const clients = stats?.statusBreakdown?.['client'] ?? 0
-          return leads > 0 ? `${Math.round((clients / leads) * 100)}%` : '0%'
-        })()} description="Conversion within period" />
+          return calls > 0 ? `${Math.round((clients / calls) * 100)}%` : '0%'
+        })()} description="Dentro del rango" />
+        <StatCard title="MQL → Client %" value={(() => {
+          const mqls = stats?.statusBreakdown?.['mql'] ?? 0
+          const clients = stats?.statusBreakdown?.['client'] ?? 0
+          return mqls > 0 ? `${Math.round((clients / mqls) * 100)}%` : '0%'
+        })()} description="Dentro del rango" />
       </div>
 
       {/* Desglose por estado (VO) */}
@@ -498,67 +515,59 @@ export default function CallsDashboardPage() {
         </div>
       </div>
 
-      {/* VO Top agents (full width) */}
-      {voAgentStats.length > 0 && (
+      {/* Top 5 agentes por MQL (100% width) */}
+      {agentLeaderboard.length > 0 && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Top agentes por volumen y tasa de fallo (VO)</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Top 5 agentes por MQL</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={voAgentStats} layout="vertical">
+              <BarChart data={[...agentLeaderboard].sort((a,b)=>b.mqls-a.mqls).slice(0,5)} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
-                <YAxis type="category" dataKey="agent" width={120} tickFormatter={truncateLabel} />
+                <YAxis type="category" dataKey="agent_name" width={150} tickFormatter={truncateLabel} />
                 <Tooltip />
-                <Legend />
-                <Bar dataKey="total" name="Total" fill="#3b82f6" />
-                <Bar dataKey="failure_rate" name="Failure %" fill="#ef4444" />
+                <Bar dataKey="mqls" name="MQLs" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       )}
 
-      {/* VO Distribution by campaign (full width) */}
-      {voCampaignStats.length > 0 && (
+      {/* Top 5 campañas por MQL (100% width) */}
+      {topCampaignsByMql.length > 0 && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Distribución por campaña (VO)</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Top 5 campañas por MQL</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={voCampaignStats} layout="vertical" barCategoryGap="10%">
+              <BarChart data={topCampaignsByMql.slice(0,5)} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
-                <YAxis type="category" dataKey="campaign" width={120} tickFormatter={truncateLabel} />
+                <YAxis type="category" dataKey="campaign_name" width={180} tickFormatter={truncateLabel} />
                 <Tooltip />
-                <Legend />
-                <Bar dataKey="total" name="Total" fill="#10b981" barSize={22} />
-                <Bar dataKey="completed" name="Completed" fill="#059669" barSize={22} />
-                <Bar dataKey="failed" name="Failed" fill="#dc2626" barSize={22} />
+                <Bar dataKey="mqls" name="MQLs" fill="#10b981" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       )}
 
-      {/* Contact repetition */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900">Repetición por contacto</h3>
-        <p className="text-sm text-gray-500 mb-4">¿Cuántas llamadas promedio hasta ser MQL/Cliente?</p>
-        <div className="flex flex-wrap gap-6">
-          <StatCard title="Promedio llamadas → MQL" value={contactRep?.avgCallsToMql ?? 0} description="Promedio global" />
-          <StatCard title="Promedio llamadas → Cliente" value={contactRep?.avgCallsToClient ?? 0} description="Promedio global" />
+      {/* Top ciudades por MQL (100% width) */}
+      {mqlsByCity.length > 0 && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Top ciudades por MQL</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[...mqlsByCity].sort((a,b)=>b.count-a.count)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="city" width={160} tickFormatter={truncateLabel} />
+                <Tooltip />
+                <Bar dataKey="count" name="MQLs" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="mt-6 h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={(contactRep?.topContacts || []).map(c => ({ name: c.contact_name, calls: c.calls }))}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={60} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="calls" name="Calls" fill="#f59e0b" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      )}
     </div>
   )
 }
