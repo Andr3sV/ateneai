@@ -35,6 +35,7 @@ export default function CallsDashboardPage() {
 
   const [evolution, setEvolution] = useState<EvolutionData[]>([])
   const [mqlEvolution, setMqlEvolution] = useState<EvolutionData[]>([])
+  const [leadEvolution, setLeadEvolution] = useState<EvolutionData[]>([])
   const [stats, setStats] = useState<CallsStats | null>(null)
   const [loading, setLoading] = useState(false)
   const [mqlChartPeriod, setMqlChartPeriod] = useState<'daily' | 'monthly' | 'yearly'>('daily')
@@ -69,15 +70,17 @@ export default function CallsDashboardPage() {
       const evoParams = new URLSearchParams({ period: chartPeriod, start_date, end_date })
       const mqlEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'mql' })
       const clientsEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'client' })
+      const leadEvoParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date, status: 'lead' })
       const statsParams = new URLSearchParams({ start_date, end_date })
       const reportDayParams = new URLSearchParams({ from, to, groupBy: 'day' })
       const reportAgentParams = new URLSearchParams({ from, to, groupBy: 'agent' })
       const reportCampaignParams = new URLSearchParams({ from, to, groupBy: 'campaign' })
 
-      const [evoRes, mqlEvoRes, clientsEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes] = await Promise.all([
+      const [evoRes, mqlEvoRes, clientsEvoRes, leadEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes] = await Promise.all([
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${evoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${mqlEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${clientsEvoParams}`)),
+        authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${leadEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/stats?${statsParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/agents?${statsParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/mqls-by-city?${statsParams}`)),
@@ -89,6 +92,7 @@ export default function CallsDashboardPage() {
       if (evoRes.success) setEvolution(evoRes.data)
       if (mqlEvoRes.success) setMqlEvolution(mqlEvoRes.data)
       if (clientsEvoRes.success) setClientsEvolution(clientsEvoRes.data)
+      if (leadEvoRes.success) setLeadEvolution(leadEvoRes.data)
       if (statsRes.success) setStats(statsRes.data)
       if (agentsRes.success) setAgentLeaderboard((agentsRes.data || []).map((a: any) => ({ agent_name: a.agent_name, mqls: a.mqls, win_rate: a.win_rate })))
       if (cityRes.success) setMqlsByCity(cityRes.data || [])
@@ -98,14 +102,13 @@ export default function CallsDashboardPage() {
       if (voCampaignRes?.success && Array.isArray(voCampaignRes?.data?.groups)) {
         const groups = voCampaignRes.data.groups as Array<Record<string, any>>
         const agg: Record<string, number> = { queued: 0, in_progress: 0, completed: 0, failed: 0 }
-        let totalCalls = Number(voCampaignRes?.data?.totals?.count || 0)
+        const totalCalls = Number(voCampaignRes?.data?.totals?.count || 0)
         for (const g of groups) {
           for (const key of Object.keys(g)) {
             if (['key', 'campaign', 'campaignId'].includes(key)) continue
             const val = g[key]
-            if (typeof val === 'number') {
-              totalCalls += val
-              if (key in agg) agg[key] += val
+            if (typeof val === 'number' && (key in agg)) {
+              agg[key] += val
             }
           }
         }
@@ -311,6 +314,7 @@ export default function CallsDashboardPage() {
         <StatCard title="Total Calls (VO)" value={voTotalCalls} description="Created in range (VO)" />
         <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Total MQLs in range" />
         <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Total clientes en el periodo" />
+        <StatCard title="No interesados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Total 'lead' (no interesado)" />
         <StatCard title="Lead → Client %" value={(() => {
           const leads = stats?.statusBreakdown?.['lead'] ?? 0
           const clients = stats?.statusBreakdown?.['client'] ?? 0
@@ -451,7 +455,7 @@ export default function CallsDashboardPage() {
             <div>
               <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Evolución de MQLs y Clientes
+                Evolución de MQLs, Clientes y No interesados
               </h3>
               <p className="text-sm text-gray-500">Tendencia con media móvil</p>
             </div>
@@ -484,6 +488,7 @@ export default function CallsDashboardPage() {
                 />
                 <Line type="monotone" dataKey="count" name="MQLs" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
                 <Line type="monotone" dataKey="count" name="Clientes" data={clientsEvolution} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="count" name="No interesados" data={leadEvolution} stroke="#6b7280" strokeWidth={2} dot={{ r: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
