@@ -950,7 +950,7 @@ export const db = {
   ) {
     let query = supabase
       .from(TABLES.CALLS)
-      .select('status, interest, type, created_at')
+      .select('status, interest, type, created_at, services_count')
       .eq('workspace_id', workspaceId);
 
     if (startDate && endDate) {
@@ -976,12 +976,30 @@ export const db = {
       return acc;
     }, {});
 
+    // New: total services sold = sum of services_count for client status
+    const servicesSold = (data || []).reduce((sum: number, row: any) => {
+      const st = (row.status || '').toLowerCase();
+      const count = Number(row.services_count) || 0;
+      return sum + (st === 'client' ? count : 0);
+    }, 0);
+
+    // New: counts for conversion metrics to services
+    const servicesCalls = (data || []).reduce((acc: number, row: any) => acc + ((Number(row.services_count) || 0) > 0 ? 1 : 0), 0);
+    const mqlServices = (data || []).reduce((acc: number, row: any) => {
+      const st = (row.status || '').toLowerCase();
+      const has = (Number(row.services_count) || 0) > 0;
+      return acc + (st === 'mql' && has ? 1 : 0);
+    }, 0);
+
     return {
       total,
       outbound,
       inbound,
       statusBreakdown,
       interestBreakdown,
+      servicesSold,
+      servicesCalls,
+      mqlServices,
     };
   },
 
@@ -1022,6 +1040,49 @@ export const db = {
         key = date.getFullYear().toString();
       }
       evolutionMap[key] = (evolutionMap[key] || 0) + 1;
+    });
+
+    return Object.entries(evolutionMap)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  },
+
+  async getServicesEvolution(
+    workspaceId: number,
+    period: 'daily' | 'monthly' | 'yearly',
+    startDate?: string,
+    endDate?: string
+  ) {
+    let query = supabase
+      .from(TABLES.CALLS)
+      .select('created_at, status, services_count')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: true });
+
+    if (startDate && endDate) {
+      query = query.gte('created_at', startDate).lte('created_at', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const evolutionMap: { [key: string]: number } = {};
+    (data || []).forEach((row: any) => {
+      if (!row.created_at) return;
+      const s = (row.status || '').toLowerCase();
+      const count = Number(row.services_count) || 0;
+      if (s !== 'client' || count <= 0) return;
+
+      const date = new Date(row.created_at);
+      let key: string;
+      if (period === 'daily') {
+        key = date.toISOString().split('T')[0];
+      } else if (period === 'monthly') {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      } else {
+        key = date.getFullYear().toString();
+      }
+      evolutionMap[key] = (evolutionMap[key] || 0) + count;
     });
 
     return Object.entries(evolutionMap)

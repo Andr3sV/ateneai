@@ -133,8 +133,8 @@ router.put('/:id(\\d+)/services-count', requireWorkspaceContext, async (req, res
     }
     const body = req.body as { services_count?: number }
     const n = Number(body.services_count)
-    if (!Number.isFinite(n) || n < 1 || n > 20) {
-      res.status(400).json({ success: false, error: 'services_count must be between 1 and 20' })
+    if (!Number.isFinite(n) || n < 0 || n > 20) {
+      res.status(400).json({ success: false, error: 'services_count must be between 0 and 20' })
       return;
     }
     const updated = await db.updateCallServicesCount(req.workspaceContext.workspaceId, id, n)
@@ -234,6 +234,29 @@ router.get('/dashboard/evolution', requireWorkspaceContext, async (req, res): Pr
     res.json({ success: true, data: evo });
   } catch (error: any) {
     console.error('❌ Error in GET /calls/dashboard/evolution:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Services sold evolution
+router.get('/dashboard/services-evolution', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const { period, start_date, end_date } = req.query as Record<string, string>;
+    const resolvedPeriod = (period === 'monthly' || period === 'yearly') ? period : 'daily';
+    const evo = await db.getServicesEvolution(
+      req.workspaceContext.workspaceId,
+      resolvedPeriod,
+      start_date,
+      end_date
+    );
+    res.json({ success: true, data: evo });
+  } catch (error: any) {
+    console.error('❌ Error in GET /calls/dashboard/services-evolution:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

@@ -20,6 +20,9 @@ interface CallsStats {
   inbound: number
   statusBreakdown: Record<string, number>
   interestBreakdown: Record<string, number>
+  servicesSold?: number
+  servicesCalls?: number
+  mqlServices?: number
 }
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
@@ -50,6 +53,7 @@ export default function CallsDashboardPage() {
   const [batchTotalCalls, setBatchTotalCalls] = useState<number>(0)
   const [voStatusBreakdown, setVoStatusBreakdown] = useState<Array<{ status: string; count: number }>>([])
   const [voDailyStates, setVoDailyStates] = useState<Array<{ date: string; queued?: number; in_progress?: number; completed?: number; failed?: number }>>([])
+  const [servicesEvolution, setServicesEvolution] = useState<EvolutionData[]>([])
   const [voAgentStats, setVoAgentStats] = useState<Array<{ agent: string; total: number; failed: number; failure_rate: number }>>([])
   const [voCampaignStats, setVoCampaignStats] = useState<Array<{ campaign: string; total: number; completed: number; failed: number }>>([])
 
@@ -93,6 +97,13 @@ export default function CallsDashboardPage() {
         authenticatedFetch(getApiUrl(`calls/dashboard/batch-totals?${statsParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/top-campaigns-by-mql?${statsParams}&limit=5`)),
       ])
+      // Services evolution
+      try {
+        const evoServicesParams = new URLSearchParams({ period: mqlChartPeriod, start_date, end_date })
+        const svcRes = await authenticatedFetch(getApiUrl(`calls/dashboard/services-evolution?${evoServicesParams}`))
+        if (svcRes?.success) setServicesEvolution(svcRes.data || [])
+        else setServicesEvolution([])
+      } catch { setServicesEvolution([]) }
       if (evoRes.success) setEvolution(evoRes.data)
       if (mqlEvoRes.success) setMqlEvolution(mqlEvoRes.data)
       if (clientsEvoRes.success) setClientsEvolution(clientsEvoRes.data)
@@ -316,15 +327,16 @@ export default function CallsDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Calls" value={batchTotalCalls} description="Lanzadas en el rango (batch_calls)" />
-        <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Total MQLs in range" />
-        <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Total clientes en el periodo" />
-        <StatCard title="Mal cualificados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Total 'lead'" />
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <StatCard title="Total Calls" value={batchTotalCalls} description="Lanzadas" />
+        <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Dentro del rango" />
+        <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Dentro del rango" />
+        <StatCard title="Servicios vendidos" value={stats?.servicesSold ?? 0} description="Dentro del rango" />
+        <StatCard title="Mal cualificados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Dentro del rango" />
       </div>
 
       {/* Conversion boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <StatCard title="Calls → MQL %" value={(() => {
           const calls = batchTotalCalls || 0
           const mqls = stats?.statusBreakdown?.['mql'] ?? 0
@@ -339,6 +351,16 @@ export default function CallsDashboardPage() {
           const mqls = stats?.statusBreakdown?.['mql'] ?? 0
           const clients = stats?.statusBreakdown?.['client'] ?? 0
           return mqls > 0 ? `${Math.round((clients / mqls) * 100)}%` : '0%'
+        })()} description="Dentro del rango" />
+        <StatCard title="Calls → Services %" value={(() => {
+          const callsLaunched = batchTotalCalls || 0
+          const services = stats?.servicesSold ?? 0
+          return callsLaunched > 0 ? `${Math.round((services / callsLaunched) * 100)}%` : '0%'
+        })()} description="Dentro del rango" />
+        <StatCard title="MQL → Services %" value={(() => {
+          const mqls = stats?.statusBreakdown?.['mql'] ?? 0
+          const services = stats?.servicesSold ?? 0
+          return mqls > 0 ? `${Math.round((services / mqls) * 100)}%` : '0%'
         })()} description="Dentro del rango" />
       </div>
 
@@ -361,27 +383,26 @@ export default function CallsDashboardPage() {
         </div>
       )}
 
-      {/* Evolución diaria de estados (VO) */}
-      {voDailyStates.length > 0 && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Evolución diaria de estados (Voice Orchestrator)</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={voDailyStates}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="queued" name="Queued" stroke="#94a3b8" dot={false} />
-                <Line type="monotone" dataKey="in_progress" name="In progress" stroke="#f59e0b" dot={false} />
-                <Line type="monotone" dataKey="completed" name="Completed" stroke="#10b981" dot={false} />
-                <Line type="monotone" dataKey="failed" name="Failed" stroke="#ef4444" dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Evolución de servicios vendidos */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Evolución de servicios vendidos</h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={servicesEvolution}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="date" 
+                fontSize={12}
+                tickFormatter={(value) => formatTick(String(value), mqlChartPeriod)}
+              />
+              <YAxis fontSize={12} />
+              <Tooltip labelFormatter={(value) => formatLabel(String(value), mqlChartPeriod)} />
+              <Legend />
+              <Line type="monotone" dataKey="count" name="Servicios" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
-      )}
+      </div>
 
       {/* Chart and Pie Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

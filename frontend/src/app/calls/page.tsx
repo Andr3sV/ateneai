@@ -308,6 +308,24 @@ export default function CallsPage() {
     )
   }
 
+  const ServicesDropdown = ({ value, onChange }: { value: number | undefined; onChange: (v: number) => void }) => {
+    const label = String(typeof value === 'number' && value >= 0 ? value : 0)
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Badge className={`bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer`}>{label}</Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+          {[...Array.from({ length: 21 }, (_, i) => i)].map((n) => (
+            <DropdownMenuItem key={n} onClick={() => onChange(n)}>
+              <span className="text-gray-700">{n}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   const getInterestBadge = (interest: CallItem['interest']) => {
     if (!interest) return <span className="text-gray-400">-</span>
     const text = interest.charAt(0).toUpperCase() + interest.slice(1)
@@ -472,7 +490,6 @@ export default function CallsPage() {
                     To
                   </div>
                 </TableHead>
-                <TableHead className="text-left font-semibold text-gray-900">Servicios</TableHead>
                 <TableHead className="text-left font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
@@ -485,6 +502,7 @@ export default function CallsPage() {
                     Status
                   </div>
                 </TableHead>
+                <TableHead className="text-left font-semibold text-gray-900">Servicios</TableHead>
                 <TableHead className="text-left font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <TagIcon className="h-4 w-4" />
@@ -529,31 +547,6 @@ export default function CallsPage() {
                         <span>{c.phone_to || '-'}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
-                      <Select defaultValue={String((c as any).services_count || 1)} onValueChange={async (val) => {
-                        const n = Number(val)
-                        if (!Number.isFinite(n)) return
-                        try {
-                          await authenticatedFetch(getApiUrl(`calls/${c.id}/services-count`), {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ services_count: n })
-                          })
-                          setCalls(prev => prev.map(row => row.id === c.id ? ({ ...row, services_count: n } as any) : row))
-                        } catch (err) {
-                          console.error('Failed updating services_count', err)
-                        }
-                      }}>
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
-                            <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
                     <TableCell className="py-4">
                       <span className="text-gray-700">{c.agent?.name || '-'}</span>
                     </TableCell>
@@ -571,6 +564,23 @@ export default function CallsPage() {
                             setCalls((prev) => prev.map((row) => row.id === c.id ? { ...row, status: next } : row))
                           } catch (e) {
                             console.error('Failed updating call status', e)
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                      <ServicesDropdown
+                        value={(c as any).services_count as number | undefined}
+                        onChange={async (n: number) => {
+                          try {
+                            await authenticatedFetch(getApiUrl(`calls/${c.id}/services-count`), {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ services_count: n })
+                            })
+                            setCalls(prev => prev.map(row => row.id === c.id ? ({ ...row, services_count: n } as any) : row))
+                          } catch (err) {
+                            console.error('Failed updating services_count', err)
                           }
                         }}
                       />
