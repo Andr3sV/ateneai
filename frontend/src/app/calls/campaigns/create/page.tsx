@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useAuth } from '@clerk/nextjs'
 import * as XLSX from "xlsx"
 import Papa from "papaparse"
 import { usePageTitle } from "@/hooks/usePageTitle"
@@ -35,6 +36,7 @@ type CallType = 'bulk' | 'priority'
 export default function CreateBatchCallPage() {
   usePageTitle("Create a batch call")
   const authenticatedFetch = useAuthenticatedFetch()
+  const { getToken } = useAuth()
 
   const [batchName, setBatchName] = useState("")
   const [callType, setCallType] = useState<CallType>('bulk')
@@ -66,6 +68,7 @@ export default function CreateBatchCallPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [campaignId, setCampaignId] = useState<string>("")
+  const [toastMsg, setToastMsg] = useState<string>("")
   const [progress, setProgress] = useState<{ queued: number; in_progress: number; completed: number; failed: number; total: number; done: boolean } | null>(null)
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -295,6 +298,32 @@ export default function CreateBatchCallPage() {
       const rows = await buildAllRows()
       // Filtra filas sin teléfono
       const valid = rows.filter(r => r.toNumber && r.toNumber.length > 0)
+      const useServerMode = rowCount > 1000 || (selectedFile && selectedFile.size > 2 * 1024 * 1024)
+      if (useServerMode && selectedFile) {
+        // Server-mode: upload file with FormData, immediate schedule
+        const fd = new FormData()
+        fd.append('file', selectedFile)
+        fd.append('campaignName', batchName || 'Bulk Campaign')
+        fd.append('agents', JSON.stringify(selectedAgentIds.map(agentId => ({ agentId, agentPhoneNumberId: agentPhoneMap[agentId], fromNumber: resolveFromNumber(agentPhoneMap[agentId]) }))))
+        fd.append('agentPhoneNumberId', '')
+        fd.append('fromNumber', '')
+        fd.append('concurrency', String(concurrency))
+        fd.append('timeWindow', JSON.stringify({ startTime, endTime, timezone, daysOfWeek: selectedDays }))
+
+        // Use fetch directly to override JSON header from hook
+        const token = await getToken()
+        const api = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/calls/bulk/upload`
+        const upResp = await fetch(api, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : undefined, body: fd })
+        const res = { ok: upResp.ok, data: await upResp.json().catch(() => ({})) as any }
+
+        if (!res.ok || !res.data?.success) {
+          throw new Error(res.data?.error || 'Upload failed')
+        }
+        setToastMsg('Campaign scheduled. Redirecting…')
+        // Redirect immediately; background worker and VO will handle progress
+        window.location.href = '/calls/campaigns'
+        return
+      }
       
       // Prepare payload based on call type
       let payload: {

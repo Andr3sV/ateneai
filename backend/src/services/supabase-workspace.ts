@@ -761,6 +761,18 @@ export const db = {
     return data;
   },
 
+  async updateCallServicesCount(workspaceId: number, callId: number, servicesCount: number) {
+    const { data, error } = await supabase
+      .from(TABLES.CALLS)
+      .update({ services_count: servicesCount } as any)
+      .eq('workspace_id', workspaceId)
+      .eq('id', callId)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   // ================================================
   // BATCH CALLS (workspace-scoped)
   // ================================================
@@ -823,6 +835,21 @@ export const db = {
       .limit(options?.limit ?? 50);
     if (error) throw error;
     return data || [];
+  },
+
+  async updateBatchCallByCampaignId(
+    workspaceId: number,
+    campaignId: string,
+    updates: Partial<{ status: string; total_recipients: number; processed_recipients: number; metadata: Record<string, any> }>
+  ) {
+    const { data, error } = await supabase
+      .from(TABLES.BATCH_CALLS)
+      .update(updates as any)
+      .eq('workspace_id', workspaceId)
+      .eq('campaign_id', campaignId)
+      .select('*');
+    if (error) throw error;
+    return data;
   },
 
   async getBatchCallsTotalRecipients(

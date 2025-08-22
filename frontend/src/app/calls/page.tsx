@@ -327,7 +327,8 @@ export default function CallsPage() {
       {/* Filters header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          <Input placeholder="From" value={fromFilter} onChange={(e) => setFromFilter(e.target.value)} className="w-40" />
+          {/* Removed From filter per request */}
+          {/* <Input placeholder="From" value={fromFilter} onChange={(e) => setFromFilter(e.target.value)} className="w-40" /> */}
           <Input placeholder="To" value={toFilter} onChange={(e) => setToFilter(e.target.value)} className="w-40" />
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -468,15 +469,10 @@ export default function CallsPage() {
                 <TableHead className="text-left font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />
-                    From
-                  </div>
-                </TableHead>
-                <TableHead className="text-left font-semibold text-gray-900">
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
                     To
                   </div>
                 </TableHead>
+                <TableHead className="text-left font-semibold text-gray-900">Servicios</TableHead>
                 <TableHead className="text-left font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
@@ -530,14 +526,33 @@ export default function CallsPage() {
                     <TableCell className="py-4">
                       <div className="flex items-center gap-2 text-gray-600">
                         <Phone className="h-4 w-4 text-gray-400" />
-                        <span>{c.phone_from || '-'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Phone className="h-4 w-4 text-gray-400" />
                         <span>{c.phone_to || '-'}</span>
                       </div>
+                    </TableCell>
+                    <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                      <Select defaultValue={String((c as any).services_count || 1)} onValueChange={async (val) => {
+                        const n = Number(val)
+                        if (!Number.isFinite(n)) return
+                        try {
+                          await authenticatedFetch(getApiUrl(`calls/${c.id}/services-count`), {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ services_count: n })
+                          })
+                          setCalls(prev => prev.map(row => row.id === c.id ? ({ ...row, services_count: n } as any) : row))
+                        } catch (err) {
+                          console.error('Failed updating services_count', err)
+                        }
+                      }}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
+                            <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="py-4">
                       <span className="text-gray-700">{c.agent?.name || '-'}</span>
