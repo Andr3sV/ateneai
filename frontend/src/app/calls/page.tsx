@@ -113,6 +113,7 @@ export default function CallsPage() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const [celebrateEnabled, setCelebrateEnabled] = useState<boolean>(true)
   const [scheduledByCall, setScheduledByCall] = useState<Record<number, string | null>>({})
+  const [scheduledLoadedSignature, setScheduledLoadedSignature] = useState<string>("")
 
   // Detect desktop to avoid double render issues with CSS-only breakpoints
   const [isDesktop, setIsDesktop] = useState<boolean>(false)
@@ -231,62 +232,70 @@ export default function CallsPage() {
   useEffect(() => {
     let cancelled = false
     async function loadScheduled() {
-      const entries = await Promise.all(
-        (calls || []).map(async (c) => {
-          if (!c.contact?.id) return [c.id, null] as const
-          if (scheduledByCall[c.id] !== undefined) return [c.id, scheduledByCall[c.id]] as const
-          const contactId = c.contact.id
-          try {
-            // Primary: server by-contact
-            const res = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
-            let due: string | null = null
-            if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-              due = res.data[0]?.due_date || null
-            } else {
-              // Fallback: fetch all and filter client-side
-              try {
-                const all = await authenticatedFetch(getApiUrl('tasks?'), { muteErrors: true } as any)
-                const list = Array.isArray(all?.data) ? all.data : []
-                const filtered = list.filter((row: any) => Array.isArray(row.contacts) && row.contacts.some((ct: any) => String(ct?.id) === String(contactId)))
-                due = filtered.length > 0 ? (filtered[0]?.due_date || null) : null
-              } catch {
-                due = null
+      const visible = (calls || [])
+      if (visible.length === 0) return
+      // Build a stable signature to avoid redundant work
+      const sig = visible.map(c => `${c.id}:${c.contact?.id ?? 'x'}`).join(',')
+      if (sig === scheduledLoadedSignature) return
+
+      // Prepare set of contactIds to resolve
+      const contactIds = Array.from(new Set(visible.map(c => c.contact?.id).filter(Boolean))) as number[]
+      const current: Record<number, string | null> = { ...scheduledByCall }
+
+      // Try a single show_all tasks fetch to map all in one request
+      let mappedAny = false
+      try {
+        const params = new URLSearchParams({ page: '1', limit: '1000', show_all: 'true' })
+        const all = await authenticatedFetch(getApiUrl(`tasks?${params.toString()}`), { muteErrors: true } as any)
+        const list: any[] = Array.isArray(all?.data) ? all.data : []
+        if (list.length > 0) {
+          // Map earliest due_date per contact id
+          const bestByContact = new Map<string, string>()
+          for (const t of list) {
+            const due = t?.due_date || null
+            const arr = Array.isArray(t?.contacts) ? t.contacts : []
+            for (const ct of arr) {
+              const key = String(ct?.id)
+              if (!due) continue
+              const prev = bestByContact.get(key)
+              if (!prev || new Date(due) < new Date(prev)) {
+                bestByContact.set(key, due)
               }
             }
-            return [c.id, due] as const
-          } catch {
-            return [c.id, null] as const
           }
-        })
-      )
-      if (cancelled) return
-      const merged: Record<number, string | null> = { ...scheduledByCall }
-      let needRetry = false
-      for (const [id, due] of entries) {
-        merged[id] = due
-        if (!due) needRetry = true
-      }
-      setScheduledByCall(merged)
+          for (const c of visible) {
+            const key = c.contact?.id != null ? String(c.contact.id) : ''
+            if (!key) continue
+            if (bestByContact.has(key)) {
+              current[c.id] = bestByContact.get(key) || null
+              mappedAny = true
+            }
+          }
+        }
+      } catch { /* ignore */ }
 
-      // Simple backoff retry once if any missing
-      if (needRetry) {
-        setTimeout(async () => {
-          if (cancelled) return
-          const retry: Record<number, string | null> = { ...merged }
-          for (const c of calls) {
-            if (!c.contact?.id || retry[c.id]) continue
-            try {
-              const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${c.contact.id}`), { muteErrors: true } as any)
-              if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
-                retry[c.id] = t.data[0]?.due_date || null
-              }
-            } catch { /* ignore */ }
-          }
-          if (!cancelled) setScheduledByCall(retry)
-        }, 900)
+      // For any missing, try lightweight by-contact but capped to avoid bursts (max 5)
+      const missing = visible.filter(c => current[c.id] === undefined || current[c.id] === null).slice(0, 5)
+      if (missing.length > 0) {
+        const results = await Promise.all(missing.map(async (c) => {
+          if (!c.contact?.id) return [c.id, null] as const
+          try {
+            const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${c.contact.id}`), { muteErrors: true } as any)
+            if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
+              return [c.id, t.data[0]?.due_date || null] as const
+            }
+            return [c.id, null] as const
+          } catch { return [c.id, null] as const }
+        }))
+        for (const [id, due] of results) current[id] = due
+      }
+
+      if (!cancelled) {
+        setScheduledByCall(current)
+        setScheduledLoadedSignature(sig)
       }
     }
-    if ((calls || []).length > 0) loadScheduled()
+    loadScheduled()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calls, pagination.page])
@@ -336,16 +345,14 @@ export default function CallsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
 
-  // Silent background polling to auto-refresh without flicker
+  // Silent background polling to auto-refresh without flicker (visibility-aware)
   useEffect(() => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-    pollTimerRef.current = setInterval(() => {
-      fetchCalls(pagination.page, true)
-    }, 10000)
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-    }
-    // Include relevant dependencies so polling respects current page/filters
+    const isVisible = () => typeof document !== 'undefined' ? document.visibilityState === 'visible' : true
+    const intervalMs = 20000
+    const tick = () => { if (isVisible()) fetchCalls(pagination.page, true) }
+    const id = setInterval(tick, intervalMs)
+    return () => { clearInterval(id) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
 
   const applyQuickDateRange = (days: number) => {
