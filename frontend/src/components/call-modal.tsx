@@ -11,6 +11,7 @@ import { TaskModal } from '@/components/task-modal'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { getApiUrl } from '@/config/features'
 import { X, Share2, Check } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 
 type CallDetail = {
   id: number
@@ -46,6 +47,8 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false)
   const [existingTask, setExistingTask] = useState<any | null>(null)
   const [members, setMembers] = useState<{ id: number; name: string }[]>([])
+  const [notes, setNotes] = useState<Array<{ id: number; content: string; created_at: string }>>([])
+  const [noteText, setNoteText] = useState<string>('')
   // Force v2 endpoints for tasks to avoid env flag mismatch in production
   const apiV2 = (path: string) => `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v2/${path}`
   
@@ -93,6 +96,21 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
     }
     fetchMembers()
   }, [open, authenticatedFetch])
+
+  // Load notes for this call
+  useEffect(() => {
+    async function loadNotes() {
+      if (!open || !callId) return
+      try {
+        const res = await authenticatedFetch(apiV2(`notes/by-call/${callId}`), { muteErrors: true } as any)
+        if (res?.success && Array.isArray(res.data)) setNotes(res.data)
+        else setNotes([])
+      } catch {
+        setNotes([])
+      }
+    }
+    loadNotes()
+  }, [open, callId])
 
   const assignedUserName = (() => {
     const u = call?.assigned_user
@@ -201,64 +219,60 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                 <SheetTitle className="text-lg font-semibold">
                   {call?.contact?.name || 'Call details'}
                 </SheetTitle>
-                <SheetDescription className="text-left">
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                    {call?.contact?.phone && <span>📱 {call.contact.phone}</span>}
-                    {call?.agent?.name && <span>• 👤 {call.agent.name}</span>}
-                    {call?.type && <span>• ☎️ {call.type === 'inbound' ? 'Inbound' : 'Outbound'}</span>}
-                    {call?.city && <span>• 🏙️ {call.city}</span>}
-                      {typeof call?.duration === 'number' && (
-                        <span>• ⏱️ {Math.floor((call.duration || 0) / 60)}m {Math.floor((call.duration || 0) % 60)}s</span>
-                      )}
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <StatusDropdown
-                      value={call?.status || null}
-                      onChange={async (next) => {
-                        if (!call) return
-                        try {
-                          await authenticatedFetch(getApiUrl(`calls/${call.id}/status`), {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ status: next }),
-                          })
-                          setCall({ ...call, status: next })
-                        } catch (e) {
-                          console.error('Failed updating call status', e)
-                        }
-                      }}
-                    />
-                    {renderInterestBadge(call?.interest || null)}
-                    {/* Assignee dropdown - only for admin/owner */}
-                    {(role !== 'member' && role !== 'viewer') ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Badge className="bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200">{assignedUserName}</Badge>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => assignToUser(null)}>Unassigned</DropdownMenuItem>
-                          {members.map(m => (
-                            <DropdownMenuItem key={m.id} onClick={() => assignToUser(m.id)}>
-                              {m.name}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <Badge className="bg-blue-100 text-blue-800 opacity-60" title="Member/Viewer cannot change assignee">
-                        {assignedUserName}
-                      </Badge>
-                    )}
-                    <Badge
-                      className="bg-black text-white cursor-pointer hover:bg-neutral-900"
-                      onClick={(e) => { e.stopPropagation(); setTaskModalOpen(true) }}
-                    >
-                      {existingTask
-                        ? <>Llamada agendada {existingTask?.due_date ? new Date(existingTask.due_date).toLocaleString() : ''}</>
-                        : <>Agendar llamada</>}
-                    </Badge>
-                  </div>
+                <SheetDescription className="text-left text-muted-foreground text-sm">
+                  {call?.contact?.phone && `📱 ${call.contact.phone}`}
+                  {call?.agent?.name && ` • 👤 ${call.agent.name}`}
+                  {call?.type && ` • ☎️ ${call.type === 'inbound' ? 'Inbound' : 'Outbound'}`}
+                  {call?.city && ` • 🏙️ ${call.city}`}
+                  {typeof call?.duration === 'number' && ` • ⏱️ ${Math.floor((call.duration || 0) / 60)}m ${Math.floor((call.duration || 0) % 60)}s`}
                 </SheetDescription>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <StatusDropdown
+                    value={call?.status || null}
+                    onChange={async (next) => {
+                      if (!call) return
+                      try {
+                        await authenticatedFetch(getApiUrl(`calls/${call.id}/status`), {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: next }),
+                        })
+                        setCall({ ...call, status: next })
+                      } catch (e) {
+                        console.error('Failed updating call status', e)
+                      }
+                    }}
+                  />
+                  {renderInterestBadge(call?.interest || null)}
+                  {/* Assignee dropdown - only for admin/owner */}
+                  {(role !== 'member' && role !== 'viewer') ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Badge className="bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200">{assignedUserName}</Badge>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => assignToUser(null)}>Unassigned</DropdownMenuItem>
+                        {members.map(m => (
+                          <DropdownMenuItem key={m.id} onClick={() => assignToUser(m.id)}>
+                            {m.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Badge className="bg-blue-100 text-blue-800 opacity-60" title="Member/Viewer cannot change assignee">
+                      {assignedUserName}
+                    </Badge>
+                  )}
+                  <Badge
+                    className="bg-black text-white cursor-pointer hover:bg-neutral-900"
+                    onClick={(e) => { e.stopPropagation(); setTaskModalOpen(true) }}
+                  >
+                    {existingTask
+                      ? <>Llamada agendada {existingTask?.due_date ? new Date(existingTask.due_date).toLocaleString() : ''}</>
+                      : <>Agendar llamada</>}
+                  </Badge>
+                </div>
               </div>
               <div className="flex items-center gap-1">
                 <Button
@@ -326,6 +340,50 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
               ) : (
                 <div className="text-sm text-gray-500">No dynamic variables</div>
               )}
+            </div>
+
+            {/* Notes */}
+            <div>
+              <div className="text-sm font-semibold mb-2">Notes</div>
+              <div className="space-y-2">
+                <Textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Añadir una nota…" />
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      const txt = noteText.trim()
+                      if (!txt || !callId) return
+                      try {
+                        const res = await authenticatedFetch(apiV2('notes'), {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ content: txt, call_id: callId })
+                        } as any)
+                        if (res?.success) {
+                          setNoteText('')
+                          const refreshed = await authenticatedFetch(apiV2(`notes/by-call/${callId}`), { muteErrors: true } as any)
+                          setNotes(Array.isArray(refreshed?.data) ? refreshed.data : [])
+                        }
+                      } catch {}
+                    }}
+                    disabled={!noteText.trim()}
+                  >
+                    Guardar
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                {notes.length === 0 ? (
+                  <div className="text-sm text-gray-500">No hay notas</div>
+                ) : (
+                  notes.map(n => (
+                    <div key={n.id} className="rounded-md border p-2">
+                      <div className="text-sm whitespace-pre-wrap">{n.content}</div>
+                      <div className="text-xs text-gray-500 mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

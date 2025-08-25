@@ -95,6 +95,16 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Notes */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/notes")}>
+                  <Link href="/notes">
+                    <Share2 className="h-4 w-4" />
+                    <span>Notes</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Messages collapsible */}
               <SidebarMenuItem>
                 <SidebarMenuButton
