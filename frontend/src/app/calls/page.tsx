@@ -725,7 +725,7 @@ export default function CallsPage() {
                       {typeof c.duration === 'number' ? `${Math.floor((c.duration || 0)/60)}m ${Math.floor((c.duration || 0)%60)}s` : '-'}
                     </TableCell>
                     <TableCell className="py-4">
-                      {formatDueDate(scheduledByCall[c.id] as string | null)}
+                      {formatDueDate((c as any).scheduled_at || (scheduledByCall[c.id] as string | null))}
                     </TableCell>
                   </TableRow>
                 ))
