@@ -186,14 +186,33 @@ router.get('/', requireWorkspaceContext, async (req, res): Promise<void> => {
 router.post('/', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
-    const { title, due_date, assignees = [], contacts = [] } = req.body || {}
+    const { title, due_date, assignees = [], contacts = [], call_id } = req.body || {}
     if (!title) { res.status(400).json({ success: false, error: 'title required' }); return }
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ workspace_id: ctx.workspaceId, title, due_date: due_date || null, assignees, contacts })
+      .insert({ workspace_id: ctx.workspaceId, title, due_date: due_date || null, assignees, contacts, call_id: call_id ?? null })
       .select('*')
       .single()
     if (error) throw error
+
+    // Recompute scheduled_at for the related call if provided
+    if (data?.call_id) {
+      const { data: minDue } = await supabase
+        .from('tasks')
+        .select('due_date')
+        .eq('workspace_id', ctx.workspaceId)
+        .eq('call_id', data.call_id)
+        .not('due_date', 'is', null)
+        .order('due_date', { ascending: true })
+        .limit(1)
+      const nextDue = Array.isArray(minDue) && minDue.length > 0 ? minDue[0]?.due_date : null
+      await supabase
+        .from('calls')
+        .update({ scheduled_at: nextDue })
+        .eq('workspace_id', ctx.workspaceId)
+        .eq('id', data.call_id)
+    }
+
     res.json({ success: true, data })
     return
   } catch (e: any) {
@@ -207,15 +226,34 @@ router.put('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
     const ctx = req.workspaceContext!
     const id = parseInt(req.params.id)
-    const { title, due_date, assignees, contacts } = req.body || {}
+    const { title, due_date, assignees, contacts, call_id } = req.body || {}
     const { data, error } = await supabase
       .from('tasks')
-      .update({ title, due_date, assignees, contacts })
+      .update({ title, due_date, assignees, contacts, call_id: call_id ?? null })
       .eq('workspace_id', ctx.workspaceId)
       .eq('id', id)
       .select('*')
       .single()
     if (error) throw error
+
+    // Recompute scheduled_at for this call if present
+    if (data?.call_id) {
+      const { data: minDue } = await supabase
+        .from('tasks')
+        .select('due_date')
+        .eq('workspace_id', ctx.workspaceId)
+        .eq('call_id', data.call_id)
+        .not('due_date', 'is', null)
+        .order('due_date', { ascending: true })
+        .limit(1)
+      const nextDue = Array.isArray(minDue) && minDue.length > 0 ? minDue[0]?.due_date : null
+      await supabase
+        .from('calls')
+        .update({ scheduled_at: nextDue })
+        .eq('workspace_id', ctx.workspaceId)
+        .eq('id', data.call_id)
+    }
+
     res.json({ success: true, data })
     return
   } catch (e: any) {
@@ -229,12 +267,39 @@ router.delete('/:id', requireWorkspaceContext, async (req, res): Promise<void> =
   try {
     const ctx = req.workspaceContext!
     const id = parseInt(req.params.id)
+    // Fetch task to know call_id before deleting
+    const { data: existing } = await supabase
+      .from('tasks')
+      .select('id, call_id')
+      .eq('workspace_id', ctx.workspaceId)
+      .eq('id', id)
+      .single()
+
     const { error } = await supabase
       .from('tasks')
       .delete()
       .eq('workspace_id', ctx.workspaceId)
       .eq('id', id)
     if (error) throw error
+
+    // Recompute scheduled_at for that call if necessary
+    if (existing?.call_id) {
+      const { data: minDue } = await supabase
+        .from('tasks')
+        .select('due_date')
+        .eq('workspace_id', ctx.workspaceId)
+        .eq('call_id', existing.call_id)
+        .not('due_date', 'is', null)
+        .order('due_date', { ascending: true })
+        .limit(1)
+      const nextDue = Array.isArray(minDue) && minDue.length > 0 ? minDue[0]?.due_date : null
+      await supabase
+        .from('calls')
+        .update({ scheduled_at: nextDue })
+        .eq('workspace_id', ctx.workspaceId)
+        .eq('id', existing.call_id)
+    }
+
     res.json({ success: true })
     return
   } catch (e: any) {

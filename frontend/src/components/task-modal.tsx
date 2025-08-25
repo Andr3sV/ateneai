@@ -22,9 +22,10 @@ type TaskRow = {
   due_date: string | null
   assignees: { id: number; name: string }[]
   contacts: { id: number; name: string }[]
+  call_id?: number | null
 }
 
-export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }: { open: boolean; onOpenChange: (o: boolean) => void; task: TaskRow | null; onSaved: (saved?: TaskRow | null) => void; initialContacts?: { id: number; name: string }[] }) {
+export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts, initialCallId }: { open: boolean; onOpenChange: (o: boolean) => void; task: TaskRow | null; onSaved: (saved?: TaskRow | null) => void; initialContacts?: { id: number; name: string }[]; initialCallId?: number }) {
   const authenticatedFetch = useAuthenticatedFetch()
   const { user, role } = useWorkspaceContext()
   const [title, setTitle] = useState('')
@@ -129,7 +130,9 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
       const dt = new Date(due.getFullYear(), due.getMonth(), due.getDate(), hh || 12, mm || 0, 0)
       dueIso = dt.toISOString()
     }
-    const payload = { title, due_date: dueIso, assignees, contacts }
+    const payload: any = { title, due_date: dueIso, assignees, contacts }
+    if (typeof initialCallId === 'number') payload.call_id = initialCallId
+    if (task?.call_id && payload.call_id == null) payload.call_id = task.call_id
     if (!title.trim()) return
     let saved: TaskRow | null = null
     if (task) {
@@ -195,13 +198,13 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts }
                         </span>
                       ))}
                     </div>
-                                         <div className="mt-2 max-h-52 overflow-auto divide-y">
-                       {(memberResults.length ? memberResults : members).map(m => (
-                         <button key={m.id} className="w-full text-left px-2 py-2 hover:bg-gray-50" onClick={() => setAssignees(prev => prev.find(a => a.id === m.id) ? prev : [...prev, m])}>
-                           {m.name}
-                         </button>
-                       ))}
-                     </div>
+                    <div className="mt-2 max-h-52 overflow-auto divide-y">
+                      {(memberResults.length ? memberResults : members).map(m => (
+                        <button key={m.id} className="w-full text-left px-2 py-2 hover:bg-gray-50" onClick={() => setAssignees(prev => prev.find(a => a.id === m.id) ? prev : [...prev, m])}>
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
                   </PopoverContent>
                 </Popover>
               ) : (

@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Phone, User, Calendar as CalendarIcon, Tag as TagIcon } from 'lucide-react'
 import { CallModal } from '@/components/call-modal'
 import { Switch } from '@/components/ui/switch'
+import supabase from '@/lib/supabase'
 
 // light-weight confetti (dynamic import to avoid SSR issues)
 let confettiFn: ((opts?: any) => void) | null = null
@@ -83,6 +84,8 @@ interface CallItem {
   call_type?: 'transfer' | 'call_later' | null
   created_at: string
   duration?: number | null
+  assigned_user_id?: number | null
+  scheduled_at?: string | null
 }
 
 export default function CallsPage() {
@@ -299,6 +302,42 @@ export default function CallsPage() {
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calls, pagination.page])
+
+  // Realtime subscription to calls (workspace-scoped)
+  useEffect(() => {
+    // Infer workspaceId from API user endpoint would be ideal; here we rely on server to include only workspace rows
+    // If supabase client/env isn’t configured, skip
+    if (!supabase) return
+
+    // We don't have workspaceId here; subscribe broadly to calls and filter by arriving rows’ ids present in view
+    const channel = supabase
+      .channel('realtime:calls')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, (payload: any) => {
+        const row = payload.new || payload.old
+        if (!row) return
+        setCalls(prev => {
+          // If the row is visible, update fields; if new and matches current filters, we could prepend (omitted for simplicity)
+          const idx = prev.findIndex(r => r.id === row.id)
+          if (idx === -1) return prev
+          const next = [...prev]
+          next[idx] = {
+            ...next[idx],
+            status: row.status ?? next[idx].status,
+            assigned_user_id: row.assigned_user_id ?? next[idx].assigned_user_id,
+            duration: typeof row.duration === 'number' ? row.duration : next[idx].duration,
+            // reflect scheduled_at if present; frontend reads it via scheduledByCall mapping for now
+          } as any
+          return next
+        })
+        // Also update scheduled map if scheduled_at arrived
+        if (row.scheduled_at) {
+          setScheduledByCall(prev => ({ ...prev, [row.id]: row.scheduled_at }))
+        }
+      })
+      .subscribe()
+
+    return () => { try { supabase?.removeChannel(channel) } catch {} }
+  }, [])
 
   const formatDueDate = (s?: string | null) => {
     if (!s) return '-'
