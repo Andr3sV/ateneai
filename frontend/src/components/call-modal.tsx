@@ -49,6 +49,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
   const [members, setMembers] = useState<{ id: number; name: string }[]>([])
   const [notes, setNotes] = useState<Array<{ id: number; content: string; created_at: string }>>([])
   const [noteText, setNoteText] = useState<string>('')
+  const [savingTask, setSavingTask] = useState<boolean>(false)
   // Force v2 endpoints for tasks to avoid env flag mismatch in production
   const apiV2 = (path: string) => `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v2/${path}`
   
@@ -395,23 +396,38 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
       task={existingTask}
       initialContacts={call?.contact ? [{ id: call.contact.id, name: call.contact.name || call.contact.phone || `Contact ${call.contact.id}` }] : []}
       onSaved={async (saved) => {
-        if (call?.contact?.id) {
-          const contactId = call.contact.id
-          const t = await authenticatedFetch(apiV2(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
-          if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
-            setExistingTask(t.data[0])
-          } else {
+        // Optimistic: if modal returns the saved task, reflect immediately
+        if (saved) setExistingTask(saved)
+
+        const revalidate = async () => {
+          if (call?.contact?.id) {
+            const contactId = call.contact.id
+            // Try by-contact first
+            const t = await authenticatedFetch(apiV2(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
+            if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
+              setExistingTask(t.data[0])
+              return true
+            }
+            // Fallback list
             try {
               const all = await authenticatedFetch(apiV2('tasks?'), { muteErrors: true } as any)
               const list = Array.isArray(all?.data) ? all.data : []
               const filtered = list.filter((row: any) => Array.isArray(row.contacts) && row.contacts.some((c: any) => String(c?.id) === String(contactId)))
               setExistingTask(filtered.length > 0 ? filtered[0] : null)
+              return filtered.length > 0
             } catch {
-              setExistingTask(null)
+              setExistingTask((prev: any) => prev || null)
+              return false
             }
           }
+          return false
         }
-        if (saved) setExistingTask(saved)
+
+        // Small backoff revalidation to account for eventual consistency
+        await revalidate()
+        setTimeout(revalidate, 600)
+        setTimeout(revalidate, 1800)
+
         setTaskModalOpen(false)
       }}
     />

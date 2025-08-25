@@ -112,6 +112,7 @@ export default function CallsPage() {
   // Pagination
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const [celebrateEnabled, setCelebrateEnabled] = useState<boolean>(true)
+  const [scheduledByCall, setScheduledByCall] = useState<Record<number, string | null>>({})
 
   // Detect desktop to avoid double render issues with CSS-only breakpoints
   const [isDesktop, setIsDesktop] = useState<boolean>(false)
@@ -225,6 +226,82 @@ export default function CallsPage() {
     fetchCalls(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // After calls load or page changes, fetch scheduled dates for visible calls
+  useEffect(() => {
+    let cancelled = false
+    async function loadScheduled() {
+      const entries = await Promise.all(
+        (calls || []).map(async (c) => {
+          if (!c.contact?.id) return [c.id, null] as const
+          if (scheduledByCall[c.id] !== undefined) return [c.id, scheduledByCall[c.id]] as const
+          const contactId = c.contact.id
+          try {
+            // Primary: server by-contact
+            const res = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
+            let due: string | null = null
+            if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+              due = res.data[0]?.due_date || null
+            } else {
+              // Fallback: fetch all and filter client-side
+              try {
+                const all = await authenticatedFetch(getApiUrl('tasks?'), { muteErrors: true } as any)
+                const list = Array.isArray(all?.data) ? all.data : []
+                const filtered = list.filter((row: any) => Array.isArray(row.contacts) && row.contacts.some((ct: any) => String(ct?.id) === String(contactId)))
+                due = filtered.length > 0 ? (filtered[0]?.due_date || null) : null
+              } catch {
+                due = null
+              }
+            }
+            return [c.id, due] as const
+          } catch {
+            return [c.id, null] as const
+          }
+        })
+      )
+      if (cancelled) return
+      const merged: Record<number, string | null> = { ...scheduledByCall }
+      let needRetry = false
+      for (const [id, due] of entries) {
+        merged[id] = due
+        if (!due) needRetry = true
+      }
+      setScheduledByCall(merged)
+
+      // Simple backoff retry once if any missing
+      if (needRetry) {
+        setTimeout(async () => {
+          if (cancelled) return
+          const retry: Record<number, string | null> = { ...merged }
+          for (const c of calls) {
+            if (!c.contact?.id || retry[c.id]) continue
+            try {
+              const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${c.contact.id}`), { muteErrors: true } as any)
+              if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
+                retry[c.id] = t.data[0]?.due_date || null
+              }
+            } catch { /* ignore */ }
+          }
+          if (!cancelled) setScheduledByCall(retry)
+        }, 900)
+      }
+    }
+    if ((calls || []).length > 0) loadScheduled()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calls, pagination.page])
+
+  const formatDueDate = (s?: string | null) => {
+    if (!s) return '-'
+    const str = String(s)
+    try {
+      const d = str.includes('T') ? new Date(str) : new Date(`${str}T00:00:00`)
+      if (Number.isNaN(d.getTime())) return str
+      return format(new Date(d), 'yyyy-MM-dd HH:mm')
+    } catch {
+      return str
+    }
+  }
 
   // Load members for assignee filter
   useEffect(() => {
@@ -441,6 +518,9 @@ export default function CallsPage() {
                           <Phone className="h-3.5 w-3.5 text-gray-400" />
                           <span className="truncate">{c.phone_to || c.phone_from || '-'}</span>
                         </div>
+                        <div className="text-[11px] text-gray-500">
+                          {`Scheduled: ${formatDueDate(scheduledByCall[c.id] as string | null)}`}
+                        </div>
                       </div>
                     </div>
                     <div className="text-xs text-gray-500 whitespace-nowrap">{format(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}</div>
@@ -522,16 +602,17 @@ export default function CallsPage() {
                   </div>
                 </TableHead>
                 <TableHead className="text-left font-semibold text-gray-900">Duration</TableHead>
+                <TableHead className="text-left font-semibold text-gray-900">Scheduled</TableHead>
             </TableRow>
           </TableHeader>
             <TableBody>
             {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Loading...</TableCell>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">Loading...</TableCell>
               </TableRow>
             ) : calls.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No results</TableCell>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No results</TableCell>
               </TableRow>
             ) : (
                 calls.map((c) => (
@@ -596,6 +677,9 @@ export default function CallsPage() {
                     </TableCell>
                     <TableCell className="py-4">
                       {typeof c.duration === 'number' ? `${Math.floor((c.duration || 0)/60)}m ${Math.floor((c.duration || 0)%60)}s` : '-'}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      {formatDueDate(scheduledByCall[c.id] as string | null)}
                     </TableCell>
                   </TableRow>
                 ))
