@@ -3,7 +3,7 @@
 import { useUser, useAuth } from '@clerk/nextjs'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
-import { subscribeToWorkspaceConversations, subscribeToWorkspaceMessages } from '@/lib/supabase'
+import { subscribeToWorkspaceConversations, subscribeToWorkspaceMessages, subscribeToWorkspaceCalls } from '@/lib/supabase'
 import { useWorkspaceContext } from '@/hooks/useWorkspaceContext'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { Badge } from '@/components/ui/badge'
@@ -73,6 +73,7 @@ export default function ConversationsPage() {
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
   const realtimeConvRef = useRef<any | null>(null)
   const realtimeMsgRef = useRef<any | null>(null)
+  const realtimeCallsRef = useRef<any | null>(null)
   
   // Filtros
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -122,20 +123,50 @@ export default function ConversationsPage() {
     }
   }, [pagination.page, statusFilter, assignedToFilter, debouncedSearchTerm])
 
-  // Realtime (workspace v2): refresh silently on INSERT/UPDATE of conversations/messages
+  // Realtime (workspace v2): refresh silently on INSERT/UPDATE of conversations/messages/calls
   useEffect(() => {
     if (!workspaceId) return
+    
+    console.log('🔌 Setting up real-time subscriptions for workspace:', workspaceId)
+    
     const convSub = subscribeToWorkspaceConversations(workspaceId, () => {
+      console.log('📞 Conversations real-time event received')
       fetchConversations(pagination.page, true)
     })
+    
     const msgSub = subscribeToWorkspaceMessages(workspaceId, () => {
+      console.log('💬 Messages real-time event received')
       fetchConversations(pagination.page, true)
     })
+    
+    const callsSub = subscribeToWorkspaceCalls(workspaceId, (payload: any) => {
+      console.log('🔔 Calls real-time event received:', payload)
+      
+      // Handle new call (conversation) with confetti and sound
+      if (payload.eventType === 'INSERT') {
+        console.log('🎉 New call INSERT detected:', payload.new)
+        handleNewConversation(payload.new)
+      }
+      
+      // Refresh conversations list
+      fetchConversations(pagination.page, true)
+    })
+    
+    console.log('✅ Real-time subscriptions created:', {
+      conversations: !!convSub,
+      messages: !!msgSub,
+      calls: !!callsSub
+    })
+    
     realtimeConvRef.current = convSub
     realtimeMsgRef.current = msgSub
+    realtimeCallsRef.current = callsSub
+    
     return () => {
+      console.log('🔌 Cleaning up real-time subscriptions')
       try { convSub.unsubscribe() } catch {}
       try { msgSub.unsubscribe() } catch {}
+      try { callsSub.unsubscribe() } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId, pagination.page])
@@ -237,6 +268,40 @@ export default function ConversationsPage() {
       if (!silent) setLoading(false)
     }
   }
+
+  // Handle new conversation with confetti and sound (using existing implementation)
+  const handleNewConversation = useCallback(async (newCall: any) => {
+    console.log('🎉 New conversation received:', newCall)
+    
+    // Trigger confetti animation (using existing canvas-confetti)
+    try {
+      const confetti = await import('canvas-confetti')
+      confetti.default({
+        particleCount: 120,
+        spread: 70,
+        origin: { y: 0.6 }
+      })
+    } catch (error) {
+      console.log('Confetti not available:', error)
+    }
+    
+    // Play applause sound (using existing sound file)
+    try {
+      const audio = new Audio('/sounds/applause.mp3')
+      audio.volume = 0.9
+      await audio.play()
+    } catch (error) {
+      console.log('Audio not available:', error)
+    }
+    
+    // Show notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Nueva Conversación', {
+        body: `Nueva conversación de ${newCall.contact?.name || 'Cliente'}`,
+        icon: '/favicon.ico'
+      })
+    }
+  }, [])
 
   const getStatusBadge = (status: string, conversationId: number) => {
     const statusLower = status.toLowerCase()

@@ -15,7 +15,6 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Phone, User, Calendar as CalendarIcon, Tag as TagIcon } from 'lucide-react'
 import { CallModal } from '@/components/call-modal'
@@ -158,14 +157,29 @@ export default function CallsPage() {
 
   const inflightRefCalls = useRef<AbortController | null>(null)
 
-  const fetchCalls = async (pageNum = 1, silent = false) => {
+  const fetchCalls = async (pageNum = 1, silent = false, signal?: AbortSignal) => {
+    let ctrl: AbortController | null = null;
+    
     try {
       if (!silent) setLoading(true)
+      
+      // If there's already a request in flight, abort it
       if (inflightRefCalls.current) {
         inflightRefCalls.current.abort()
+        inflightRefCalls.current = null
       }
-      const ctrl = new AbortController()
+      
+      // Create new controller for this request
+      ctrl = new AbortController()
       inflightRefCalls.current = ctrl
+      
+      // If external signal is provided, listen to it
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          ctrl?.abort()
+        })
+      }
+      
       const params = new URLSearchParams({ page: String(pageNum), limit: String(pagination.limit) })
       if (fromFilter) params.append('from', fromFilter)
       if (toFilter) params.append('to', toFilter)
@@ -179,10 +193,22 @@ export default function CallsPage() {
       }
 
       const apiUrl = getApiUrl(`calls?${params.toString()}`)
-      if (!silent) console.log('🔍 Calls API URL:', apiUrl)
+      console.log('🔍 Calls API URL:', apiUrl) // Always log the URL for debugging
       
       if (!silent) logMigrationEvent('Calls fetch', { page: pageNum })
+      
+      // Check if request was aborted before making the call
+      if (ctrl.signal.aborted) {
+        return
+      }
+      
       const data = await authenticatedFetch(apiUrl, { signal: ctrl.signal, retries: 3 } as any)
+      
+      // Check if request was aborted after the call
+      if (ctrl.signal.aborted) {
+        return
+      }
+      
       if (!silent) console.log('📞 Calls API response:', data)
       
       if (data.success) {
@@ -218,18 +244,51 @@ export default function CallsPage() {
         })
       }
     } catch (e) {
-      console.error('❌ Error fetching calls:', e)
-      if (!silent) setCalls([])
+      // Only log errors that aren't from aborting
+      if (e instanceof Error && e.name !== 'AbortError') {
+        console.error('❌ Error fetching calls:', e)
+        if (!silent) setCalls([])
+      }
     } finally {
-      inflightRefCalls.current = null
+      // Always clear the ref when done
+      if (inflightRefCalls.current === ctrl) {
+        inflightRefCalls.current = null
+      }
       if (!silent) setLoading(false)
     }
   }
 
+  // Initial load effect - runs only once
   useEffect(() => {
-    fetchCalls(1)
+    console.log('🚀 Initial load effect triggered');
+    fetchCalls(1, false);
+  }, []); // Empty dependency array - runs only once
+
+  // Consolidated useEffect for initial load and filter changes
+  useEffect(() => {
+    console.log('🔍 useEffect triggered with filters:', { fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd });
+    
+    // Use a ref to prevent duplicate calls
+    const controller = new AbortController();
+    
+    // Force clear any existing request to ensure fresh start
+    if (inflightRefCalls.current) {
+      inflightRefCalls.current.abort();
+      inflightRefCalls.current = null;
+    }
+    
+    // Reset loading state to ensure we can make new requests
+    setLoading(false);
+    
+    // Always fetch on filter changes
+    console.log('🚀 Starting fetchCalls...');
+    fetchCalls(1, true, controller.signal);
+    
+    return () => {
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
 
   // After calls load or page changes, fetch scheduled dates for visible calls
   useEffect(() => {
@@ -237,21 +296,59 @@ export default function CallsPage() {
     async function loadScheduled() {
       const visible = (calls || [])
       if (visible.length === 0) return
+      
       // Build a stable signature to avoid redundant work
       const sig = visible.map(c => `${c.id}:${c.contact?.id ?? 'x'}`).join(',')
       if (sig === scheduledLoadedSignature) return
+
+      console.log('📅 Loading scheduled dates for', visible.length, 'calls');
 
       // Prepare set of contactIds to resolve
       const contactIds = Array.from(new Set(visible.map(c => c.contact?.id).filter(Boolean))) as number[]
       const current: Record<number, string | null> = { ...scheduledByCall }
 
-      // Try a single show_all tasks fetch to map all in one request
+      // Try to use the minimap endpoint first for better performance
+      if (contactIds.length > 0) {
+        try {
+          const params = new URLSearchParams();
+          contactIds.forEach(id => params.append('contactIds[]', id.toString()));
+          const response = await authenticatedFetch(`/api/v2/tasks/minimap?${params.toString()}`);
+          
+          if (response?.success && response.data) {
+            console.log('✅ Minimap endpoint success:', Object.keys(response.data).length, 'scheduled dates found');
+            
+            // Map the response to our format
+            for (const call of visible) {
+              if (call.contact?.id && response.data[call.contact.id]) {
+                current[call.id] = response.data[call.contact.id];
+              }
+            }
+            
+            // If we got all the data we need, return early
+            const hasAllData = visible.every(call => 
+              !call.contact?.id || current[call.id] !== undefined
+            );
+            if (hasAllData && !cancelled) {
+              setScheduledByCall(current);
+              setScheduledLoadedSignature(sig);
+              console.log('✅ All scheduled dates loaded via minimap');
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Minimap endpoint failed, falling back to individual requests:', error);
+        }
+      }
+
+      // Fallback: Try a single show_all tasks fetch to map all in one request
       let mappedAny = false
       try {
         const params = new URLSearchParams({ page: '1', limit: '1000', show_all: 'true' })
         const all = await authenticatedFetch(getApiUrl(`tasks?${params.toString()}`), { muteErrors: true } as any)
         const list: any[] = Array.isArray(all?.data) ? all.data : []
         if (list.length > 0) {
+          console.log('🔄 Fallback: Processing', list.length, 'tasks for scheduled dates');
+          
           // Map earliest due_date per contact id
           const bestByContact = new Map<string, string>()
           for (const t of list) {
@@ -275,11 +372,15 @@ export default function CallsPage() {
             }
           }
         }
-      } catch { /* ignore */ }
+      } catch (error) { 
+        console.warn('⚠️ Fallback tasks fetch failed:', error);
+      }
 
-      // For any missing, try lightweight by-contact but capped to avoid bursts (max 5)
-      const missing = visible.filter(c => current[c.id] === undefined || current[c.id] === null).slice(0, 5)
+      // For any missing, try lightweight by-contact but capped to avoid bursts (max 3 instead of 5)
+      const missing = visible.filter(c => current[c.id] === undefined || current[c.id] === null).slice(0, 3)
       if (missing.length > 0) {
+        console.log('🔄 Individual fallback: Fetching scheduled dates for', missing.length, 'missing calls');
+        
         const results = await Promise.all(missing.map(async (c) => {
           if (!c.contact?.id) return [c.id, null] as const
           try {
@@ -288,7 +389,10 @@ export default function CallsPage() {
               return [c.id, t.data[0]?.due_date || null] as const
             }
             return [c.id, null] as const
-          } catch { return [c.id, null] as const }
+          } catch (error) { 
+            console.warn('⚠️ Individual contact fetch failed for contact', c.contact.id, ':', error);
+            return [c.id, null] as const 
+          }
         }))
         for (const [id, due] of results) current[id] = due
       }
@@ -296,6 +400,7 @@ export default function CallsPage() {
       if (!cancelled) {
         setScheduledByCall(current)
         setScheduledLoadedSignature(sig)
+        console.log('✅ Scheduled dates loaded:', Object.keys(current).filter(k => current[parseInt(k)] !== null).length, 'calls have scheduled dates');
       }
     }
     loadScheduled()
@@ -305,16 +410,19 @@ export default function CallsPage() {
 
   // Realtime subscription to calls (workspace-scoped)
   useEffect(() => {
-    // Infer workspaceId from API user endpoint would be ideal; here we rely on server to include only workspace rows
-    // If supabase client/env isn’t configured, skip
-    if (!supabase) return
+    // Only subscribe if we have calls loaded
+    if (!supabase || calls.length === 0) return
 
-    // We don't have workspaceId here; subscribe broadly to calls and filter by arriving rows’ ids present in view
+    console.log('🔌 Setting up realtime subscription for calls');
+    
     const channel = supabase
       .channel('realtime:calls')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, (payload: any) => {
         const row = payload.new || payload.old
         if (!row) return
+        
+        console.log('📡 Realtime update received:', payload.event, row.id);
+        
         setCalls(prev => {
           // If the row is visible, update fields; if new and matches current filters, we could prepend (omitted for simplicity)
           const idx = prev.findIndex(r => r.id === row.id)
@@ -336,8 +444,15 @@ export default function CallsPage() {
       })
       .subscribe()
 
-    return () => { try { supabase?.removeChannel(channel) } catch {} }
-  }, [])
+    return () => { 
+      console.log('🔌 Cleaning up realtime subscription');
+      try { 
+        supabase?.removeChannel(channel) 
+      } catch (e) {
+        console.warn('⚠️ Error cleaning up realtime:', e);
+      }
+    }
+  }, [supabase, calls.length]) // Only re-subscribe when calls array length changes
 
   const formatDueDate = (s?: string | null) => {
     if (!s) return '-'
@@ -345,7 +460,7 @@ export default function CallsPage() {
     try {
       const d = str.includes('T') ? new Date(str) : new Date(`${str}T00:00:00`)
       if (Number.isNaN(d.getTime())) return str
-      return format(new Date(d), 'yyyy-MM-dd HH:mm')
+      return formatDate(new Date(d), 'yyyy-MM-dd HH:mm')
     } catch {
       return str
     }
@@ -378,21 +493,28 @@ export default function CallsPage() {
     setModalOpen(true)
   }, [])
 
+  // Polling for calls - reduced frequency and visibility-aware
   useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }))
-    fetchCalls(1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    const pollInterval = 60000; // Poll every 60 seconds instead of 20
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        pollTimerRef.current = setInterval(() => {
+          fetchCalls(pagination.page, true);
+        }, pollInterval);
+      } else {
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      }
+    };
 
-  // Silent background polling to auto-refresh without flicker (visibility-aware)
-  useEffect(() => {
-    const isVisible = () => typeof document !== 'undefined' ? document.visibilityState === 'visible' : true
-    const intervalMs = 20000
-    const tick = () => { if (isVisible()) fetchCalls(pagination.page, true) }
-    const id = setInterval(tick, intervalMs)
-    return () => { clearInterval(id) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
+    handleVisibilityChange(); // Initial check
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [pagination.page]); // Only depend on page changes, not filters
 
   const applyQuickDateRange = (days: number) => {
     setDateStart(subDays(new Date(), days))
@@ -569,7 +691,7 @@ export default function CallsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 whitespace-nowrap">{format(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}</div>
+                    <div className="text-xs text-gray-500 whitespace-nowrap">{formatDate(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}</div>
                   </div>
 
                   <div className="mt-2 flex items-center justify-between">
@@ -719,7 +841,7 @@ export default function CallsPage() {
                       {getCallTypeBadge(c.call_type || null)}
                     </TableCell>
                     <TableCell className="py-4">
-                      {format(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}
+                      {formatDate(new Date(c.created_at), 'yyyy-MM-dd HH:mm')}
                     </TableCell>
                     <TableCell className="py-4">
                       {typeof c.duration === 'number' ? `${Math.floor((c.duration || 0)/60)}m ${Math.floor((c.duration || 0)%60)}s` : '-'}

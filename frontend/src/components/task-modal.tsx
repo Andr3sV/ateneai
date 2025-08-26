@@ -123,23 +123,42 @@ export function TaskModal({ open, onOpenChange, task, onSaved, initialContacts, 
   const removeContact = (id: number) => setContacts(prev => prev.filter(c => c.id !== id))
 
   const handleSave = async () => {
-    // Build ISO with local CET time (store as timestamp)
+    if (!title.trim()) return
     let dueIso: string | null = null
     if (due) {
-      const [hh, mm] = (timeStr || '12:00').split(':').map(Number)
-      const dt = new Date(due.getFullYear(), due.getMonth(), due.getDate(), hh || 12, mm || 0, 0)
+      const [hh, mm] = timeStr.split(':')
+      const dt = new Date(due.getFullYear(), due.getMonth(), due.getDate(), parseInt(hh) || 12, parseInt(mm) || 0, 0)
       dueIso = dt.toISOString()
     }
-    const payload: any = { title, due_date: dueIso, assignees, contacts }
+    const payload: any = { 
+      title, 
+      due_date: dueIso, 
+      assignees: assignees || [], 
+      contacts: contacts || [],
+      workspace_id: undefined // Will be set by backend
+    }
     if (typeof initialCallId === 'number') payload.call_id = initialCallId
     if (task?.call_id && payload.call_id == null) payload.call_id = task.call_id
+    
+    // Debug logging
+    console.log('📝 TaskModal: Payload being sent:', payload);
+    console.log('📝 TaskModal: Payload types:', {
+      title: typeof payload.title,
+      due_date: typeof payload.due_date,
+      assignees: Array.isArray(payload.assignees) ? payload.assignees.length : 'not array',
+      contacts: Array.isArray(payload.contacts) ? payload.contacts.length : 'not array',
+      call_id: typeof payload.call_id
+    });
+    
     if (!title.trim()) return
     let saved: TaskRow | null = null
     if (task) {
+      console.log('📝 TaskModal: Updating existing task:', task.id);
       const resp = await authenticatedFetch(getApiUrl(`tasks/${task.id}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       if (resp?.success) saved = resp.data as TaskRow
     } else {
-      const resp = await authenticatedFetch(getApiUrl('tasks'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      console.log('📝 TaskModal: Creating new task');
+      const resp = await authenticatedFetch(getApiUrl('tasks/create-task-safe'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       if (resp?.success) saved = resp.data as TaskRow
     }
     onSaved(saved)

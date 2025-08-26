@@ -237,4 +237,21 @@ export const subscribeToWorkspaceMessages = (workspaceId: number, callback: (pay
     .subscribe();
 };
 
+export const subscribeToWorkspaceCalls = (workspaceId: number, callback: (payload: any) => void) => {
+  if (!supabase) return { unsubscribe: () => {} } as any
+  return supabase
+    .channel(`workspace:${workspaceId}:calls`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+        schema: 'public',
+        table: 'calls', // Target the calls table
+        filter: `workspace_id=eq.${workspaceId}`, // Filter by workspace_id at database level
+      },
+      callback
+    )
+    .subscribe();
+};
+
 export default supabase; 

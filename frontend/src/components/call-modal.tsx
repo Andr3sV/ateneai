@@ -144,28 +144,87 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
 
   // Fetch tasks when the modal opens and whenever call/contact changes
   useEffect(() => {
-    async function fetchTasks() {
-      if (!open) return
-      const contactId = call?.contact?.id || null
-      if (!contactId) { setExistingTask(null); return }
-      // Primary: server by-contact
-      const t = await authenticatedFetch(apiV2(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
-      if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
-        setExistingTask(t.data[0])
-        return
+    let isMounted = true;
+    const fetchTasksWithRetry = async (retries = 0) => {
+      if (!isMounted || !open) return;
+      const contactId = call?.contact?.id || null;
+      if (!contactId) { 
+        console.log('📞 CallModal: No contact ID, clearing existing task');
+        setExistingTask(null); 
+        return; 
       }
-      // Fallback: fetch all and filter client-side (covers numeric/string JSONB mismatches)
+
+      console.log('📞 CallModal: Fetching tasks for contact', contactId);
+
       try {
-        const all = await authenticatedFetch(apiV2('tasks?'), { muteErrors: true } as any)
-        const list = Array.isArray(all?.data) ? all.data : []
-        const filtered = list.filter((row: any) => Array.isArray(row.contacts) && row.contacts.some((c: any) => String(c?.id) === String(contactId)))
-        setExistingTask(filtered.length > 0 ? filtered[0] : null)
-      } catch {
-        setExistingTask(null)
+        // Use the minimap endpoint for better performance
+        const response = await authenticatedFetch(`/api/v2/tasks/minimap?contactIds[]=${contactId}`);
+        if (isMounted && response?.success && response.data) {
+          const scheduledDate = response.data[contactId];
+          console.log('📞 CallModal: Minimap response:', { contactId, scheduledDate, allData: response.data });
+          
+          if (scheduledDate) {
+            // Create a minimal task object for display
+            const taskObject = {
+              id: 0, // Placeholder
+              title: 'Scheduled Call',
+              due_date: scheduledDate,
+              contacts: [{ id: contactId, name: call?.contact?.name || '' }],
+              workspace_id: 0,
+              created_at: '',
+              updated_at: '',
+              assignees: [],
+              call_id: call?.id || null
+            };
+            
+            console.log('📞 CallModal: Setting existing task:', taskObject);
+            setExistingTask(taskObject);
+          } else {
+            console.log('📞 CallModal: No scheduled date found for contact', contactId);
+            setExistingTask(null);
+          }
+        } else {
+          console.log('📞 CallModal: Minimap response not successful:', response);
+          setExistingTask(null);
+        }
+      } catch (error) {
+        console.error('📞 CallModal: Failed to fetch tasks for call modal:', error);
+        
+        // Fallback: try individual contact fetch
+        try {
+          console.log('📞 CallModal: Trying fallback individual fetch for contact', contactId);
+          const fallbackResponse = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`));
+          if (isMounted && fallbackResponse?.success && Array.isArray(fallbackResponse.data) && fallbackResponse.data.length > 0) {
+            const task = fallbackResponse.data[0];
+            if (task.due_date) {
+              const taskObject = {
+                id: task.id,
+                title: task.title || 'Scheduled Call',
+                due_date: task.due_date,
+                contacts: task.contacts || [{ id: contactId, name: call?.contact?.name || '' }],
+                workspace_id: task.workspace_id || 0,
+                created_at: task.created_at || '',
+                updated_at: task.updated_at || '',
+                assignees: task.assignees || [],
+                call_id: task.call_id || call?.id || null
+              };
+              
+              console.log('📞 CallModal: Fallback successful, setting existing task:', taskObject);
+              setExistingTask(taskObject);
+              return;
+            }
+          }
+        } catch (fallbackError) {
+          console.error('📞 CallModal: Fallback also failed:', fallbackError);
+        }
+        
+        setExistingTask(null);
       }
-    }
-    fetchTasks()
-  }, [open, call?.contact?.id])
+    };
+
+    fetchTasksWithRetry();
+    return () => { isMounted = false; };
+  }, [open, call?.contact?.id, call?.id, authenticatedFetch]);
 
   const StatusDropdown = ({ value, onChange }: { value: CallDetail['status']; onChange: (v: CallDetail['status']) => void }) => {
     const s = (value || '').toString().toLowerCase()

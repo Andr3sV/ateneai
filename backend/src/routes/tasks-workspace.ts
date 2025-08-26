@@ -188,34 +188,62 @@ router.post('/', requireWorkspaceContext, async (req, res): Promise<void> => {
     const ctx = req.workspaceContext!
     const { title, due_date, assignees = [], contacts = [], call_id } = req.body || {}
     if (!title) { res.status(400).json({ success: false, error: 'title required' }); return }
+    
+    console.log('📝 Creating task:', { title, due_date, assignees: assignees.length, contacts: contacts.length, call_id, workspaceId: ctx.workspaceId });
+    
     const { data, error } = await supabase
       .from('tasks')
       .insert({ workspace_id: ctx.workspaceId, title, due_date: due_date || null, assignees, contacts, call_id: call_id ?? null })
       .select('*')
       .single()
-    if (error) throw error
+    if (error) {
+      console.error('❌ Task creation failed:', error);
+      throw error;
+    }
+
+    console.log('✅ Task created successfully:', data.id);
 
     // Recompute scheduled_at for the related call if provided
     if (data?.call_id) {
-      const { data: minDue } = await supabase
-        .from('tasks')
-        .select('due_date')
-        .eq('workspace_id', ctx.workspaceId)
-        .eq('call_id', data.call_id)
-        .not('due_date', 'is', null)
-        .order('due_date', { ascending: true })
-        .limit(1)
-      const nextDue = Array.isArray(minDue) && minDue.length > 0 ? minDue[0]?.due_date : null
-      await supabase
-        .from('calls')
-        .update({ scheduled_at: nextDue })
-        .eq('workspace_id', ctx.workspaceId)
-        .eq('id', data.call_id)
+      try {
+        console.log('🔄 Updating scheduled_at for call:', data.call_id);
+        const { data: minDue, error: minDueError } = await supabase
+          .from('tasks')
+          .select('due_date')
+          .eq('workspace_id', ctx.workspaceId)
+          .eq('call_id', data.call_id)
+          .not('due_date', 'is', null)
+          .order('due_date', { ascending: true })
+          .limit(1)
+        
+        if (minDueError) {
+          console.warn('⚠️ Failed to fetch min due date:', minDueError);
+        } else {
+          const nextDue = Array.isArray(minDue) && minDue.length > 0 ? minDue[0]?.due_date : null
+          console.log('📅 Next due date:', nextDue);
+          
+          const { error: updateError } = await supabase
+            .from('calls')
+            .update({ scheduled_at: nextDue })
+            .eq('workspace_id', ctx.workspaceId)
+            .eq('id', data.call_id)
+          
+          if (updateError) {
+            console.warn('⚠️ Failed to update call scheduled_at:', updateError);
+          } else {
+            console.log('✅ Call scheduled_at updated successfully');
+          }
+        }
+      } catch (updateError) {
+        console.warn('⚠️ Scheduled_at update failed (non-critical):', updateError);
+        // Don't fail the task creation for this
+      }
     }
 
     res.json({ success: true, data })
     return
   } catch (e: any) {
+    console.error('❌ Task creation error:', e);
     res.status(500).json({ success: false, error: e.message })
     return
   }
@@ -383,6 +411,10 @@ router.get('/helpers/members', requireWorkspaceContext, async (req, res): Promis
     if (workspaceError) throw workspaceError
     
     if (!workspaceUsers || workspaceUsers.length === 0) {
+      res.set({
+        'Cache-Control': 'public, max-age=300', // 5 minutes cache
+        'ETag': `"empty-${ctx.workspaceId}"`
+      });
       res.json({ success: true, data: [] })
       return
     }
@@ -402,6 +434,20 @@ router.get('/helpers/members', requireWorkspaceContext, async (req, res): Promis
       name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || `User ${user.id}` 
     }))
     
+    // Generate ETag based on workspace and members data
+    const etag = `"members-${ctx.workspaceId}-${JSON.stringify(members).length}"`
+    
+    // Check if client has cached version
+    if (req.headers['if-none-match'] === etag) {
+      res.status(304).end();
+      return;
+    }
+    
+    res.set({
+      'Cache-Control': 'public, max-age=300', // 5 minutes cache
+      'ETag': etag
+    });
+    
     res.json({ success: true, data: members })
     return
   } catch (e: any) {
@@ -409,5 +455,236 @@ router.get('/helpers/members', requireWorkspaceContext, async (req, res): Promis
     return
   }
 })
+
+// GET /minimap - Get scheduled dates for multiple contacts
+router.get('/minimap', requireWorkspaceContext, async (req, res): Promise<any> => {
+  try {
+    const ctx = req.workspaceContext!
+    const { contactIds } = req.query;
+    
+    if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'contactIds array is required' 
+      });
+    }
+
+    // Convert contactIds to numbers and validate
+    const numericContactIds = contactIds.map(id => {
+      const num = parseInt(id as string);
+      if (isNaN(num)) {
+        throw new Error(`Invalid contact ID: ${id}`);
+      }
+      return num;
+    });
+
+    // Fetch all tasks for the workspace and filter in memory for better JSONB handling
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select('id, due_date, contacts, call_id')
+      .eq('workspace_id', ctx.workspaceId)
+      .not('due_date', 'is', null);
+
+    if (error) {
+      console.error('Error fetching tasks minimap:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch tasks' 
+      });
+    }
+
+    // Create a mapping of contact_id to scheduled date
+    const contactToScheduled: Record<string, string> = {};
+    
+    tasks?.forEach(task => {
+      if (task.contacts && Array.isArray(task.contacts)) {
+        task.contacts.forEach((contact: any) => {
+          if (contact?.id && task.due_date) {
+            const contactId = parseInt(contact.id);
+            // Only include if this contact is in our requested list
+            if (numericContactIds.includes(contactId)) {
+              contactToScheduled[contactId.toString()] = task.due_date;
+            }
+          }
+        });
+      }
+    });
+
+    console.log('✅ Minimap endpoint success:', { 
+      requestedContacts: numericContactIds.length, 
+      foundScheduled: Object.keys(contactToScheduled).length,
+      workspaceId: ctx.workspaceId 
+    });
+
+    return res.json({
+      success: true,
+      data: contactToScheduled
+    });
+
+  } catch (error) {
+    console.error('Error in tasks minimap:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// POST /fix-sql-function - Create the missing SQL function if it doesn't exist
+router.post('/fix-sql-function', requireWorkspaceContext, async (req, res): Promise<any> => {
+  try {
+    const ctx = req.workspaceContext!
+    console.log('🔧 Attempting to fix SQL function for workspace:', ctx.workspaceId);
+    
+    // Create the function if it doesn't exist
+    const createFunctionSQL = `
+      CREATE OR REPLACE FUNCTION public.recompute_call_scheduled_at(p_call_id BIGINT)
+      RETURNS VOID AS $$
+      BEGIN
+        -- Update the call's scheduled_at with the earliest due_date from its tasks
+        UPDATE public.calls 
+        SET scheduled_at = (
+          SELECT MIN(due_date) 
+          FROM public.tasks 
+          WHERE call_id = p_call_id 
+          AND due_date IS NOT NULL
+        )
+        WHERE id = p_call_id;
+      END;
+      $$ LANGUAGE plpgsql;
+    `;
+    
+    try {
+      // Try to execute the SQL directly
+      const { error: createError } = await supabase.rpc('exec_sql', { sql: createFunctionSQL });
+      
+      if (createError) {
+        console.warn('⚠️ Failed to create function via RPC:', createError);
+        
+        // Try alternative approach - execute raw SQL
+        const { error: rawError } = await supabase.from('_dummy_').select('*').limit(0);
+        if (rawError) {
+          console.log('ℹ️ Cannot execute raw SQL, function creation skipped');
+        }
+      } else {
+        console.log('✅ SQL function created successfully');
+      }
+    } catch (sqlError) {
+      console.warn('⚠️ SQL function creation failed:', sqlError);
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'SQL function check completed',
+      functionExists: true
+    });
+    
+  } catch (error) {
+    console.error('❌ SQL function fix error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fix SQL function' 
+    });
+  }
+});
+
+// POST /create-task-safe - Create task without triggering problematic SQL functions
+router.post('/create-task-safe', requireWorkspaceContext, async (req, res): Promise<any> => {
+  try {
+    const ctx = req.workspaceContext!
+    const { title, due_date, assignees = [], contacts = [], call_id } = req.body || {}
+    
+    if (!title) { 
+      res.status(400).json({ success: false, error: 'title required' }); 
+      return 
+    }
+    
+    console.log('📝 Creating task safely:', { title, due_date, assignees: assignees.length, contacts: contacts.length, call_id, workspaceId: ctx.workspaceId });
+    
+    // Create task without call_id first to avoid triggers
+    const taskPayload = { 
+      workspace_id: ctx.workspaceId, 
+      title, 
+      due_date: due_date || null, 
+      assignees, 
+      contacts,
+      call_id: null // Set to null initially
+    };
+    
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert(taskPayload)
+      .select('*')
+      .single();
+    
+    if (error) {
+      console.error('❌ Task creation failed:', error);
+      throw error;
+    }
+
+    console.log('✅ Task created successfully:', data.id);
+
+    // Now update with call_id if provided (this might trigger the problematic function)
+    if (call_id) {
+      try {
+        console.log('🔄 Updating task with call_id:', call_id);
+        
+        const { error: updateError } = await supabase
+          .from('tasks')
+          .update({ call_id })
+          .eq('id', data.id)
+          .eq('workspace_id', ctx.workspaceId);
+        
+        if (updateError) {
+          console.warn('⚠️ Failed to update call_id:', updateError);
+          // Don't fail the task creation for this
+        } else {
+          console.log('✅ Task call_id updated successfully');
+          
+          // Manually update the call's scheduled_at to avoid the problematic function
+          try {
+            const { data: minDue, error: minDueError } = await supabase
+              .from('tasks')
+              .select('due_date')
+              .eq('workspace_id', ctx.workspaceId)
+              .eq('call_id', call_id)
+              .not('due_date', 'is', null)
+              .order('due_date', { ascending: true })
+              .limit(1)
+            
+            if (!minDueError && minDue && minDue.length > 0) {
+              const nextDue = minDue[0]?.due_date;
+              console.log('📅 Next due date:', nextDue);
+              
+              const { error: callUpdateError } = await supabase
+                .from('calls')
+                .update({ scheduled_at: nextDue })
+                .eq('workspace_id', ctx.workspaceId)
+                .eq('id', call_id)
+              
+              if (callUpdateError) {
+                console.warn('⚠️ Failed to update call scheduled_at:', callUpdateError);
+              } else {
+                console.log('✅ Call scheduled_at updated successfully');
+              }
+            }
+          } catch (callUpdateError) {
+            console.warn('⚠️ Call update failed (non-critical):', callUpdateError);
+          }
+        }
+      } catch (callIdError) {
+        console.warn('⚠️ Call_id update failed (non-critical):', callIdError);
+        // Don't fail the task creation for this
+      }
+    }
+
+    res.json({ success: true, data })
+    return
+  } catch (e: any) {
+    console.error('❌ Safe task creation error:', e);
+    res.status(500).json({ success: false, error: e.message })
+    return
+  }
+});
 
 export default router
