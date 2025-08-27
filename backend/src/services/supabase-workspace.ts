@@ -749,7 +749,7 @@ export const db = {
     };
   },
 
-  async updateCallStatus(workspaceId: number, callId: number, status: 'mql' | 'client' | 'lead') {
+  async updateCallStatus(workspaceId: number, callId: number, status: 'mql' | 'client' | 'lead' | 'agendado') {
     const { data, error } = await supabase
       .from(TABLES.CALLS)
       .update({ status })

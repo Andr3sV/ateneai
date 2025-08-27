@@ -19,7 +19,7 @@ type CallDetail = {
   agent: { id: number; name: string } | null
   phone_from: string | null
   phone_to: string | null
-  status: 'lead' | 'mql' | 'client' | null
+  status: 'lead' | 'mql' | 'client' | 'agendado' | null
   interest: 'energy' | 'alarm' | 'telco' | null
   type: 'outbound' | 'inbound' | null
   city: string | null
@@ -228,7 +228,10 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
 
   const StatusDropdown = ({ value, onChange }: { value: CallDetail['status']; onChange: (v: CallDetail['status']) => void }) => {
     const s = (value || '').toString().toLowerCase()
-    const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                      : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+                      : s === 'agendado' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
     const label = s ? (s === 'lead' ? 'No interesado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
     const isMemberOrViewer = role === 'member' || role === 'viewer'
 
@@ -241,6 +244,10 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
           <DropdownMenuItem onClick={() => onChange('mql')}>
             <span className="text-red-600">●</span>
             <span className="ml-2 text-red-600 font-medium">Mql</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('agendado')}>
+            <span className="text-blue-600">●</span>
+            <span className="ml-2 text-blue-700 font-medium">Agendado</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('client')}>
             <span className="text-green-600">●</span>

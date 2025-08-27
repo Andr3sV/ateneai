@@ -77,7 +77,7 @@ interface CallItem {
   phone_to: string | null
   agent: { id: number; name: string } | null
   city: string | null
-  status: 'lead' | 'mql' | 'client' | null
+  status: 'lead' | 'mql' | 'client' | 'agendado' | null
   interest: 'energy' | 'alarm' | 'telco' | null
   type: 'outbound' | 'inbound' | null
   call_type?: 'transfer' | 'call_later' | null
@@ -218,7 +218,7 @@ export default function CallsPage() {
           const qualifiedNow = next
             .filter(r => {
               const s = (r.status || '').toLowerCase()
-              return s === 'mql' || s === 'client'
+              return s === 'mql' || s === 'client' || s === 'agendado'
             })
             .map(r => r.id)
 
@@ -526,7 +526,10 @@ export default function CallsPage() {
 
   const StatusDropdown = ({ value, onChange }: { value: CallItem['status']; onChange: (v: CallItem['status']) => void }) => {
     const s = (value || '').toString().toLowerCase()
-    const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                      : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+                      : s === 'agendado' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
     const label = s ? (s === 'lead' ? 'No interesado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
     const isMemberOrViewer = role === 'member' || role === 'viewer'
 
@@ -539,6 +542,10 @@ export default function CallsPage() {
           <DropdownMenuItem onClick={() => onChange('mql')}> 
             <span className="text-red-600">●</span>
             <span className="ml-2 text-red-600 font-medium">Mql</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('agendado')}>
+            <span className="text-blue-600">●</span>
+            <span className="ml-2 text-blue-700 font-medium">Agendado</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('client')}>
             <span className="text-green-600">●</span>
@@ -601,6 +608,7 @@ export default function CallsPage() {
               <SelectItem value="lead">Lead</SelectItem>
               <SelectItem value="mql">MQL</SelectItem>
               <SelectItem value="client">Client</SelectItem>
+              <SelectItem value="agendado">Agendado</SelectItem>
             </SelectContent>
           </Select>
 
