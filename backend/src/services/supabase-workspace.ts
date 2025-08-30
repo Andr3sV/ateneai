@@ -773,6 +773,18 @@ export const db = {
     return data;
   },
 
+  async updateCallInterest(workspaceId: number, callId: number, interest: 'energy' | 'alarm' | 'telco' | null) {
+    const { data, error } = await supabase
+      .from(TABLES.CALLS)
+      .update({ interest })
+      .eq('workspace_id', workspaceId)
+      .eq('id', callId)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   // ================================================
   // BATCH CALLS (workspace-scoped)
   // ================================================

@@ -578,10 +578,39 @@ export default function CallsPage() {
     )
   }
 
-  const getInterestBadge = (interest: CallItem['interest']) => {
-    if (!interest) return <span className="text-gray-400">-</span>
-    const text = interest.charAt(0).toUpperCase() + interest.slice(1)
-    return <Badge className="bg-gray-100 text-gray-700">{text}</Badge>
+  const InterestDropdown = ({ value, onChange }: { value: CallItem['interest']; onChange: (v: CallItem['interest']) => void }) => {
+    const i = (value || '').toString().toLowerCase()
+    const badgeColor = i === 'energy' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
+                      : i === 'alarm' ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+                      : i === 'telco' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const label = i ? (i.charAt(0).toUpperCase() + i.slice(1)) : '-'
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Badge className={`${badgeColor} cursor-pointer`}>{label}</Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onClick={() => onChange('energy')}> 
+            <span className="text-yellow-600">●</span>
+            <span className="ml-2 text-yellow-700 font-medium">Energy</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('alarm')}>
+            <span className="text-red-600">●</span>
+            <span className="ml-2 text-red-700 font-medium">Alarm</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('telco')}>
+            <span className="text-blue-600">●</span>
+            <span className="ml-2 text-blue-700 font-medium">Telco</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(null)}>
+            <span className="text-gray-500">●</span>
+            <span className="ml-2 text-gray-700 font-medium">None</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
   }
 
   const getCallTypeBadge = (callType: CallItem['call_type']) => {
@@ -704,7 +733,23 @@ export default function CallsPage() {
 
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {getInterestBadge(c.interest)}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <InterestDropdown
+                          value={c.interest}
+                          onChange={async (next) => {
+                            try {
+                              await authenticatedFetch(getApiUrl(`calls/${c.id}/interest`), {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ interest: next }),
+                              })
+                              setCalls((prev) => prev.map((row) => row.id === c.id ? { ...row, interest: next } : row))
+                            } catch (e) {
+                              console.error('Failed updating call interest', e)
+                            }
+                          }}
+                        />
+                      </div>
                       {getCallTypeBadge(c.call_type || null)}
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
@@ -842,8 +887,23 @@ export default function CallsPage() {
                         }}
                       />
                     </TableCell>
-                    <TableCell className="py-4">
-                      {getInterestBadge(c.interest)}
+                    <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                      <InterestDropdown
+                        value={c.interest}
+                        onChange={async (next) => {
+                          try {
+                            await authenticatedFetch(getApiUrl(`calls/${c.id}/interest`), {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ interest: next }),
+                            })
+                            // Update locally without refetch to keep UI snappy
+                            setCalls((prev) => prev.map((row) => row.id === c.id ? { ...row, interest: next } : row))
+                          } catch (e) {
+                            console.error('Failed updating call interest', e)
+                          }
+                        }}
+                      />
                     </TableCell>
                     <TableCell className="py-4">
                       {getCallTypeBadge(c.call_type || null)}

@@ -262,16 +262,39 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
     )
   }
 
-  const renderInterestBadge = (interest: CallDetail['interest']) => {
-    if (!interest) return null
-    const i = interest.toLowerCase()
-    const styles = i === 'energy'
-      ? 'bg-emerald-100 text-emerald-800'
-      : i === 'alarm'
-      ? 'bg-red-100 text-red-800'
-      : 'bg-violet-100 text-violet-800'
-    const text = i.charAt(0).toUpperCase() + i.slice(1)
-    return <Badge className={styles}>{text}</Badge>
+  const InterestDropdown = ({ value, onChange }: { value: CallDetail['interest']; onChange: (v: CallDetail['interest']) => void }) => {
+    const i = (value || '').toString().toLowerCase()
+    const badgeColor = i === 'energy' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
+                      : i === 'alarm' ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+                      : i === 'telco' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const label = i ? (i.charAt(0).toUpperCase() + i.slice(1)) : '-'
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Badge className={`${badgeColor} cursor-pointer`}>{label}</Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onClick={() => onChange('energy')}> 
+            <span className="text-yellow-600">●</span>
+            <span className="ml-2 text-yellow-700 font-medium">Energy</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('alarm')}>
+            <span className="text-red-600">●</span>
+            <span className="ml-2 text-red-700 font-medium">Alarm</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('telco')}>
+            <span className="text-blue-600">●</span>
+            <span className="ml-2 text-blue-700 font-medium">Telco</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(null)}>
+            <span className="text-gray-500">●</span>
+            <span className="ml-2 text-gray-700 font-medium">None</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
   }
 
   return (
@@ -310,7 +333,22 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                       }
                     }}
                   />
-                  {renderInterestBadge(call?.interest || null)}
+                  <InterestDropdown
+                    value={call?.interest || null}
+                    onChange={async (next) => {
+                      if (!call) return
+                      try {
+                        await authenticatedFetch(getApiUrl(`calls/${call.id}/interest`), {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ interest: next }),
+                        })
+                        setCall({ ...call, interest: next })
+                      } catch (e) {
+                        console.error('Failed updating call interest', e)
+                      }
+                    }}
+                  />
                   {/* Assignee dropdown - only for admin/owner */}
                   {(role !== 'member' && role !== 'viewer') ? (
                     <DropdownMenu>

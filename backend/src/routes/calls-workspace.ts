@@ -119,6 +119,36 @@ router.put('/:id(\\d+)/status', requireWorkspaceContext, async (req, res): Promi
   }
 })
 
+// Update call interest
+router.put('/:id(\\d+)/interest', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    const id = parseInt(req.params.id as string)
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ success: false, error: 'Invalid id' })
+      return;
+    }
+    
+    const body = req.body as { interest?: string | null }
+    const next = body.interest ?? null
+    
+    const allowed = ['energy', 'alarm', 'telco', null]
+    if (!allowed.includes(next)) {
+      res.status(400).json({ success: false, error: `Invalid interest. Allowed: ${allowed.filter(Boolean).join(', ')}, or null` })
+      return;
+    }
+    
+    const updated = await db.updateCallInterest(req.workspaceContext.workspaceId, id, next as 'energy' | 'alarm' | 'telco' | null)
+    res.json({ success: true, data: updated })
+  } catch (error: any) {
+    console.error('❌ Error in PUT /calls/:id/interest:', error)
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 // Update services count (number of services) for a call
 router.put('/:id(\\d+)/services-count', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {
