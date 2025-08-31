@@ -264,10 +264,7 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
 
   const InterestDropdown = ({ value, onChange }: { value: CallDetail['interest']; onChange: (v: CallDetail['interest']) => void }) => {
     const i = (value || '').toString().toLowerCase()
-    const badgeColor = i === 'energy' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
-                      : i === 'alarm' ? 'bg-red-100 text-red-800 hover:bg-red-200' 
-                      : i === 'telco' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const badgeColor = 'bg-gray-100 text-gray-700 hover:bg-gray-200'
     const label = i ? (i.charAt(0).toUpperCase() + i.slice(1)) : '-'
 
     return (
