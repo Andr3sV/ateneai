@@ -57,7 +57,7 @@ export default function HomePage() {
             <div className="text-center">
               <div className="text-2xl mb-2">📞</div>
               <div className="font-medium text-gray-900">Llamadas con la AI</div>
-              <div className="text-sm text-gray-500">Iniciar conversación</div>
+              <div className="text-sm text-gray-500">Gestionar leads</div>
             </div>
           </a>
           
@@ -68,7 +68,7 @@ export default function HomePage() {
             <div className="text-center">
               <div className="text-2xl mb-2">👥</div>
               <div className="font-medium text-gray-900">Ver Contactos</div>
-              <div className="text-sm text-gray-500">Gestionar leads</div>
+              <div className="text-sm text-gray-500">Haz seguimiento</div>
             </div>
           </a>
           
