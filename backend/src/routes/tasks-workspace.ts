@@ -687,4 +687,52 @@ router.post('/create-task-safe', requireWorkspaceContext, async (req, res): Prom
   }
 });
 
+// PUT /:id - Update task
+router.put('/:id(\\d+)', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+    
+    const id = parseInt(req.params.id as string)
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ success: false, error: 'Invalid id' })
+      return;
+    }
+    
+    const { title, due_date, assignees, contacts } = req.body as any
+    
+    // Build update payload with only provided fields
+    const updatePayload: any = {}
+    if (title !== undefined) updatePayload.title = title
+    if (due_date !== undefined) updatePayload.due_date = due_date
+    if (assignees !== undefined) updatePayload.assignees = assignees
+    if (contacts !== undefined) updatePayload.contacts = contacts
+    
+    if (Object.keys(updatePayload).length === 0) {
+      res.status(400).json({ success: false, error: 'No fields to update' })
+      return;
+    }
+    
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updatePayload)
+      .eq('id', id)
+      .eq('workspace_id', req.workspaceContext.workspaceId)
+      .select('*')
+      .single();
+    
+    if (error) {
+      console.error('❌ Task update failed:', error);
+      throw error;
+    }
+    
+    res.json({ success: true, data })
+  } catch (e: any) {
+    console.error('❌ Task update error:', e);
+    res.status(500).json({ success: false, error: e.message })
+  }
+});
+
 export default router

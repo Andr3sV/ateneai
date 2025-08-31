@@ -166,15 +166,16 @@ export default function TasksPage() {
     return new Date(y, m - 1, d)
   }
 
-  const { todayRows, weekRows, upcomingRows } = useMemo(() => {
+  const { delayRows, todayRows, weekRows, upcomingRows } = useMemo(() => {
     const now = new Date()
     const sod = startOfDay(now)
     const eod = endOfDay(now)
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
-    const group = { todayRows: [] as TaskRow[], weekRows: [] as TaskRow[], upcomingRows: [] as TaskRow[] }
+    const group = { delayRows: [] as TaskRow[], todayRows: [] as TaskRow[], weekRows: [] as TaskRow[], upcomingRows: [] as TaskRow[] }
     ;(rows || []).forEach(r => {
       const d = parseDueDate(r.due_date)
       if (!d) { group.upcomingRows.push(r); return }
+      if (d < sod) { group.delayRows.push(r); return } // Tareas vencidas van en delay
       if (d >= sod && d <= eod) { group.todayRows.push(r); return }
       if (d > eod && d <= weekEnd) { group.weekRows.push(r); return }
       group.upcomingRows.push(r)
@@ -182,10 +183,14 @@ export default function TasksPage() {
     return group
   }, [rows])
 
-  const renderDue = (row: TaskRow, section: 'today' | 'week' | 'upcoming') => {
+  const renderDue = (row: TaskRow, section: 'delay' | 'today' | 'week' | 'upcoming') => {
     const now = new Date()
     const d = parseDueDate(row.due_date)
     if (!d) return '-'
+    if (section === 'delay') {
+      const days = Math.abs(differenceInDays(startOfDay(d), startOfDay(now)))
+      return days === 1 ? '1 day overdue' : `${days} days overdue`
+    }
     if (section === 'today') {
       const remainingMin = Math.max(0, differenceInMinutes(d, now))
       if (remainingMin < 60) return `${remainingMin} min left`
@@ -199,7 +204,9 @@ export default function TasksPage() {
     return format(d, 'MMM dd, yyyy')
   }
 
-  const renderSection = (title: string, items: TaskRow[], section: 'today' | 'week' | 'upcoming') => (
+
+
+  const renderSection = (title: string, items: TaskRow[], section: 'delay' | 'today' | 'week' | 'upcoming') => (
     <>
       <TableRow>
         <TableCell colSpan={4} className="py-2 text-xs text-gray-600 bg-white">{title} {items.length > 0 && <span className="ml-1">{items.length}</span>}</TableCell>
@@ -207,7 +214,7 @@ export default function TasksPage() {
       {items.map(r => (
         <TableRow key={r.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => { setEditing(r); setModalOpen(true) }}>
           <TableCell className="py-3">{r.title}</TableCell>
-          <TableCell className={`py-3 ${section === 'upcoming' ? 'text-gray-800' : 'text-orange-600 font-medium'}`}>{renderDue(r, section)}</TableCell>
+          <TableCell className={`py-3 ${section === 'upcoming' ? 'text-gray-800' : section === 'delay' ? 'text-red-600 font-medium' : 'text-orange-600 font-medium'}`}>{renderDue(r, section)}</TableCell>
           <TableCell className="py-3">{r.assignees?.map(a => a.name).join(', ') || '-'}</TableCell>
           <TableCell className="py-3">
             {r.contacts?.map((c, index) => (
@@ -305,6 +312,7 @@ export default function TasksPage() {
                   <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">No tasks</TableCell></TableRow>
                 ) : (
                   <>
+                    {renderSection('Delay', delayRows, 'delay')}
                     {renderSection('Today', todayRows, 'today')}
                     {renderSection('This week', weekRows, 'week')}
                     {renderSection('Upcoming', upcomingRows, 'upcoming')}

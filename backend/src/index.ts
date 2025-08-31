@@ -34,6 +34,12 @@ import { MIGRATION_CONFIG, logMigrationEvent } from './config/migration';
 dotenv.config(); // Load .env first
 dotenv.config({ path: '.env.local', override: true }); // Override with .env.local for development
 
+// Debug: Log environment variables (remove in production)
+console.log('🔧 Environment check:');
+console.log('CLERK_SECRET_KEY:', process.env.CLERK_SECRET_KEY ? '✅ Set' : '❌ Missing');
+console.log('CLERK_PUBLISHABLE_KEY:', process.env.CLERK_PUBLISHABLE_KEY ? '✅ Set' : '❌ Missing');
+console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
