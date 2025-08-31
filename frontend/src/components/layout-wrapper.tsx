@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { WorkspaceProvider } from "@/hooks/useWorkspaceContext"
 
-const DASHBOARD_ROUTES = ['/dashboard', '/conversations', '/contacts', '/messages', '/calls', '/tasks', '/notes']
+const DASHBOARD_ROUTES = ['/dashboard', '/messages', '/contacts', '/calls', '/tasks', '/notes']
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

@@ -33,6 +33,38 @@ import {
 } from "lucide-react"
 import { getApiUrl, logMigrationEvent } from '@/config/features'
 
+// Skeleton Components for loading states
+const TableRowSkeleton = () => (
+  <TableRow className="animate-pulse">
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-32"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </TableCell>
+  </TableRow>
+)
+
+const FiltersSkeleton = () => (
+  <div className="flex items-center gap-3 mb-6 animate-pulse">
+    <div className="h-10 bg-gray-200 rounded w-64"></div>
+    <div className="h-10 bg-gray-200 rounded w-32"></div>
+    <div className="h-10 bg-gray-200 rounded w-24 ml-auto"></div>
+  </div>
+)
+
 interface Contact {
   id: number
   name: string
@@ -106,21 +138,16 @@ export default function ContactsListPage() {
     contactsWithEmail: 0,
     contactsWithInstagram: 0
   })
+  const [loading, setLoading] = useState(true)
+  const [searchValue, setSearchValue] = useState('')
+  const [searchPhone, setSearchPhone] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 20,
     total: 0,
     totalPages: 0
   })
-
-  const [searchValue, setSearchValue] = useState('')
-  const [searchPhone, setSearchPhone] = useState('')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [loading, setLoading] = useState(false)
-
-  const [editingCell, setEditingCell] = useState<{contactId: number, field: string} | null>(null)
-  const [editValue, setEditValue] = useState('')
-
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false)
   const [newContact, setNewContact] = useState({
     name: '',
@@ -130,6 +157,12 @@ export default function ContactsListPage() {
     country: '',
     instagram_url: ''
   })
+
+  // Show loading state until we have actual data
+  const showSkeletons = loading || contacts.length === 0
+
+  const [editingCell, setEditingCell] = useState<{contactId: number, field: string} | null>(null)
+  const [editValue, setEditValue] = useState('')
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -358,8 +391,49 @@ export default function ContactsListPage() {
       <div className="px-6 py-4">
         <Card>
           <CardContent className="p-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-12"><div className="text-muted-foreground">Loading contacts...</div></div>
+          {showSkeletons ? (
+            <div className="flex flex-col gap-4">
+              <FiltersSkeleton />
+              <Table className="sm:table">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-200">
+                    <TableHead className="text-left font-semibold text-gray-900">Name</TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        Phone
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        Status
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Instagram className="h-4 w-4" />
+                        Instagram
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">Country</TableHead>
+                    <TableHead className="text-left font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        Last Activity
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                </TableBody>
+              </Table>
+            </div>
           ) : contacts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="h-12 w-12 text-muted-foreground mb-4" />

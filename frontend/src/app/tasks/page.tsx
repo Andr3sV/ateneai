@@ -18,6 +18,47 @@ import { Plus, Filter, Calendar as CalendarIcon, User, Link2, Loader2 } from 'lu
 import Link from 'next/link'
 import { TaskModal } from '@/components/task-modal'
 
+// Skeleton Components for loading states
+const TaskRowSkeleton = () => (
+  <TableRow className="animate-pulse">
+    <TableCell className="py-3">
+      <div className="h-4 bg-gray-200 rounded w-48"></div>
+    </TableCell>
+    <TableCell className="py-3">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </TableCell>
+    <TableCell className="py-3">
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-3">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </TableCell>
+  </TableRow>
+)
+
+const TaskSectionSkeleton = (title: string) => (
+  <>
+    <TableRow>
+      <TableCell colSpan={4} className="py-2 text-xs text-gray-600 bg-white">
+        {title} <span className="ml-1">3</span>
+      </TableCell>
+    </TableRow>
+    <TaskRowSkeleton />
+    <TaskRowSkeleton />
+    <TaskRowSkeleton />
+  </>
+)
+
+const FiltersSkeleton = () => (
+  <div className="flex items-center gap-2 animate-pulse">
+    <div className="h-10 bg-gray-200 rounded w-64"></div>
+    <div className="h-10 bg-gray-200 rounded w-32"></div>
+    <div className="h-10 bg-gray-200 rounded w-20"></div>
+    <div className="h-10 bg-gray-200 rounded w-56"></div>
+    <div className="h-10 bg-gray-200 rounded w-24 ml-auto"></div>
+  </div>
+)
+
 type TaskRow = {
   id: number
   title: string
@@ -45,8 +86,10 @@ export default function TasksPage() {
   const [members, setMembers] = useState<{ id: number; name: string }[]>([])
   const limit = 30 // Fixed limit for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-
   const inflightRef = useRef<AbortController | null>(null)
+
+  // Show loading state until we have actual data
+  const showSkeletons = loading || rows.length === 0
 
   const fetchTasks = useCallback(async (pageNum = 1, append = false) => {
     if (append) {
@@ -238,49 +281,55 @@ export default function TasksPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-2">
-        <Input placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} className="w-64" />
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm">
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              {dateStart && dateEnd ? `${format(dateStart, 'MMM dd')} - ${format(dateEnd, 'MMM dd')}` : 'Due date'}
+        {showSkeletons ? (
+          <FiltersSkeleton />
+        ) : (
+          <>
+            <Input placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} className="w-64" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {dateStart && dateEnd ? `${format(dateStart, 'MMM dd')} - ${format(dateEnd, 'MMM dd')}` : 'Due date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-3 border-b">
+                  <div className="text-sm font-medium">Start</div>
+                  <Calendar mode="single" selected={dateStart} onSelect={(d) => d && setDateStart(d)} />
+                </div>
+                <div className="p-3">
+                  <div className="text-sm font-medium">End</div>
+                  <Calendar mode="single" selected={dateEnd} onSelect={(d) => d && setDateEnd(d)} />
+                </div>
+              </PopoverContent>
+            </Popover>
+            {(dateStart || dateEnd) && (
+              <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
+            )}
+            {/* Assignee filter */}
+            {(role !== 'member' && role !== 'viewer') && (
+              <div className="flex items-center">
+                <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="All assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All assigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {members.map(m => (
+                      <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            <Button className="ml-auto" onClick={() => { setEditing(null); setModalOpen(true) }}>
+              <Plus className="h-4 w-4 mr-2" /> New task
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="p-3 border-b">
-              <div className="text-sm font-medium">Start</div>
-              <Calendar mode="single" selected={dateStart} onSelect={(d) => d && setDateStart(d)} />
-            </div>
-            <div className="p-3">
-              <div className="text-sm font-medium">End</div>
-              <Calendar mode="single" selected={dateEnd} onSelect={(d) => d && setDateEnd(d)} />
-            </div>
-          </PopoverContent>
-        </Popover>
-        {(dateStart || dateEnd) && (
-          <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
+          </>
         )}
-        {/* Assignee filter */}
-        {(role !== 'member' && role !== 'viewer') && (
-          <div className="flex items-center">
-            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-              <SelectTrigger className="w-56">
-                <SelectValue placeholder="All assigned" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All assigned</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {members.map(m => (
-                  <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        
-        <Button className="ml-auto" onClick={() => { setEditing(null); setModalOpen(true) }}>
-          <Plus className="h-4 w-4 mr-2" /> New task
-        </Button>
       </div>
 
       <Card className="border shadow-sm">
@@ -306,8 +355,13 @@ export default function TasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">Loading…</TableCell></TableRow>
+                {showSkeletons ? (
+                  <>
+                    {TaskSectionSkeleton('Delay')}
+                    {TaskSectionSkeleton('Today')}
+                    {TaskSectionSkeleton('This week')}
+                    {TaskSectionSkeleton('Upcoming')}
+                  </>
                 ) : rows.length === 0 ? (
                   <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">No tasks</TableCell></TableRow>
                 ) : (

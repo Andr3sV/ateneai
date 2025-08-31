@@ -15,6 +15,27 @@ import { format } from 'date-fns'
 import { User, Plus, Link2, Calendar as CalendarIcon, Loader2 } from 'lucide-react'
 import { CallModal } from '@/components/call-modal'
 
+// Skeleton Component for loading state
+const TableRowSkeleton = () => (
+  <TableRow className="animate-pulse">
+    <TableCell className="py-3">
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-full"></div>
+        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+      </div>
+    </TableCell>
+    <TableCell className="py-3">
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-3">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </TableCell>
+    <TableCell className="py-3">
+      <div className="h-4 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+  </TableRow>
+)
+
 interface NoteRow {
   id: number
   workspace_id: number
@@ -103,6 +124,9 @@ export default function NotesPage() {
 
   useEffect(() => { fetchNotes(1, false) }, [fetchNotes])
 
+  // Show loading state until we have actual data
+  const showSkeletons = loading || rows.length === 0
+
   const handleCreate = async () => {
     if (!newContent.trim() || !userId) return
     setSubmitting(true)
@@ -154,8 +178,14 @@ export default function NotesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">Loading…</TableCell></TableRow>
+                {showSkeletons ? (
+                  <>
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                  </>
                 ) : rows.length === 0 ? (
                   <TableRow><TableCell colSpan={4} className="py-8 text-center text-gray-500">No notes</TableCell></TableRow>
                 ) : (

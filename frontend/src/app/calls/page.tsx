@@ -21,6 +21,71 @@ import { CallModal } from '@/components/call-modal'
 import { Switch } from '@/components/ui/switch'
 import supabase from '@/lib/supabase'
 
+// Skeleton Components for loading states
+const TableRowSkeleton = () => (
+  <TableRow className="animate-pulse">
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-12"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+  </TableRow>
+)
+
+const MobileCardSkeleton = () => (
+  <div className="border rounded-lg p-4 mb-3 animate-pulse">
+    <div className="flex justify-between items-start mb-3">
+      <div className="h-5 bg-gray-200 rounded w-32"></div>
+      <div className="h-5 bg-gray-200 rounded w-16"></div>
+    </div>
+    <div className="space-y-2 mb-3">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+      <div className="h-4 bg-gray-200 rounded w-28"></div>
+    </div>
+    <div className="flex gap-2">
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+    </div>
+  </div>
+)
+
+const FiltersSkeleton = () => (
+  <div className="flex flex-wrap gap-3 mb-6 animate-pulse">
+    <div className="h-10 bg-gray-200 rounded w-32"></div>
+    <div className="h-10 bg-gray-200 rounded w-32"></div>
+    <div className="h-10 bg-gray-200 rounded w-32"></div>
+    <div className="h-10 bg-gray-200 rounded w-32"></div>
+    <div className="h-10 bg-gray-200 rounded w-32"></div>
+  </div>
+)
+
 // light-weight confetti (dynamic import to avoid SSR issues)
 let confettiFn: ((opts?: any) => void) | null = null
 async function fireConfetti() {
@@ -124,8 +189,11 @@ export default function CallsPage() {
     const handler = () => setIsDesktop(!!mq?.matches)
     handler()
     mq?.addEventListener('change', handler)
-    return () => mq?.removeEventListener('change', handler)
+    return () => { mq?.removeEventListener('change', handler) }
   }, [])
+
+  // Show loading state until we have actual data
+  const showSkeletons = loading || calls.length === 0
 
   const callsSignature = (list: CallItem[]) =>
     list
@@ -175,9 +243,16 @@ export default function CallsPage() {
       
       // If external signal is provided, listen to it
       if (signal) {
-        signal.addEventListener('abort', () => {
-          ctrl?.abort()
-        })
+        try {
+          signal.addEventListener('abort', () => {
+            if (ctrl && !ctrl.signal.aborted) {
+              ctrl.abort();
+            }
+          });
+        } catch (error) {
+          // Ignore errors from signal handling
+          console.log('🔄 Signal handling error, continuing without external abort');
+        }
       }
       
       const params = new URLSearchParams({ page: String(pageNum), limit: String(pagination.limit) })
@@ -273,7 +348,12 @@ export default function CallsPage() {
     
     // Force clear any existing request to ensure fresh start
     if (inflightRefCalls.current) {
-      inflightRefCalls.current.abort();
+      try {
+        inflightRefCalls.current.abort();
+      } catch (error) {
+        // Ignore abort errors
+        console.log('🔄 Aborting previous request');
+      }
       inflightRefCalls.current = null;
     }
     
@@ -285,7 +365,12 @@ export default function CallsPage() {
     fetchCalls(1, true, controller.signal);
     
     return () => {
-      controller.abort();
+      try {
+        controller.abort();
+      } catch (error) {
+        // Ignore abort errors
+        console.log('🔄 Cleanup: Aborting controller');
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
@@ -623,83 +708,96 @@ export default function CallsPage() {
       {/* Filters header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Removed From filter per request */}
-          {/* <Input placeholder="From" value={fromFilter} onChange={(e) => setFromFilter(e.target.value)} className="w-40" /> */}
-          <Input placeholder="To" value={toFilter} onChange={(e) => setToFilter(e.target.value)} className="w-40" />
+          {/* Show skeleton filters when loading and no members loaded yet */}
+          {showSkeletons && members.length === 0 ? (
+            <FiltersSkeleton />
+          ) : (
+            <>
+              {/* Removed From filter per request */}
+              {/* <Input placeholder="From" value={fromFilter} onChange={(e) => setFromFilter(e.target.value)} className="w-40" /> */}
+              <Input placeholder="To" value={toFilter} onChange={(e) => setToFilter(e.target.value)} className="w-40" />
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All status</SelectItem>
-              <SelectItem value="lead">Lead</SelectItem>
-              <SelectItem value="mql">MQL</SelectItem>
-              <SelectItem value="client">Client</SelectItem>
-              <SelectItem value="agendado">Agendado</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All status</SelectItem>
+                  <SelectItem value="lead">Lead</SelectItem>
+                  <SelectItem value="mql">MQL</SelectItem>
+                  <SelectItem value="client">Client</SelectItem>
+                  <SelectItem value="agendado">Agendado</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <Select value={interestFilter} onValueChange={setInterestFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Interest" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All interests</SelectItem>
-              <SelectItem value="energy">Energy</SelectItem>
-              <SelectItem value="alarm">Alarm</SelectItem>
-              <SelectItem value="telco">Telco</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select value={interestFilter} onValueChange={setInterestFilter}>
+                <SelectTrigger className="w-44"><SelectValue placeholder="Interest" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All interests</SelectItem>
+                  <SelectItem value="energy">Energy</SelectItem>
+                  <SelectItem value="alarm">Alarm</SelectItem>
+                  <SelectItem value="telco">Telco</SelectItem>
+                </SelectContent>
+              </Select>
 
-          {/* Assignee filter only for admin/owner */}
-          {(role !== 'member' && role !== 'viewer') && (
-            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-              <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All assigned</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {members.map(m => (
-                  <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Assignee filter only for admin/owner */}
+              {(role !== 'member' && role !== 'viewer') && (
+                <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                  <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All assigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {members.map(m => (
+                      <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Date range - use Contacts dashboard style: single button shows current range, popover with start/end calendars */}
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {dateStart && dateEnd ? `${formatDate(dateStart, 'MMM dd')} - ${formatDate(dateEnd, 'MMM dd')}` : 'Select range'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <div className="p-3 border-b">
+                      <div className="text-sm font-medium">Start Date</div>
+                      <Calendar mode="single" selected={dateStart} onSelect={(d) => d && setDateStart(d)} required={false} />
+                    </div>
+                    <div className="p-3">
+                      <div className="text-sm font-medium">End Date</div>
+                      <Calendar mode="single" selected={dateEnd} onSelect={(d) => d && setDateEnd(d)} required={false} />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {(dateStart || dateEnd) && (
+                  <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
+                )}
+              </div>
+              <div className="ml-auto flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎉</span>
+                  <Switch checked={celebrateEnabled} onCheckedChange={setCelebrateEnabled} />
+                </div>
+              </div>
+            </>
           )}
-
-          {/* Date range - use Contacts dashboard style: single button shows current range, popover with start/end calendars */}
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {dateStart && dateEnd ? `${formatDate(dateStart, 'MMM dd')} - ${formatDate(dateEnd, 'MMM dd')}` : 'Select range'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <div className="p-3 border-b">
-                  <div className="text-sm font-medium">Start Date</div>
-                  <Calendar mode="single" selected={dateStart} onSelect={(d) => d && setDateStart(d)} required={false} />
-                </div>
-                <div className="p-3">
-                  <div className="text-sm font-medium">End Date</div>
-                  <Calendar mode="single" selected={dateEnd} onSelect={(d) => d && setDateEnd(d)} required={false} />
-                </div>
-              </PopoverContent>
-            </Popover>
-            {(dateStart || dateEnd) && (
-              <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
-            )}
-          </div>
-          <div className="ml-auto flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🎉</span>
-              <Switch checked={celebrateEnabled} onCheckedChange={setCelebrateEnabled} />
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Mobile cards list (Attio-inspired) */}
       <Card className="block md:hidden" hidden={isDesktop}>
         <CardContent className="p-4">
-          {loading ? (
-            <div className="text-center text-muted-foreground py-8">Loading...</div>
+          {showSkeletons ? (
+            <>
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+            </>
           ) : calls.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">No results</div>
           ) : (
@@ -824,11 +922,15 @@ export default function CallsPage() {
             </TableRow>
           </TableHeader>
             <TableBody>
-            {loading ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">Loading...</TableCell>
-              </TableRow>
-            ) : calls.length === 0 ? (
+              {showSkeletons ? (
+                <>
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                </>
+              ) : calls.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No results</TableCell>
               </TableRow>

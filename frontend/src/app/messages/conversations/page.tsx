@@ -31,6 +31,60 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 
+// Skeleton Components
+const TableRowSkeleton = () => (
+  <TableRow className="animate-pulse">
+    <TableCell className="py-4">
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col">
+          <div className="h-4 bg-gray-200 rounded w-24 mb-1"></div>
+          <div className="h-3 bg-gray-200 rounded w-20"></div>
+        </div>
+      </div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="flex items-center gap-2">
+        <div className="h-4 bg-gray-200 rounded w-20"></div>
+      </div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-32"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-16"></div>
+    </TableCell>
+  </TableRow>
+)
+
+const MobileCardSkeleton = () => (
+  <div className="p-4 animate-pulse">
+    <div className="flex items-start gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="h-4 bg-gray-200 rounded w-24"></div>
+          <div className="h-5 bg-gray-200 rounded w-16"></div>
+        </div>
+        <div className="h-3 bg-gray-200 rounded w-20 mb-1"></div>
+        <div className="h-3 bg-gray-200 rounded w-32"></div>
+      </div>
+    </div>
+  </div>
+)
+
+const FiltersSkeleton = () => (
+  <div className="flex flex-wrap items-center gap-4 animate-pulse">
+    <div className="h-9 bg-gray-200 rounded w-64"></div>
+    <div className="h-9 bg-gray-200 rounded w-48"></div>
+    <div className="h-9 bg-gray-200 rounded w-56"></div>
+  </div>
+)
+
 interface Conversation {
   id: number
   status: string
@@ -81,6 +135,20 @@ export default function ConversationsPage() {
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('')
 
+  // Show loading state until we have actual data
+  const showSkeletons = loading || conversations.length === 0 || !user
+
+  // Debug logging for skeleton state
+  useEffect(() => {
+    console.log('🔄 Skeleton state changed:', { 
+      loading, 
+      conversationsLength: conversations.length, 
+      showSkeletons,
+      hasUser: !!user,
+      timestamp: new Date().toISOString()
+    })
+  }, [loading, conversations.length])
+
   // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -92,7 +160,10 @@ export default function ConversationsPage() {
 
   useEffect(() => {
     if (user) {
+      console.log('👤 User authenticated, calling fetchConversations')
       fetchConversations(1)
+    } else {
+      console.log('⏳ No user yet, waiting for authentication')
     }
   }, [user])
 
@@ -224,7 +295,10 @@ export default function ConversationsPage() {
 
   const fetchConversations = async (pageNum = 1, silent = false) => {
     try {
-      if (!silent) setLoading(true)
+      if (!silent) {
+        console.log('🚀 Starting fetchConversations, setting loading to true')
+        setLoading(true)
+      }
 
       // Construir URL con filtros
       const params = new URLSearchParams({
@@ -265,7 +339,10 @@ export default function ConversationsPage() {
     } catch (error) {
       console.error('Error fetching conversations:', error)
     } finally {
-      if (!silent) setLoading(false)
+      if (!silent) {
+        console.log('✅ fetchConversations completed, setting loading to false')
+        setLoading(false)
+      }
     }
   }
 
@@ -565,74 +642,74 @@ export default function ConversationsPage() {
     return phone // Devolver original si no se puede formatear
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-gray-900">Conversations</h1>
-          <p className="text-gray-600">Gestiona todas las conversaciones</p>
-        </div>
-        <div className="flex items-center justify-center h-32">
-          <div className="text-gray-500">Cargando conversaciones...</div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-1 flex-col">
+      {console.log('🔄 Rendering main table:', { 
+        showSkeletons, 
+        loading, 
+        conversationsLength: conversations.length,
+        hasUser: !!user,
+        timestamp: new Date().toISOString()
+      })}
+      
       {/* Filters directly below header - compact spacing, no frame */}
       <div className="px-6 py-4 bg-background">
         <div className="flex items-center gap-4">
-          {/* Search */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar por nombre o teléfono..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64"
-              />
+          {showSkeletons ? (
+            <FiltersSkeleton />
+          ) : (
+            <>
+              {/* Search */}
+              <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nombre o teléfono..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-64"
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  Search
+                </Button>
+              </form>
+
+              {/* Status Filter */}
+              <div className="flex items-center space-x-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="closed_timeout">Closed Timeout</SelectItem>
+                    <SelectItem value="closed_human">Closed Human</SelectItem>
+                  </SelectContent>
+                </Select>
             </div>
-            <Button 
-              type="submit"
-              variant="outline"
-              className="whitespace-nowrap"
-            >
-              Search
-            </Button>
-          </form>
 
-          {/* Status Filter */}
-          <div className="flex items-center space-x-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="closed_timeout">Closed Timeout</SelectItem>
-                <SelectItem value="closed_human">Closed Human</SelectItem>
-              </SelectContent>
-            </Select>
-      </div>
-
-          {/* Assigned To Filter */}
-          <div className="flex items-center space-x-2">
-            <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
-              <SelectTrigger className="w-56">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los asignados</SelectItem>
-                <SelectItem value="agent_1">IA</SelectItem>
-                <SelectItem value="human">Human</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              {/* Assigned To Filter */}
+              <div className="flex items-center space-x-2">
+                <Select value={assignedToFilter} onValueChange={setAssignedToFilter}>
+                  <SelectTrigger className="w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los asignados</SelectItem>
+                    <SelectItem value="agent_1">IA</SelectItem>
+                    <SelectItem value="human">Human</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
         </div>
         
@@ -641,7 +718,15 @@ export default function ConversationsPage() {
         <div className="bg-white rounded-lg border shadow-sm p-4">
         {/* Mobile list */}
         <div className="sm:hidden divide-y">
-          {conversations.length === 0 ? (
+          {showSkeletons ? (
+            <>
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+              <MobileCardSkeleton />
+            </>
+          ) : conversations.length === 0 ? (
             <div className="p-4 text-center text-gray-500">{loading ? 'Cargando...' : 'No hay conversaciones disponibles'}</div>
           ) : (
             conversations.map((c) => (
@@ -694,7 +779,15 @@ export default function ConversationsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {conversations.length === 0 ? (
+            {showSkeletons ? (
+              <>
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+              </>
+            ) : conversations.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12 text-gray-500">
                   {loading ? 'Cargando...' : 'No hay conversaciones disponibles'}

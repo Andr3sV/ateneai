@@ -10,6 +10,32 @@ import { Progress } from "@/components/ui/progress"
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch"
 import { CampaignModal } from "@/components/campaign-modal"
 
+// Skeleton Component for loading state
+const CampaignCardSkeleton = () => (
+  <Card className="p-4 flex flex-col gap-3 border-gray-200 shadow-sm animate-pulse">
+    <div className="flex items-start justify-between">
+      <div className="space-y-1">
+        <div className="h-4 bg-gray-200 rounded w-32"></div>
+        <div className="h-3 bg-gray-200 rounded w-24"></div>
+      </div>
+      <div className="h-5 bg-gray-200 rounded w-16"></div>
+    </div>
+    
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <div className="h-3 bg-gray-200 rounded w-16"></div>
+        <div className="h-3 bg-gray-200 rounded w-12"></div>
+      </div>
+      <div className="h-1.5 bg-gray-200 rounded"></div>
+    </div>
+    
+    <div className="flex items-center justify-between">
+      <div className="h-3 bg-gray-200 rounded w-20"></div>
+      <div className="h-3 bg-gray-200 rounded w-24"></div>
+    </div>
+  </Card>
+)
+
 type BatchRow = {
   id: number
   name: string
@@ -189,16 +215,32 @@ export default function CampaignsPage() {
     <div className="flex flex-1 flex-col p-6 gap-6">
       {/* Search + primary action */}
       <div className="flex items-center justify-between gap-3">
-        <div className="w-72">
-          <Input placeholder="Search Batch Calls…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <Button asChild>
-          <Link href="/calls/campaigns/create">Create a batch call</Link>
-        </Button>
+        {loading ? (
+          <>
+            <div className="h-10 bg-gray-200 rounded w-72 animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded w-40 animate-pulse"></div>
+          </>
+        ) : (
+          <>
+            <div className="w-72">
+              <Input placeholder="Search Batch Calls…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <Button asChild>
+              <Link href="/calls/campaigns/create">Create a batch call</Link>
+            </Button>
+          </>
+        )}
       </div>
 
       {loading ? (
-        <Card className="p-6 text-gray-600">Loading…</Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <CampaignCardSkeleton />
+          <CampaignCardSkeleton />
+          <CampaignCardSkeleton />
+          <CampaignCardSkeleton />
+          <CampaignCardSkeleton />
+          <CampaignCardSkeleton />
+        </div>
       ) : filtered.length === 0 ? (
         <Card className="p-6 text-gray-600">No campaigns yet.</Card>
       ) : (

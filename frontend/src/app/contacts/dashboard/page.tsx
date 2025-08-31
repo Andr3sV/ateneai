@@ -12,6 +12,23 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { format, subDays } from 'date-fns'
 import { Calendar as CalendarIcon, TrendingUp, Phone, Instagram, Mail, Users } from "lucide-react"
 
+// Skeleton Components for loading states
+const StatCardSkeleton = () => (
+  <div className="bg-white shadow rounded-lg p-6 animate-pulse">
+    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+    <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+  </div>
+)
+
+const ChartSkeleton = () => (
+  <div className="bg-white shadow rounded-lg p-6 animate-pulse">
+    <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+    <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+    <div className="h-80 bg-gray-100 rounded"></div>
+  </div>
+)
+
 interface DashboardStats {
   contacts: {
     totalContacts: number
@@ -103,18 +120,40 @@ export default function ContactsDashboardPage() {
         </Popover>
       </div>
 
-      {/* Contacts Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Contacts" value={loading ? '...' : (stats?.contacts?.totalContacts ?? 0)} description="All contacts in database" icon={<Users className="h-4 w-4" />} />
-        <StatCard title="Leads" value={loading ? '...' : (stats?.contacts?.leads ?? 0)} description="Contactos en etapa lead" icon={<Users className="h-4 w-4" />} />
-        <StatCard title="Clients" value={loading ? '...' : (stats?.contacts?.clients ?? 0)} description="Contactos activos clientes" icon={<Users className="h-4 w-4" />} />
-        <StatCard title="Conversion Rate" value={loading ? '...' : `${stats?.contacts?.conversionRate ?? 0}%`} description="Leads a clientes" icon={<TrendingUp className="h-4 w-4" />} />
+        {loading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard title="Total Contacts" value={stats?.contacts?.totalContacts ?? 0} description="All contacts in database" icon={<Users className="h-4 w-4" />} />
+            <StatCard title="Leads" value={stats?.contacts?.leads ?? 0} description="Contactos en etapa lead" icon={<Users className="h-4 w-4" />} />
+            <StatCard title="Clients" value={stats?.contacts?.clients ?? 0} description="Contactos activos clientes" icon={<Users className="h-4 w-4" />} />
+            <StatCard title="Conversion Rate" value={`${stats?.contacts?.conversionRate ?? 0}%`} description="Leads a clientes" icon={<TrendingUp className="h-4 w-4" />} />
+          </>
+        )}
       </div>
 
+      {/* Field Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="Phones" value={loading ? '...' : (stats?.contacts?.fields?.phones ?? 0)} description="Contactos con teléfono" icon={<Phone className="h-4 w-4" />} />
-        <StatCard title="Instagrams" value={loading ? '...' : (stats?.contacts?.fields?.instagrams ?? 0)} description="Contactos con Instagram" icon={<Instagram className="h-4 w-4" />} />
-        <StatCard title="Emails" value={loading ? '...' : (stats?.contacts?.fields?.emails ?? 0)} description="Contactos con email" icon={<Mail className="h-4 w-4" />} />
+        {loading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard title="Phones" value={stats?.contacts?.fields?.phones ?? 0} description="Contactos con teléfono" icon={<Phone className="h-4 w-4" />} />
+            <StatCard title="Instagrams" value={stats?.contacts?.fields?.instagrams ?? 0} description="Contactos con Instagram" icon={<Instagram className="h-4 w-4" />} />
+            <StatCard title="Emails" value={stats?.contacts?.fields?.emails ?? 0} description="Contactos con email" icon={<Mail className="h-4 w-4" />} />
+          </>
+        )}
       </div>
 
       {/* Contacts Evolution Chart */}
@@ -136,24 +175,36 @@ export default function ContactsDashboardPage() {
           </div>
         </div>
         <div className="h-80">
-          {contactsChartLoading ? (
-            <div className="flex items-center justify-center h-full"><div className="text-gray-500">Cargando gráfico...</div></div>
+          {loading || contactsChartLoading ? (
+            <div className="w-full h-full bg-gray-100 rounded animate-pulse"></div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={contactsEvolutionData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} tickFormatter={(value) => {
-                  if (chartPeriod === 'daily') return format(new Date(value), 'MMM dd')
-                  if (chartPeriod === 'monthly') return format(new Date(value + '-01'), 'MMM yyyy')
-                  return value
-                }} />
+                <XAxis 
+                  dataKey="date" 
+                  fontSize={12}
+                  tickFormatter={(value) => {
+                    if (chartPeriod === 'daily') return format(new Date(value), 'MMM dd')
+                    if (chartPeriod === 'monthly') return format(new Date(value), 'MMM yyyy')
+                    return format(new Date(value), 'yyyy')
+                  }}
+                />
                 <YAxis fontSize={12} />
-                <Tooltip labelFormatter={(value) => {
-                  if (chartPeriod === 'daily') return format(new Date(value as string), 'MMM dd, yyyy')
-                  if (chartPeriod === 'monthly') return format(new Date(value + '-01'), 'MMM yyyy')
-                  return value
-                }} formatter={(value) => [value, 'Contactos']} />
-                <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
+                <Tooltip 
+                  labelFormatter={(value) => {
+                    if (chartPeriod === 'daily') return format(new Date(value), 'MMM dd, yyyy')
+                    if (chartPeriod === 'monthly') return format(new Date(value), 'MMMM yyyy')
+                    return format(new Date(value), 'yyyy')
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           )}

@@ -74,7 +74,7 @@ export function ChatModal({ conversation, open, onOpenChange, onStatusUpdated }:
     try {
       const id = conversation?.id
       if (!id || typeof window === 'undefined') return
-      const url = `${window.location.origin}/conversations?open=${id}`
+      const url = `${window.location.origin}/messages/conversations?open=${id}`
       await navigator.clipboard.writeText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)

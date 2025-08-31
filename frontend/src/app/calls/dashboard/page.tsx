@@ -12,6 +12,30 @@ import { format, subDays } from 'date-fns'
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend, Label, BarChart, Bar } from 'recharts'
 import { StatCard } from '@/components/stat-card'
 
+// Skeleton Components for loading states
+const StatCardSkeleton = () => (
+  <div className="bg-white shadow rounded-lg p-6 animate-pulse">
+    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+    <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+  </div>
+)
+
+const ChartSkeleton = () => (
+  <div className="bg-white shadow rounded-lg p-6 animate-pulse">
+    <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+    <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+    <div className="h-80 bg-gray-100 rounded"></div>
+  </div>
+)
+
+const TableSkeleton = () => (
+  <div className="bg-white shadow rounded-lg p-6 animate-pulse">
+    <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+    <div className="h-80 bg-gray-100 rounded"></div>
+  </div>
+)
+
 interface EvolutionData { date: string; count: number }
 
 interface CallsStats {
@@ -328,44 +352,70 @@ export default function CallsDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <StatCard title="Total Calls" value={batchTotalCalls} description="Lanzadas" />
-        <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Dentro del rango" />
-        <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Dentro del rango" />
-        <StatCard title="Servicios vendidos" value={stats?.servicesSold ?? 0} description="Dentro del rango" />
-        <StatCard title="Mal cualificados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Dentro del rango" />
+        {loading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard title="Total Calls" value={batchTotalCalls} description="Lanzadas" />
+            <StatCard title="MQLs" value={stats?.statusBreakdown?.['mql'] ?? 0} description="Dentro del rango" />
+            <StatCard title="Clientes" value={stats?.statusBreakdown?.['client'] ?? 0} description="Dentro del rango" />
+            <StatCard title="Servicios vendidos" value={stats?.servicesSold ?? 0} description="Dentro del rango" />
+            <StatCard title="Mal cualificados" value={stats?.statusBreakdown?.['lead'] ?? 0} description="Dentro del rango" />
+          </>
+        )}
       </div>
 
       {/* Conversion boxes */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <StatCard title="Calls → MQL %" value={(() => {
-          const calls = batchTotalCalls || 0
-          const mqls = stats?.statusBreakdown?.['mql'] ?? 0
-          return calls > 0 ? `${Math.round((mqls / calls) * 100)}%` : '0%'
-        })()} description="Dentro del rango" />
-        <StatCard title="Calls → Client %" value={(() => {
-          const calls = batchTotalCalls || 0
-          const clients = stats?.statusBreakdown?.['client'] ?? 0
-          return calls > 0 ? `${Math.round((clients / calls) * 100)}%` : '0%'
-        })()} description="Dentro del rango" />
-        <StatCard title="MQL → Client %" value={(() => {
-          const mqls = stats?.statusBreakdown?.['mql'] ?? 0
-          const clients = stats?.statusBreakdown?.['client'] ?? 0
-          return mqls > 0 ? `${Math.round((clients / mqls) * 100)}%` : '0%'
-        })()} description="Dentro del rango" />
-        <StatCard title="Calls → Services %" value={(() => {
-          const callsLaunched = batchTotalCalls || 0
-          const services = stats?.servicesSold ?? 0
-          return callsLaunched > 0 ? `${Math.round((services / callsLaunched) * 100)}%` : '0%'
-        })()} description="Dentro del rango" />
-        <StatCard title="MQL → Services %" value={(() => {
-          const mqls = stats?.statusBreakdown?.['mql'] ?? 0
-          const services = stats?.servicesSold ?? 0
-          return mqls > 0 ? `${Math.round((services / mqls) * 100)}%` : '0%'
-        })()} description="Dentro del rango" />
+        {loading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard title="Calls → MQL %" value={(() => {
+              const calls = batchTotalCalls || 0
+              const mqls = stats?.statusBreakdown?.['mql'] ?? 0
+              return calls > 0 ? `${Math.round((mqls / calls) * 100)}%` : '0%'
+            })()} description="Dentro del rango" />
+            <StatCard title="Calls → Client %" value={(() => {
+              const calls = batchTotalCalls || 0
+              const clients = stats?.statusBreakdown?.['client'] ?? 0
+              return calls > 0 ? `${Math.round((clients / calls) * 100)}%` : '0%'
+            })()} description="Dentro del rango" />
+            <StatCard title="MQL → Client %" value={(() => {
+              const mqls = stats?.statusBreakdown?.['mql'] ?? 0
+              const clients = stats?.statusBreakdown?.['client'] ?? 0
+              return mqls > 0 ? `${Math.round((clients / mqls) * 100)}%` : '0%'
+            })()} description="Dentro del rango" />
+            <StatCard title="Calls → Services %" value={(() => {
+              const callsLaunched = batchTotalCalls || 0
+              const services = stats?.servicesSold ?? 0
+              return callsLaunched > 0 ? `${Math.round((services / callsLaunched) * 100)}%` : '0%'
+            })()} description="Dentro del rango" />
+            <StatCard title="MQL → Services %" value={(() => {
+              const mqls = stats?.statusBreakdown?.['mql'] ?? 0
+              const services = stats?.servicesSold ?? 0
+              return mqls > 0 ? `${Math.round((services / mqls) * 100)}%` : '0%'
+            })()} description="Dentro del rango" />
+          </>
+        )}
       </div>
 
       {/* Desglose por estado (VO) */}
-      {voStatusBreakdown.length > 0 && (
+      {loading ? (
+        <TableSkeleton />
+      ) : voStatusBreakdown.length > 0 ? (
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Desglose por estado (Voice Orchestrator)</h3>
           <div className="h-72">
@@ -381,26 +431,32 @@ export default function CallsDashboardPage() {
             </ResponsiveContainer>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Evolución de servicios vendidos */}
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-2">Evolución de servicios vendidos</h3>
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={servicesEvolution}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date" 
-                fontSize={12}
-                tickFormatter={(value) => formatTick(String(value), mqlChartPeriod)}
-              />
-              <YAxis fontSize={12} />
-              <Tooltip labelFormatter={(value) => formatLabel(String(value), mqlChartPeriod)} />
-              <Legend />
-              <Line type="monotone" dataKey="count" name="Servicios" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {loading ? (
+            <div className="w-full h-full bg-gray-100 rounded animate-pulse"></div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={servicesEvolution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  fontSize={12}
+                  tickFormatter={(value) => formatTick(String(value), mqlChartPeriod)}
+                />
+                <YAxis fontSize={12} />
+                <Tooltip 
+                  labelFormatter={(value) => formatLabel(String(value), mqlChartPeriod)}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="count" name="Servicios" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -431,27 +487,31 @@ export default function CallsDashboardPage() {
           </div>
 
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={evolution}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
-                  fontSize={12}
-                  tickFormatter={(value) => formatTick(String(value), chartPeriod)}
-                />
-                <YAxis fontSize={12} />
-                <Tooltip 
-                  labelFormatter={(value) => formatLabel(String(value), chartPeriod)}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="w-full h-full bg-gray-100 rounded animate-pulse"></div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={evolution}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    fontSize={12}
+                    tickFormatter={(value) => formatTick(String(value), chartPeriod)}
+                  />
+                  <YAxis fontSize={12} />
+                  <Tooltip 
+                    labelFormatter={(value) => formatLabel(String(value), chartPeriod)}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -460,31 +520,35 @@ export default function CallsDashboardPage() {
           <h3 className="text-lg font-medium text-gray-900 mb-2">Interés</h3>
           <p className="text-sm text-gray-500 mb-4">Distribución por interés</p>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie 
-                  dataKey="value" 
-                  data={interestData} 
-                  cx="50%" cy="50%" 
-                  innerRadius={55} 
-                  outerRadius={90}
-                >
-                  {interestData.map((d, idx) => (
-                    <Cell key={`cell-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                  ))}
-                  <Label
-                    value={`${TOTAL_INTEREST}`}
-                    position="center"
-                    className="text-xl font-semibold fill-gray-900"
-                  />
-                </Pie>
-                <Tooltip formatter={(value: number, name: string) => {
-                  const pct = TOTAL_INTEREST ? Math.round((value / TOTAL_INTEREST) * 100) : 0
-                  return [`${value} (${pct}%)`, name]
-                }} />
-                <Legend verticalAlign="bottom" align="center" />
-              </PieChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="w-full h-full bg-gray-100 rounded animate-pulse"></div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie 
+                    dataKey="value" 
+                    data={interestData} 
+                    cx="50%" cy="50%" 
+                    innerRadius={55} 
+                    outerRadius={90}
+                  >
+                    {interestData.map((d, idx) => (
+                      <Cell key={`cell-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                    ))}
+                    <Label
+                      value={`${TOTAL_INTEREST}`}
+                      position="center"
+                      className="text-xl font-semibold fill-gray-900"
+                    />
+                  </Pie>
+                  <Tooltip formatter={(value: number, name: string) => {
+                    const pct = TOTAL_INTEREST ? Math.round((value / TOTAL_INTEREST) * 100) : 0
+                    return [`${value} (${pct}%)`, name]
+                  }} />
+                  <Legend verticalAlign="bottom" align="center" />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -515,29 +579,35 @@ export default function CallsDashboardPage() {
           </div>
 
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={mqlEvolution}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
-                  fontSize={12}
-                  tickFormatter={(value) => formatTick(String(value), mqlChartPeriod)}
-                />
-                <YAxis fontSize={12} />
-                <Tooltip 
-                  labelFormatter={(value) => formatLabel(String(value), mqlChartPeriod)}
-                />
-                <Line type="monotone" dataKey="count" name="MQLs" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="count" name="Clientes" data={clientsEvolution} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="count" name="No interesados" data={leadEvolution} stroke="#6b7280" strokeWidth={2} dot={{ r: 2 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="w-full h-full bg-gray-100 rounded animate-pulse"></div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={mqlEvolution}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    fontSize={12}
+                    tickFormatter={(value) => formatTick(String(value), mqlChartPeriod)}
+                  />
+                  <YAxis fontSize={12} />
+                  <Tooltip 
+                    labelFormatter={(value) => formatLabel(String(value), mqlChartPeriod)}
+                  />
+                  <Line type="monotone" dataKey="count" name="MQLs" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+                  <Line type="monotone" dataKey="count" name="Clientes" data={clientsEvolution} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
+                  <Line type="monotone" dataKey="count" name="No interesados" data={leadEvolution} stroke="#6b7280" strokeWidth={2} dot={{ r: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
 
       {/* Top 5 agentes por MQL (100% width) */}
-      {agentLeaderboard.length > 0 && (
+      {loading ? (
+        <TableSkeleton />
+      ) : agentLeaderboard.length > 0 ? (
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Top 5 agentes por MQL</h3>
           <div className="h-80">
@@ -552,10 +622,12 @@ export default function CallsDashboardPage() {
             </ResponsiveContainer>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Top 5 campañas por MQL (100% width) */}
-      {topCampaignsByMql.length > 0 && (
+      {loading ? (
+        <TableSkeleton />
+      ) : topCampaignsByMql.length > 0 ? (
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Top 5 campañas por MQL</h3>
           <div className="h-80">
@@ -570,10 +642,12 @@ export default function CallsDashboardPage() {
             </ResponsiveContainer>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Top ciudades por MQL (100% width) */}
-      {mqlsByCity.length > 0 && (
+      {loading ? (
+        <TableSkeleton />
+      ) : mqlsByCity.length > 0 ? (
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Top ciudades por MQL</h3>
           <div className="h-80">
@@ -588,7 +662,7 @@ export default function CallsDashboardPage() {
             </ResponsiveContainer>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

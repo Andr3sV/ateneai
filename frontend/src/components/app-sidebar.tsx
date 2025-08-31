@@ -33,7 +33,7 @@ export function AppSidebar() {
   const { role } = useWorkspaceContext()
 
   const isMessagesActive = useMemo(
-    () => pathname.startsWith("/messages") || pathname.startsWith("/conversations") || pathname.startsWith("/social-connections"),
+    () => pathname.startsWith("/messages") || pathname.startsWith("/social-connections"),
     [pathname]
   )
   const [messagesOpen, setMessagesOpen] = useState<boolean>(isMessagesActive)
@@ -129,8 +129,8 @@ export function AppSidebar() {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/conversations")}>
-                        <Link href="/conversations">
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/messages/conversations")}>
+                        <Link href="/messages/conversations">
                           <span>Conversations</span>
                         </Link>
                       </SidebarMenuSubButton>

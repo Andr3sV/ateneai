@@ -9,6 +9,21 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { User, Tag as TagIcon, Calendar as CalendarIcon } from 'lucide-react'
 
+// Skeleton Component for loading state
+const TableRowSkeleton = () => (
+  <TableRow className="animate-pulse">
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-32"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-20"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-4 bg-gray-200 rounded w-24"></div>
+    </TableCell>
+  </TableRow>
+)
+
 interface Agent {
   id: number
   name: string
@@ -76,9 +91,13 @@ export default function CallsAgentsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Loading...</TableCell>
-                </TableRow>
+                <>
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                  <TableRowSkeleton />
+                </>
               ) : agents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-muted-foreground py-8">No agents</TableCell>

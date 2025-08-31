@@ -23,7 +23,7 @@ router.get('/:workspaceId/:conversationId/link', async (req, res): Promise<void>
     }
 
     const baseUrl = process.env.FRONTEND_URL || 'https://app.ateneai.com';
-    const directLink = `${baseUrl}/conversations?open=${conversationId}`;
+    const directLink = `${baseUrl}/messages/conversations?open=${conversationId}`;
 
     const contactName = (conversation as any)?.contact?.name || (conversation as any)?.contact_name || 'Cliente';
     const contactPhone = (conversation as any)?.contact?.phone || (conversation as any)?.contact_phone || null;
