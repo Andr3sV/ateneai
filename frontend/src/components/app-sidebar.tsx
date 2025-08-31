@@ -77,10 +77,10 @@ export function AppSidebar() {
             <SidebarMenu>
               {/* Home Dashboard */}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/dashboard"}>
-                  <Link href="/dashboard">
+                <SidebarMenuButton asChild isActive={pathname === "/home"}>
+                  <Link href="/home">
                     <Home />
-                    <span>Dashboard</span>
+                    <span>Home</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

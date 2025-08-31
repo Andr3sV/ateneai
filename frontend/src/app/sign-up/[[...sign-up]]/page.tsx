@@ -1,16 +1,10 @@
-import { SignUp } from '@clerk/nextjs'
+import { SignUp } from "@clerk/nextjs"
 
-export default function Page() {
+export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center">
       <SignUp 
-        appearance={{
-          elements: {
-            formButtonPrimary: "bg-blue-600 hover:bg-blue-700",
-            card: "shadow-lg"
-          }
-        }}
-        redirectUrl="/dashboard"
+        redirectUrl="/home"
         signInUrl="/sign-in"
       />
     </div>
