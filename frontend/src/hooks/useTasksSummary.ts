@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
+import { useWorkspaceContext } from '@/hooks/useWorkspaceContext'
 import { getApiUrl } from '@/config/features'
 import { startOfDay, endOfDay, endOfWeek } from 'date-fns'
 
@@ -22,6 +23,7 @@ export function useTasksSummary() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const authenticatedFetch = useAuthenticatedFetch()
+  const { userId } = useWorkspaceContext()
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -29,8 +31,14 @@ export function useTasksSummary() {
         setLoading(true)
         setError(null)
         
-        // Fetch all tasks (we'll filter them client-side for consistency)
-        const response = await authenticatedFetch(getApiUrl('tasks?limit=1000'))
+        // Fetch tasks filtered by current user (assignee_id)
+        const params = new URLSearchParams()
+        params.append('limit', '1000')
+        if (userId) {
+          params.append('assignee_id', String(userId))
+        }
+        
+        const response = await authenticatedFetch(getApiUrl(`tasks?${params.toString()}`))
         
         if (response?.success) {
           setTasks(response.data || [])
@@ -46,7 +54,7 @@ export function useTasksSummary() {
     }
 
     fetchTasks()
-  }, [authenticatedFetch])
+  }, [authenticatedFetch, userId])
 
   const summary = useMemo((): TasksSummary => {
     if (!tasks.length) return { today: 0, thisWeek: 0, total: 0 }
