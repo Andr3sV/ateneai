@@ -12,6 +12,8 @@ create table if not exists public.tasks (
 
 create index if not exists idx_tasks_workspace on public.tasks(workspace_id);
 create index if not exists idx_tasks_due_date on public.tasks(due_date);
+-- Add GIN index for JSONB contacts field to optimize contains queries
+create index if not exists idx_tasks_contacts_gin on public.tasks using gin(contacts);
 
 -- Trigger for updated_at
 create or replace function public.set_updated_at_tasks()

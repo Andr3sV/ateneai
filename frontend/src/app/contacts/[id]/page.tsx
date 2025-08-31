@@ -34,6 +34,19 @@ import { CallModal } from '@/components/call-modal'
 import { TaskModal } from '@/components/task-modal'
 import { getApiUrl, logMigrationEvent } from '@/config/features'
 
+// Task Skeleton Component for loading state
+const TaskSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="flex items-center justify-between p-4 border rounded-lg mb-3">
+      <div className="flex-1">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+      </div>
+      <div className="h-6 bg-gray-200 rounded w-20"></div>
+    </div>
+  </div>
+)
+
 interface Contact {
   id: number
   name: string
@@ -127,6 +140,7 @@ export default function ContactDetailPage() {
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [conversationsLoading, setConversationsLoading] = useState(false)
+  const [tasksLoading, setTasksLoading] = useState(false)
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [isChatModalOpen, setIsChatModalOpen] = useState(false)
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null)
@@ -195,86 +209,36 @@ export default function ContactDetailPage() {
     try {
       console.log('🔍 Fetching calls and tasks for contact:', contactId)
       
-      // Fetch calls
-      const callsResp = await authenticatedFetch(getApiUrl(`calls?contact_id=${contactId}&limit=50`), { muteErrors: true } as any)
+      // Set loading state for tasks
+      setTasksLoading(true)
+      
+      // Fetch calls and tasks in parallel for better performance
+      const [callsResp, tasksResp] = await Promise.all([
+        authenticatedFetch(getApiUrl(`calls?contact_id=${contactId}&limit=50`), { muteErrors: true } as any),
+        authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
+      ])
+      
       console.log('📞 Calls response:', callsResp)
+      console.log('📋 Tasks response:', tasksResp)
+      
+      // Set calls
       setCalls(callsResp?.success ? (callsResp.data || []) : [])
-
-      // Fetch tasks with improved logic
-      console.log('🔍 Fetching tasks for contact:', contactId)
       
-      // Try multiple approaches to get tasks
-      let tasksFound = false
-      
-      // Approach 1: Direct by-contact endpoint
-      try {
-        const tasksResp = await authenticatedFetch(getApiUrl(`tasks/by-contact/${contactId}`), { muteErrors: true } as any)
-        console.log('📋 Direct tasks response:', tasksResp)
-        
-        if (tasksResp?.success && Array.isArray(tasksResp.data) && tasksResp.data.length > 0) {
-          console.log('✅ Found tasks via direct endpoint:', tasksResp.data.length)
-          setTasks(tasksResp.data)
-          tasksFound = true
-        }
-      } catch (err) {
-        console.warn('⚠️ Direct tasks fetch failed:', err)
-      }
-
-      // Approach 2: If no tasks found, try fetching all tasks and filtering
-      if (!tasksFound) {
-        try {
-          console.log('🔍 Trying fallback: fetch all tasks and filter')
-          const allTasksResp = await authenticatedFetch(getApiUrl('tasks?limit=1000'), { muteErrors: true } as any)
-          console.log('📋 All tasks response:', allTasksResp)
-          
-          if (allTasksResp?.success && Array.isArray(allTasksResp.data)) {
-            const filtered = allTasksResp.data.filter((t: any) => {
-              console.log('📋 Checking task:', t.id, 'contacts:', t.contacts)
-              const arr = Array.isArray(t.contacts) ? t.contacts : []
-              const hasContact = arr.some((c: any) => {
-                const contactMatch = String(c?.id) === String(contactId)
-                console.log('📋 Contact match check:', c?.id, 'vs', contactId, '=', contactMatch)
-                return contactMatch
-              })
-              return hasContact
-            })
-            console.log('✅ Filtered tasks found:', filtered.length)
-            setTasks(filtered)
-            tasksFound = true
-          }
-        } catch (fallbackErr) {
-          console.warn('⚠️ Fallback tasks fetch failed:', fallbackErr)
-        }
-      }
-
-      // Approach 3: If still no tasks, try with different pagination
-      if (!tasksFound) {
-        try {
-          console.log('🔍 Trying with different pagination')
-          const paginatedResp = await authenticatedFetch(getApiUrl('tasks?page=1&limit=500'), { muteErrors: true } as any)
-          console.log('📋 Paginated tasks response:', paginatedResp)
-          
-          if (paginatedResp?.success && Array.isArray(paginatedResp.data)) {
-            const filtered = paginatedResp.data.filter((t: any) => {
-              const arr = Array.isArray(t.contacts) ? t.contacts : []
-              return arr.some((c: any) => String(c?.id) === String(contactId))
-            })
-            console.log('✅ Paginated filtered tasks found:', filtered.length)
-            setTasks(filtered)
-          } else {
-            console.log('📋 No tasks found, setting empty array')
-            setTasks([])
-          }
-        } catch (paginatedErr) {
-          console.warn('⚠️ Paginated tasks fetch failed:', paginatedErr)
-          setTasks([])
-        }
+      // Set tasks - use only the efficient endpoint
+      if (tasksResp?.success && Array.isArray(tasksResp.data)) {
+        console.log('✅ Tasks found:', tasksResp.data.length)
+        setTasks(tasksResp.data)
+      } else {
+        console.log('📋 No tasks found, setting empty array')
+        setTasks([])
       }
       
     } catch (error) {
       console.error('❌ Error fetching calls/tasks:', error)
       setCalls([])
       setTasks([])
+    } finally {
+      setTasksLoading(false)
     }
   }, [contactId, authenticatedFetch])
 
@@ -617,9 +581,12 @@ export default function ContactDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {conversationsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading conversations...</div>
+              {conversationsLoading || tasksLoading ? (
+                <div className="space-y-3">
+                  {/* Show skeleton loaders while loading */}
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <TaskSkeleton key={i} />
+                  ))}
                 </div>
               ) : interactions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -338,6 +338,7 @@ router.delete('/:id', requireWorkspaceContext, async (req, res): Promise<void> =
 
 // Get tasks linked to a specific contact (by contact_id inside contacts[])
 router.get('/by-contact/:contactId', requireWorkspaceContext, async (req, res): Promise<void> => {
+  const startTime = Date.now()
   try {
     const ctx = req.workspaceContext!
     const contactId = parseInt(req.params.contactId)
@@ -345,38 +346,28 @@ router.get('/by-contact/:contactId', requireWorkspaceContext, async (req, res): 
       res.status(400).json({ success: false, error: 'Invalid contact id' });
       return
     }
-    // Prefer server-side filtering using JSONB contains. Try numeric id first.
-    const containsNumeric = [{ id: contactId }]
-    const { data: numericMatches, error: numericErr } = await supabase
+    
+    console.log(`🚀 [PERF] Starting tasks query for contact ${contactId}`)
+    
+    // Use the most efficient approach: single query with numeric ID
+    const { data: tasks, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('workspace_id', ctx.workspaceId)
-      .contains('contacts', containsNumeric as any)
+      .contains('contacts', [{ id: contactId }])
       .order('due_date', { ascending: true })
       .limit(200)
-    if (numericErr) throw numericErr
-
-    // Fallback: some rows might have stored the id as a string
-    const containsString = [{ id: String(contactId) }]
-    const { data: stringMatches, error: stringErr } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('workspace_id', ctx.workspaceId)
-      .contains('contacts', containsString as any)
-      .order('due_date', { ascending: true })
-      .limit(200)
-    if (stringErr) throw stringErr
-
-    // Merge unique by id keeping order by due_date asc
-    const seen = new Set<number>()
-    const merged = [...(numericMatches || []), ...(stringMatches || [])].filter((t: any) => {
-      if (seen.has(t.id)) return false
-      seen.add(t.id)
-      return true
-    })
-    res.json({ success: true, data: merged })
+    
+    if (error) throw error
+    
+    const queryTime = Date.now() - startTime
+    console.log(`✅ [PERF] Tasks query completed in ${queryTime}ms, found ${tasks?.length || 0} tasks`)
+    
+    res.json({ success: true, data: tasks || [] })
     return
   } catch (e: any) {
+    const totalTime = Date.now() - startTime
+    console.error(`❌ [PERF] Tasks query failed after ${totalTime}ms:`, e.message)
     res.status(500).json({ success: false, error: e.message })
     return
   }
