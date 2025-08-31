@@ -110,12 +110,34 @@ export default function Home() {
             Líderes en el sector de servicio han multiplicado sus ventas gracias a SimbiosisAI
           </h3>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                <span className="text-gray-400 font-medium">Logo {i}</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            <div className="flex justify-center">
+              <Image
+                src="/intercard-logo.png"
+                alt="Intercard Solutions Logo"
+                width={240}
+                height={120}
+                className="h-32 w-auto object-contain"
+              />
+            </div>
+            <div className="flex justify-center">
+              <Image
+                src="/limforce-logo.png"
+                alt="LIMFORCE Logo"
+                width={240}
+                height={120}
+                className="h-32 w-auto object-contain"
+              />
+            </div>
+            <div className="flex justify-center">
+              <Image
+                src="/fjdenegia-logo.png"
+                alt="FJD Energía Logo"
+                width={240}
+                height={120}
+                className="h-32 w-auto object-contain"
+              />
+            </div>
           </div>
         </div>
       </section>
