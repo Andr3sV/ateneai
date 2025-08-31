@@ -50,29 +50,38 @@ export default function HomePage() {
           Acciones Rápidas
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+          <a 
+            href="/calls" 
+            className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer block text-decoration-none"
+          >
             <div className="text-center">
               <div className="text-2xl mb-2">📞</div>
-              <div className="font-medium text-gray-900">Nueva Llamada</div>
+              <div className="font-medium text-gray-900">Llamadas con la AI</div>
               <div className="text-sm text-gray-500">Iniciar conversación</div>
             </div>
-          </div>
+          </a>
           
-          <div className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+          <a 
+            href="/contacts/list" 
+            className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer block text-decoration-none"
+          >
             <div className="text-center">
               <div className="text-2xl mb-2">👥</div>
               <div className="font-medium text-gray-900">Ver Contactos</div>
               <div className="text-sm text-gray-500">Gestionar leads</div>
             </div>
-          </div>
+          </a>
           
-          <div className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+          <a 
+            href="/tasks" 
+            className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer block text-decoration-none"
+          >
             <div className="text-center">
               <div className="text-2xl mb-2">📋</div>
               <div className="font-medium text-gray-900">Ver Tareas</div>
               <div className="text-sm text-gray-500">Organizar trabajo</div>
             </div>
-          </div>
+          </a>
         </div>
       </div>
     </div>

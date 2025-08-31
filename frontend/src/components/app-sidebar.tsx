@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, MessageSquare, User, ChevronDown, Phone, Share2 } from "lucide-react"
+import { Home, MessageSquare, User, ChevronDown, Phone, Calendar, PenTool } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -72,7 +72,7 @@ export function AppSidebar() {
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Operaciones</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {/* Home Dashboard */}
@@ -89,7 +89,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith("/tasks")}>
                   <Link href="/tasks">
-                    <Share2 className="h-4 w-4" />
+                    <Calendar className="h-4 w-4" />
                     <span>Tasks</span>
                   </Link>
                 </SidebarMenuButton>
@@ -99,51 +99,10 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith("/notes")}>
                   <Link href="/notes">
-                    <Share2 className="h-4 w-4" />
+                    <PenTool className="h-4 w-4" />
                     <span>Notes</span>
                   </Link>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Messages collapsible */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={isMessagesActive}
-                  onClick={() => setMessagesOpen((v) => !v)}
-                  className="justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    <span>Messages</span>
-                  </div>
-                  <ChevronDown className={cn("transition-transform", messagesOpen ? "rotate-180" : "rotate-0")} />
-                </SidebarMenuButton>
-
-                {messagesOpen && (
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/messages")}>
-                        <Link href="/messages/dashboard">
-                          <span>Dashboard</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/messages/conversations")}>
-                        <Link href="/messages/conversations">
-                          <span>Conversations</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/social-connections")}>
-                        <Link href="/social-connections">
-                          <span>Social Connections</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                )}
               </SidebarMenuItem>
 
               {/* Calls collapsible */}
@@ -196,7 +155,56 @@ export function AppSidebar() {
                 )}
               </SidebarMenuItem>
 
-              {/* Contacts collapsible (moved below Calls) */}
+              {/* Messages collapsible */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={isMessagesActive}
+                  onClick={() => setMessagesOpen((v) => !v)}
+                  className="justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Messages</span>
+                  </div>
+                  <ChevronDown className={cn("transition-transform", messagesOpen ? "rotate-180" : "rotate-0")} />
+                </SidebarMenuButton>
+
+                {messagesOpen && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/messages")}>
+                        <Link href="/messages/dashboard">
+                          <span>Dashboard</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/messages/conversations")}>
+                        <Link href="/messages/conversations">
+                          <span>Conversations</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname.startsWith("/social-connections")}>
+                        <Link href="/social-connections">
+                          <span>Social Connections</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* CRM Section */}
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel>CRM</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {/* Contacts collapsible */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={isContactsActive}
