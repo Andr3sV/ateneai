@@ -1,6 +1,58 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Animación sutil para el degradado */
+@keyframes subtle-glow {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-subtle-glow {
+  animation: subtle-glow 4s ease-in-out infinite;
+}
+
+/* Animación de ola suave diagonal */
+@keyframes gentle-wave {
+  0% {
+    transform: translateX(-100%) translateY(-50%) rotate(45deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.6;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(100%) translateY(50%) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.animate-gentle-wave {
+  animation: gentle-wave 4s ease-in-out infinite;
+}
+
+/* Animación de respiración para las luces */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
