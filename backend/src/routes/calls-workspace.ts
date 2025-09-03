@@ -105,7 +105,7 @@ router.put('/:id(\\d+)/status', requireWorkspaceContext, async (req, res): Promi
     const body = req.body as { status?: string }
     const next = (body.status || '').toLowerCase()
     
-    const allowed = ['mql','client','lead','agendado']
+    const allowed = ['mql','client','lead','agendado','no_contesta']
     if (!allowed.includes(next)) {
       res.status(400).json({ success: false, error: `Invalid status. Allowed: ${allowed.join(', ')}` })
       return;

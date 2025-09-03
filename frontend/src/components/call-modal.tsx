@@ -231,8 +231,9 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
     const badgeColor = s === 'client' ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                       : s === 'mql' ? 'bg-red-100 text-red-800 hover:bg-red-200' 
                       : s === 'agendado' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      : s === 'no_contesta' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-    const label = s ? (s === 'lead' ? 'No interesado' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
+    const label = s ? (s === 'lead' ? 'No interesado' : s === 'no_contesta' ? 'No contesta' : s.charAt(0).toUpperCase() + s.slice(1)) : '-'
     const isMemberOrViewer = role === 'member' || role === 'viewer'
 
     return (
@@ -252,6 +253,10 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
           <DropdownMenuItem onClick={() => onChange('client')}>
             <span className="text-green-600">●</span>
             <span className="ml-2 text-green-700 font-medium">Client</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('no_contesta')}>
+            <span className="text-orange-600">●</span>
+            <span className="ml-2 text-orange-700 font-medium">No contesta</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('lead')}>
             <span className="text-gray-500">●</span>
