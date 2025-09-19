@@ -126,7 +126,7 @@ export default function Home() {
                   className="w-full h-full"
                   color="#B675FF"
                   horizontalBeamOffset={0.0}
-                  verticalBeamOffset={-0.24}
+                  verticalBeamOffset={-0.23}
                   fogIntensity={0.95}
                   wispIntensity={8.0}
                   wispDensity={1.4}
