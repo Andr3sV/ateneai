@@ -111,12 +111,18 @@ export default function Home() {
               </div>
               {/* Subtle vignette */}
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
-              {/* Left/Right labels */}
-              <div className="absolute top-10 md:top-16 left-6 md:left-10 text-white text-4xl md:text-6xl font-semibold tracking-tight select-none">
-                <span className={`${sora.className}`}>Tu equipo</span>
-              </div>
-              <div className="absolute top-10 md:top-16 right-6 md:right-10 text-white text-4xl md:text-6xl font-semibold tracking-tight select-none">
-                <span className={`${sora.className}`}>IA</span>
+              {/* Left/Right labels refined and centered relative to the beam */}
+              <div className="absolute inset-x-0 top-[16%] md:top-[14%] flex items-center justify-between px-6 md:px-24 select-none">
+                <span
+                  className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
+                >
+                  Tu equipo
+                </span>
+                <span
+                  className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-violet-300 via-pink-300 to-fuchsia-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
+                >
+                  IA
+                </span>
               </div>
 
               {/* Bottom pedestal grid with message */}
