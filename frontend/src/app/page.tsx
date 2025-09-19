@@ -71,14 +71,14 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-0 px-4 sm:px-6 lg:px-8 min-h-[80vh] md:min-h-[90vh] overflow-hidden bg-[#060010]">
+      <section className="relative pb-0 px-0 min-h-[80vh] md:min-h-[90vh] overflow-hidden bg-[#060010]">
 
-        <div className="relative z-10 max-w-7xl mx-auto text-center">
-          <div className="px-4 sm:px-8 py-16">
-            {/* Dark hero panel to match reference */}
-            <div className="relative mx-auto max-w-6xl h-[360px] md:h-[520px] lg:h-[620px] rounded-[28px] border border-white/10 bg-[#090414] overflow-hidden">
+        <div className="relative z-10 mx-auto text-center h-[80vh] md:h-[90vh] max-w-none">
+          <div className="px-0 py-0 h-full">
+            {/* Dark hero panel stretched to fill the hero container */}
+            <div className="relative w-screen h-full rounded-none border-y border-white/10 bg-[#090414] overflow-hidden">
               {/* LaserFlow canvas */}
-              <div className="absolute inset-0">
+              <div className="absolute inset-0 z-0">
                 <LaserFlow
                   className="w-full h-full"
                   color="#B675FF"
