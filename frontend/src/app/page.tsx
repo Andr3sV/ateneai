@@ -2,7 +2,7 @@
 
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star } from 'lucide-react'
@@ -13,6 +13,8 @@ const sora = Sora({ subsets: ['latin'], weight: ['600','700','800'] })
 
 export default function Home() {
   const { isSignedIn, isLoaded } = useAuth()
+  const heroRef = useRef<HTMLDivElement | null>(null)
+  const [onLightSection, setOnLightSection] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -20,6 +22,22 @@ export default function Home() {
       router.push('/home')
     }
   }, [isLoaded, isSignedIn, router])
+
+  useEffect(() => {
+    const update = () => {
+      const navApprox = 64
+      const rect = heroRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setOnLightSection(rect.bottom <= navApprox + 8)
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
 
   if (!isLoaded) {
     return (
@@ -35,7 +53,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-100">
+      <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-colors duration-300 ${onLightSection ? 'bg-gray-900/80 border-white/10' : 'bg-transparent border-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -46,16 +64,17 @@ export default function Home() {
                   alt="SimbiosisAI Logo"
                   width={32}
                   height={32}
+                  className="brightness-0 invert"
                 />
               </div>
-              <span className="ml-1 text-xl font-bold text-gray-900">SimbiosisAI</span>
+              <span className="ml-1 text-xl font-bold text-white">SimbiosisAI</span>
             </div>
             
             {/* CTAs */}
             <div className="flex items-center space-x-4">
               <Link
                 href="/sign-in"
-                className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors"
+                className="text-white hover:text-white/90 px-4 py-2 rounded-lg transition-colors"
               >
                 Iniciar Sesión
               </Link>
@@ -71,7 +90,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pb-0 px-0 min-h-[80vh] md:min-h-[90vh] overflow-hidden bg-[#060010]">
+      <section ref={heroRef} className="relative pb-0 px-0 min-h-[80vh] md:min-h-[90vh] overflow-hidden bg-[#060010]">
 
         <div className="relative z-10 mx-auto text-center h-[80vh] md:h-[90vh] max-w-none">
           <div className="px-0 py-0 h-full">
