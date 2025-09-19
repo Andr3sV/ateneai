@@ -77,7 +77,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-colors duration-300 ${onLightSection ? 'bg-gray-900/80 border-white/10' : 'bg-transparent border-transparent'}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 border-b transition-colors duration-300 ${onLightSection ? 'backdrop-blur-xl bg-gray-900/80 border-white/10' : 'bg-transparent border-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -104,9 +104,9 @@ export default function Home() {
               </Link>
               <Link
                 href="#demo"
-                className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient-x text-white px-6 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+                className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 text-white px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(182,117,255,0.3)] hover:shadow-[0_0_30px_rgba(182,117,255,0.5)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50"
               >
-                Solicitar Demo
+                Comenzar ahora
               </Link>
             </div>
           </div>
@@ -150,13 +150,16 @@ export default function Home() {
               </div>
 
               {/* Bottom pedestal grid with message */}
-              <div ref={pedestalRef} className="absolute left-6 right-6 bottom-6 h-[140px] md:h-[180px] rounded-[22px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden">
+              <div ref={pedestalRef} className="absolute left-0 right-0 bottom-8 h-[200px] md:h-[220px] rounded-[28px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
-                <div className="absolute inset-0 ring-1 ring-white/5 rounded-[22px]" />
-                <div className="relative h-full w-full flex items-center justify-center px-6">
-                  <p className={`text-white/95 text-lg md:text-2xl lg:text-3xl text-center ${sora.className}`}>
-                    Trabajando en sintonía para aumentar tus ventas y operaciones
+                <div className="absolute inset-0 ring-1 ring-white/5 rounded-[28px]" />
+                <div className="relative h-full w-full flex flex-col items-center justify-center px-8 py-8 space-y-8">
+                  <p className={`text-white/95 text-lg md:text-2xl lg:text-3xl text-center leading-relaxed ${sora.className}`}>
+                    Trabajando en sintonía para aumentar tus ventas, mejorar la experiencia del cliente y reducir costos operaticos
                   </p>
+                  <button className="px-10 py-5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50">
+                    Comenzar ahora
+                  </button>
                 </div>
               </div>
             </div>
