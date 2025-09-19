@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star, RefreshCw } from 'lucide-react'
+import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star } from 'lucide-react'
+import { Sora } from 'next/font/google'
 import LaserFlow from '@/components/ui/laserflow'
+
+const sora = Sora({ subsets: ['latin'], weight: ['600','700','800'] })
 
 export default function Home() {
   const { isSignedIn, isLoaded } = useAuth()
@@ -72,7 +75,7 @@ export default function Home() {
 
         <div className="relative z-10 max-w-7xl mx-auto text-center">
           <div className="px-4 sm:px-8 py-16">
-            {/* Dark hero panel to match LaserFlow demo */}
+            {/* Dark hero panel to match reference */}
             <div className="relative mx-auto max-w-6xl h-[360px] md:h-[520px] lg:h-[620px] rounded-[28px] border border-white/10 bg-[#090414] overflow-hidden">
               {/* LaserFlow canvas */}
               <div className="absolute inset-0">
@@ -89,15 +92,24 @@ export default function Home() {
               </div>
               {/* Subtle vignette */}
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
-              {/* Bottom pedestal grid */}
+              {/* Left/Right labels */}
+              <div className="absolute top-10 md:top-16 left-6 md:left-10 text-white text-4xl md:text-6xl font-semibold tracking-tight select-none">
+                <span className={`${sora.className}`}>Tu equipo</span>
+              </div>
+              <div className="absolute top-10 md:top-16 right-6 md:right-10 text-white text-4xl md:text-6xl font-semibold tracking-tight select-none">
+                <span className={`${sora.className}`}>IA</span>
+              </div>
+
+              {/* Bottom pedestal grid with message */}
               <div className="absolute left-6 right-6 bottom-6 h-[140px] md:h-[180px] rounded-[22px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden">
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[22px]" />
+                <div className="relative h-full w-full flex items-center justify-center px-6">
+                  <p className={`text-white/95 text-lg md:text-2xl lg:text-3xl text-center ${sora.className}`}>
+                    Trabajando en sintonía para aumentar tus ventas y operaciones
+                  </p>
+                </div>
               </div>
-              {/* Refresh icon (decorative) */}
-              <button aria-label="Refrescar" className="absolute top-4 right-4 h-9 w-9 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white grid place-items-center transition-colors">
-                <RefreshCw className="h-4 w-4" />
-              </button>
             </div>
 
             <p className="mt-10 text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
