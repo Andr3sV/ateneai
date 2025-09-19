@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star } from 'lucide-react'
+import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star, RefreshCw } from 'lucide-react'
 import LaserFlow from '@/components/ui/laserflow'
 
 export default function Home() {
@@ -68,57 +68,46 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-0 px-4 sm:px-6 lg:px-8 min-h-[70vh] md:min-h-[80vh] overflow-hidden">
+      <section className="relative pt-32 pb-0 px-4 sm:px-6 lg:px-8 min-h-[80vh] md:min-h-[90vh] overflow-hidden bg-[#060010]">
 
         <div className="relative z-10 max-w-7xl mx-auto text-center">
-          <div className="px-8 py-20">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight tracking-tight">
-              Escala tus ventas y operaciones con{' '}
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient-x bg-clip-text text-transparent">
-                IA
-              </span>{' '}
-              sin perder la{' '}
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient-x bg-clip-text text-transparent">
-                calidez humana
-              </span>
-            </h1>
-            {/* Waterfall container between title and subtitle */}
-            <div className="relative mx-auto max-w-6xl h-48 md:h-60 lg:h-72 mt-4">
-              <div className="absolute inset-0 bg-[radial-gradient(700px_240px_at_50%_10%,rgba(124,58,237,0.12),transparent_70%)]" />
+          <div className="px-4 sm:px-8 py-16">
+            {/* Dark hero panel to match LaserFlow demo */}
+            <div className="relative mx-auto max-w-6xl h-[360px] md:h-[520px] lg:h-[620px] rounded-[28px] border border-white/10 bg-[#090414] overflow-hidden">
+              {/* LaserFlow canvas */}
               <div className="absolute inset-0">
                 <LaserFlow
                   className="w-full h-full"
-                  color="#7C3AED"
+                  color="#B675FF"
                   horizontalBeamOffset={0.0}
-                  verticalBeamOffset={-0.18}
-                  fogIntensity={0.75}
-                  wispIntensity={7.2}
-                  wispDensity={1.35}
-                  flowStrength={0.5}
+                  verticalBeamOffset={-0.24}
+                  fogIntensity={0.95}
+                  wispIntensity={8.0}
+                  wispDensity={1.4}
+                  flowStrength={0.55}
                 />
               </div>
-              {/* Side chips */}
-              <div className="hidden md:block">
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2">
-                  <span className="rounded-full bg-white/80 backdrop-blur-sm px-3 py-1 text-sm font-medium text-gray-800 shadow-sm">Tu equipo</span>
-                </div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2">
-                  <span className="rounded-full bg-white/80 backdrop-blur-sm px-3 py-1 text-sm font-medium text-gray-800 shadow-sm">IA</span>
-                </div>
+              {/* Subtle vignette */}
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
+              {/* Bottom pedestal grid */}
+              <div className="absolute left-6 right-6 bottom-6 h-[140px] md:h-[180px] rounded-[22px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden">
+                <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
+                <div className="absolute inset-0 ring-1 ring-white/5 rounded-[22px]" />
               </div>
-            </div>
-            <div className="mt-3 text-sm md:text-base text-gray-700">
-              trabajando en sintonía para potenciar tus ventas y operaciones.
+              {/* Refresh icon (decorative) */}
+              <button aria-label="Refrescar" className="absolute top-4 right-4 h-9 w-9 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white grid place-items-center transition-colors">
+                <RefreshCw className="h-4 w-4" />
+              </button>
             </div>
 
-            <p className="mt-8 text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+            <p className="mt-10 text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
               Nuestros agentes IA hacen miles de llamadas en tiempo real, como un humano, pero sin límites.
             </p>
 
             <div className="mt-12">
               <Link
                 href="#demo"
-                className="inline-flex items-center px-8 py-4 rounded-xl text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient-x text-white shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+                className="inline-flex items-center px-8 py-4 rounded-xl text-lg font-semibold bg-gradient-to-r from-fuchsia-600 via-indigo-600 to-fuchsia-600 bg-[length:200%_100%] animate-gradient-x text-white shadow-[0_0_40px_rgba(168,85,247,0.35)] hover:shadow-[0_0_60px_rgba(168,85,247,0.6)] transition-all duration-300 hover:scale-105"
               >
                 Solicitar una demo
                 <ArrowRight className="ml-2 h-5 w-5" />

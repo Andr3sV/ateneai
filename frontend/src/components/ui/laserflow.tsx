@@ -1,4 +1,3 @@
-'use client'
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
@@ -312,7 +311,7 @@ export const LaserFlow: React.FC<Props> = ({
     const mount = mountRef.current!;
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
-      alpha: true,
+      alpha: false,
       depth: false,
       stencil: false,
       powerPreference: 'high-performance',
@@ -329,7 +328,7 @@ export const LaserFlow: React.FC<Props> = ({
     renderer.setPixelRatio(currentDprRef.current);
     renderer.shadowMap.enabled = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x000000, 1);
     const canvas = renderer.domElement;
     canvas.style.width = '100%';
     canvas.style.height = '100%';
@@ -372,7 +371,7 @@ export const LaserFlow: React.FC<Props> = ({
       vertexShader: VERT,
       fragmentShader: FRAG,
       uniforms,
-      transparent: true,
+      transparent: false,
       depthTest: false,
       depthWrite: false,
       blending: THREE.NormalBlending
