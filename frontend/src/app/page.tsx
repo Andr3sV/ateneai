@@ -126,7 +126,7 @@ export default function Home() {
                   className="w-full h-full"
                   color="#B675FF"
                   horizontalBeamOffset={0.0}
-                  verticalBeamOffset={-0.11}
+                  verticalBeamOffset={-0.165}
                   fogIntensity={0.95}
                   wispIntensity={8.0}
                   wispDensity={1.4}
@@ -150,192 +150,226 @@ export default function Home() {
               </div>
 
               {/* Bottom pedestal grid with message */}
-              <div ref={pedestalRef} className="absolute left-0 right-0 bottom-8 h-[240px] md:h-[280px] rounded-[28px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+              <div ref={pedestalRef} className="absolute left-0 right-0 bottom-16 h-[180px] md:h-[200px] rounded-[28px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden max-w-4xl mx-auto px-6 sm:px-8 lg:px-12">
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[28px]" />
                 <div className="relative h-full w-full flex flex-col items-center justify-center px-8 py-8 space-y-8">
-                  <p className={`text-white/95 text-lg md:text-2xl lg:text-3xl text-center leading-relaxed ${sora.className}`}>
-                    Trabajando en sintonía para aumentar tus ventas, mejorar la experiencia del cliente y reducir costos operaticos
+                  <p className={`text-white/95 text-sm md:text-lg lg:text-2xl text-center leading-relaxed ${sora.className}`}>
+                    Trabajando en sintonía para aumentar tus ventas, mejorar la experiencia del cliente y reducir costos operativos
                   </p>
-                  <button className="px-10 py-5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50">
+                  <button className="px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50">
                     Comenzar ahora
                   </button>
                 </div>
               </div>
             </div>
 
-            <p className="mt-10 text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-              Nuestros agentes IA hacen miles de llamadas en tiempo real, como un humano, pero sin límites.
-            </p>
-
-            <div className="mt-12">
-              <Link
-                href="#demo"
-                className="inline-flex items-center px-8 py-4 rounded-xl text-lg font-semibold bg-gradient-to-r from-fuchsia-600 via-indigo-600 to-fuchsia-600 bg-[length:200%_100%] animate-gradient-x text-white shadow-[0_0_40px_rgba(168,85,247,0.35)] hover:shadow-[0_0_60px_rgba(168,85,247,0.6)] transition-all duration-300 hover:scale-105"
-              >
-                Solicitar una demo
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </div>
           </div>
         </div>
       </section>
 
       {/* Social Proof */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto text-center">
-          <h3 className="text-2xl font-semibold text-gray-900 mb-12">
-            Líderes en el sector de servicio han multiplicado sus ventas gracias a SimbiosisAI
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{backgroundImage:'radial-gradient(circle at 25% 25%, rgba(182,117,255,0.5) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto text-center relative z-10">
+          <h3 className={`text-3xl md:text-4xl font-bold text-gray-900 mb-16 ${sora.className}`}>
+            Líderes en el sector han <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">multiplicado</span> sus ventas
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-gray-50 border border-gray-100 rounded-2xl p-8">
-            <div className="flex justify-center opacity-90 hover:opacity-100 transition-opacity">
-              <Image
-                src="/intercard-logo.png"
-                alt="Intercard Solutions Logo"
-                width={240}
-                height={120}
-                className="h-24 w-auto object-contain"
-              />
-            </div>
-            <div className="flex justify-center opacity-90 hover:opacity-100 transition-opacity">
-              <Image
-                src="/limforce-logo.png"
-                alt="LIMFORCE Logo"
-                width={240}
-                height={120}
-                className="h-24 w-auto object-contain"
-              />
-            </div>
-            <div className="flex justify-center opacity-90 hover:opacity-100 transition-opacity">
-              <Image
-                src="/fjdenegia-logo.png"
-                alt="FJD Energía Logo"
-                width={240}
-                height={120}
-                className="h-24 w-auto object-contain"
-              />
+          <div className="relative group">
+            {/* Glowing border effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-violet-600/20 to-purple-600/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-12 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
+                <div className="group flex justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                    <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
+                      <Image
+                        src="/intercard-logo.png"
+                        alt="Intercard Solutions Logo"
+                        width={240}
+                        height={120}
+                        className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="group flex justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                    <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
+                      <Image
+                        src="/limforce-logo.png"
+                        alt="LIMFORCE Logo"
+                        width={240}
+                        height={120}
+                        className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="group flex justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                    <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
+                      <Image
+                        src="/fjdenegia-logo.png"
+                        alt="FJD Energía Logo"
+                        width={240}
+                        height={120}
+                        className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Sectores y Casos de Uso */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Soluciones para todos los sectores
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 20% 80%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-20">
+            <h2 className={`text-5xl md:text-6xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+              Soluciones para <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">todos los sectores</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Nuestros agentes AI se adaptan a las necesidades específicas de tu industria
+            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+              Nuestros agentes IA hacen miles de llamadas en tiempo real, como un humano, pero sin límites.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-12">
             {/* Utilities */}
-            <div className="rounded-2xl p-px bg-gradient-to-br from-blue-600/20 via-purple-600/10 to-blue-600/20">
-              <div className="bg-white rounded-2xl p-6 hover:bg-gray-50 transition-colors">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 bg-gray-100">
-                  <Zap className="h-6 w-6 text-blue-600" />
+            <div className="group relative">
+              {/* Glowing border effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                    <Zap className="h-8 w-8 text-white" />
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Utilities</h3>
-                <ul className="space-y-2 mb-4">
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Utilities</h3>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Recordatorios de pago masivos
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Notificaciones de cortes
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Cualificación de leads - venta en frío
                   </li>
                 </ul>
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
                   "Procesos repetitivos resueltos de forma instantánea."
                 </p>
               </div>
             </div>
             
             {/* Telecomunicaciones */}
-            <div className="rounded-2xl p-px bg-gradient-to-br from-blue-600/20 via-purple-600/10 to-blue-600/20">
-              <div className="bg-white rounded-2xl p-6 hover:bg-gray-50 transition-colors">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 bg-gray-100">
-                  <Phone className="h-6 w-6 text-blue-600" />
+            <div className="group relative">
+              {/* Glowing border effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                    <Phone className="h-8 w-8 text-white" />
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Telecomunicaciones</h3>
-                <ul className="space-y-2 mb-4">
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Telecomunicaciones</h3>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Retención de clientes
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Upselling de planes y bundles
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Avisos de facturación
                   </li>
                 </ul>
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
                   "Reduce tus costos de call center y aumenta la retención con IA."
                 </p>
               </div>
             </div>
             
             {/* Finanzas */}
-            <div className="rounded-2xl p-px bg-gradient-to-br from-emerald-600/20 via-teal-600/10 to-emerald-600/20">
-              <div className="bg-white rounded-2xl p-6 hover:bg-gray-50 transition-colors">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 bg-gray-100">
-                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+            <div className="group relative">
+              {/* Glowing border effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                    <TrendingUp className="h-8 w-8 text-white" />
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Finanzas & Cobranzas</h3>
-                <ul className="space-y-2 mb-4">
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Finanzas & Cobranzas</h3>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Cobranza preventiva y reactiva
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Negociación inicial de refinanciamientos
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Avisos de deuda vencida
                   </li>
                 </ul>
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
                   "Miles de llamadas diarias sin necesidad de call centers gigantes."
                 </p>
               </div>
             </div>
             
             {/* Salud */}
-            <div className="rounded-2xl p-px bg-gradient-to-br from-rose-600/20 via-pink-600/10 to-rose-600/20">
-              <div className="bg-white rounded-2xl p-6 hover:bg-gray-50 transition-colors">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 bg-gray-100">
-                  <Shield className="h-6 w-6 text-rose-600" />
+            <div className="group relative">
+              {/* Glowing border effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                    <Shield className="h-8 w-8 text-white" />
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Salud</h3>
-                <ul className="space-y-2 mb-4">
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Salud</h3>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Recordatorios de citas
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Seguimiento post-consulta
                   </li>
-                  <li className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <li className="flex items-center text-gray-700">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
                     Adherencia a tratamientos
                   </li>
                 </ul>
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
                   "Mejor experiencia del paciente, menos ausentismo."
                 </p>
               </div>
@@ -345,48 +379,63 @@ export default function Home() {
       </section>
 
       {/* Por qué elegirnos */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">
-              ¿Por qué elegir SimbiosisAI?
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 30% 70%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 70% 30%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-20">
+            <h2 className={`text-5xl md:text-6xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+              ¿Por qué elegir <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">SimbiosisAI</span>?
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
               Ventajas únicas que te harán destacar en el mercado
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="h-16 w-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="h-8 w-8 text-blue-400" />
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
+                  <TrendingUp className="h-10 w-10 text-white" />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Escalabilidad infinita</h3>
-              <p className="text-gray-300">Crece sin límites, tu AI agent se adapta</p>
+              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Escalabilidad infinita</h3>
+              <p className="text-gray-600 leading-relaxed">Crece sin límites, tu AI agent se adapta</p>
             </div>
             
-            <div className="text-center">
-              <div className="h-16 w-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-8 w-8 text-green-400" />
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
+                  <Zap className="h-10 w-10 text-white" />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Costos reducidos hasta 10x</h3>
-              <p className="text-gray-300">Ahorra significativamente en operaciones</p>
+              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Costos reducidos hasta 10x</h3>
+              <p className="text-gray-600 leading-relaxed">Ahorra significativamente en operaciones</p>
             </div>
             
-            <div className="text-center">
-              <div className="h-16 w-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-purple-400" />
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
+                  <Users className="h-10 w-10 text-white" />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Experiencia humana + velocidad AI</h3>
-              <p className="text-gray-300">Lo mejor de ambos mundos</p>
+              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Experiencia humana + velocidad AI</h3>
+              <p className="text-gray-600 leading-relaxed">Lo mejor de ambos mundos</p>
             </div>
             
-            <div className="text-center">
-              <div className="h-16 w-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-indigo-400" />
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
+                  <Shield className="h-10 w-10 text-white" />
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Fácil integración</h3>
-              <p className="text-gray-300">Conecta con tus canales actuales</p>
+              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Fácil integración</h3>
+              <p className="text-gray-600 leading-relaxed">Conecta con tus canales actuales</p>
             </div>
           </div>
         </div>
