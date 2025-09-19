@@ -14,7 +14,10 @@ const sora = Sora({ subsets: ['latin'], weight: ['600','700','800'] })
 export default function Home() {
   const { isSignedIn, isLoaded } = useAuth()
   const heroRef = useRef<HTMLDivElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const pedestalRef = useRef<HTMLDivElement | null>(null)
   const [onLightSection, setOnLightSection] = useState(false)
+  const [labelTop, setLabelTop] = useState<number>(120)
   const router = useRouter()
 
   useEffect(() => {
@@ -36,6 +39,27 @@ export default function Home() {
     return () => {
       window.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
+    }
+  }, [])
+
+  useEffect(() => {
+    const computeLabelY = () => {
+      const navEl = document.querySelector('nav') as HTMLElement | null
+      const navH = navEl?.offsetHeight ?? 64
+      const panelH = panelRef.current?.getBoundingClientRect().height ?? 0
+      const pedestalH = pedestalRef.current?.getBoundingClientRect().height ?? 0
+      const bottomGap = 24 // approximate bottom-6 in px
+      const start = navH + 8
+      const end = Math.max(start + 40, panelH - bottomGap - pedestalH)
+      const center = (start + end) / 2
+      setLabelTop(center)
+    }
+    computeLabelY()
+    window.addEventListener('resize', computeLabelY)
+    const id = requestAnimationFrame(computeLabelY)
+    return () => {
+      window.removeEventListener('resize', computeLabelY)
+      cancelAnimationFrame(id)
     }
   }, [])
 
@@ -95,7 +119,7 @@ export default function Home() {
         <div className="relative z-10 mx-auto text-center h-[80vh] md:h-[90vh] max-w-none">
           <div className="px-0 py-0 h-full">
             {/* Dark hero panel stretched to fill the hero container */}
-            <div className="relative w-screen h-full rounded-none border-y border-white/10 bg-[#090414] overflow-hidden">
+            <div ref={panelRef} className="relative w-screen h-full rounded-none border-y border-white/10 bg-[#090414] overflow-hidden">
               {/* LaserFlow canvas */}
               <div className="absolute inset-0 z-0">
                 <LaserFlow
@@ -112,7 +136,7 @@ export default function Home() {
               {/* Subtle vignette */}
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
               {/* Left/Right labels refined and centered relative to the beam */}
-              <div className="absolute inset-x-0 top-[16%] md:top-[14%] flex items-center justify-between px-6 md:px-24 select-none">
+              <div className="absolute inset-x-0 flex items-center justify-between px-6 md:px-24 select-none" style={{ top: `${labelTop}px` }}>
                 <span
                   className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
                 >
@@ -126,7 +150,7 @@ export default function Home() {
               </div>
 
               {/* Bottom pedestal grid with message */}
-              <div className="absolute left-6 right-6 bottom-6 h-[140px] md:h-[180px] rounded-[22px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden">
+              <div ref={pedestalRef} className="absolute left-6 right-6 bottom-6 h-[140px] md:h-[180px] rounded-[22px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden">
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[22px]" />
                 <div className="relative h-full w-full flex items-center justify-center px-6">
