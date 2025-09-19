@@ -136,16 +136,16 @@ export default function Home() {
               {/* Subtle vignette */}
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
               {/* Left/Right labels refined and centered relative to the beam */}
-              <div className="absolute inset-x-0 flex items-center justify-between px-6 md:px-24 select-none" style={{ top: `${labelTop}px` }}>
+              <div className="absolute inset-x-0 flex items-center justify-between px-12 md:px-48 select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
                 <span
-                  className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
+                  className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-right`}
                 >
                   Tu equipo
                 </span>
                 <span
                   className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-violet-300 via-pink-300 to-fuchsia-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
                 >
-                  IA
+                  y la IA
                 </span>
               </div>
 
