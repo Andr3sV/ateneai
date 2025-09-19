@@ -114,19 +114,19 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative pb-0 px-0 min-h-[80vh] md:min-h-[90vh] overflow-hidden bg-[#060010]">
+      <section ref={heroRef} className="relative pb-0 px-0 min-h-[90vh] md:min-h-[95vh] bg-[#060010]">
 
-        <div className="relative z-10 mx-auto text-center h-[80vh] md:h-[90vh] max-w-none">
+        <div className="relative z-10 mx-auto text-center h-[90vh] md:h-[95vh] max-w-none">
           <div className="px-0 py-0 h-full">
             {/* Dark hero panel stretched to fill the hero container */}
-            <div ref={panelRef} className="relative w-screen h-full rounded-none border-y border-white/10 bg-[#090414] overflow-hidden">
+            <div ref={panelRef} className="relative w-screen h-full rounded-none border-y border-white/10 bg-[#090414] overflow-visible">
               {/* LaserFlow canvas */}
               <div className="absolute inset-0 z-0">
                 <LaserFlow
                   className="w-full h-full"
                   color="#B675FF"
                   horizontalBeamOffset={0.0}
-                  verticalBeamOffset={-0.23}
+                  verticalBeamOffset={-0.11}
                   fogIntensity={0.95}
                   wispIntensity={8.0}
                   wispDensity={1.4}
@@ -150,7 +150,7 @@ export default function Home() {
               </div>
 
               {/* Bottom pedestal grid with message */}
-              <div ref={pedestalRef} className="absolute left-0 right-0 bottom-8 h-[200px] md:h-[220px] rounded-[28px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+              <div ref={pedestalRef} className="absolute left-0 right-0 bottom-8 h-[240px] md:h-[280px] rounded-[28px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[28px]" />
                 <div className="relative h-full w-full flex flex-col items-center justify-center px-8 py-8 space-y-8">
