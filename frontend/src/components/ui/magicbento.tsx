@@ -32,39 +32,39 @@ const MOBILE_BREAKPOINT = 768;
 const cardData: BentoCardProps[] = [
   {
     color: '#060010',
-    title: 'Analytics',
-    description: 'Track user behavior',
-    label: 'Insights'
+    title: 'Escalabilidad Infinita',
+    description: 'Crece sin límites, tu AI agent se adapta a cualquier volumen',
+    label: 'Crecimiento'
   },
   {
     color: '#060010',
-    title: 'Dashboard',
-    description: 'Centralized data view',
-    label: 'Overview'
+    title: 'Costos Reducidos 10x',
+    description: 'Ahorra significativamente en operaciones y recursos humanos',
+    label: 'Ahorro'
   },
   {
     color: '#060010',
-    title: 'Collaboration',
-    description: 'Work together seamlessly',
-    label: 'Teamwork'
+    title: 'Experiencia Humana + IA',
+    description: 'Lo mejor de ambos mundos: calidez humana y velocidad de la IA',
+    label: 'Híbrido'
   },
   {
     color: '#060010',
-    title: 'Automation',
-    description: 'Streamline workflows',
-    label: 'Efficiency'
+    title: 'Integración Fácil',
+    description: 'Conecta con tus canales actuales en minutos, no meses',
+    label: 'Conectividad'
   },
   {
     color: '#060010',
-    title: 'Integration',
-    description: 'Connect favorite tools',
-    label: 'Connectivity'
+    title: 'Análisis Inteligente',
+    description: 'IA que aprende de cada conversación para mejorar resultados',
+    label: 'Inteligencia'
   },
   {
     color: '#060010',
-    title: 'Security',
-    description: 'Enterprise-grade protection',
-    label: 'Protection'
+    title: 'Disponibilidad 24/7',
+    description: 'Nunca pierdas una oportunidad, tu AI agent nunca duerme',
+    label: 'Continuidad'
   }
 ];
 

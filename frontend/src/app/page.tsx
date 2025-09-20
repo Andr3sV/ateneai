@@ -25,6 +25,7 @@ import Image from 'next/image'
 import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star } from 'lucide-react'
 import { Sora } from 'next/font/google'
 import LaserFlow from '@/components/ui/laserflow'
+import MagicBento from '@/components/ui/magicbento'
 
 const sora = Sora({ subsets: ['latin'], weight: ['600','700','800'] })
 
@@ -237,6 +238,24 @@ export default function Home() {
             </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Magic Bento Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010]">
+        <div className="max-w-7xl mx-auto">
+          <MagicBento 
+            textAutoHide={true}
+            enableStars={true}
+            enableSpotlight={true}
+            enableBorderGlow={true}
+            enableTilt={true}
+            enableMagnetism={true}
+            clickEffect={true}
+            spotlightRadius={300}
+            particleCount={12}
+            glowColor="132, 0, 255"
+          />
         </div>
       </section>
 
