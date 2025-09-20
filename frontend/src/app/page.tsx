@@ -137,17 +137,12 @@ export default function Home() {
               </div>
               {/* Subtle vignette */}
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
-              {/* Left/Right labels refined and centered relative to the beam */}
-              <div className="absolute inset-x-0 flex items-center justify-between px-6 sm:px-12 md:px-48 select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
+              {/* Centered label */}
+              <div className="absolute inset-x-0 flex items-center justify-center select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
                 <span
-                  className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-right`}
+                  className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-center`}
                 >
-                  Tu equipo
-                </span>
-                <span
-                  className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold tracking-wide bg-gradient-to-r from-violet-300 via-pink-300 to-fuchsia-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
-                >
-                  y la IA
+                  Tus ventas, potenciadas por IA 
                 </span>
               </div>
 
@@ -157,8 +152,8 @@ export default function Home() {
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[20px] sm:rounded-[28px]" />
                 <div className="relative h-full w-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-8 space-y-4 sm:space-y-8">
                   <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed ${sora.className}`}>
-                    Trabajando en sintonía para aumentar tus ventas. La IA filtra y pasa a tu equipo solo las oportunidades reales.
-                  </p>
+                  Automatiza el primer contacto sin perder el toque humano.
+                  Ahorra horas a tu equipo y convierte más leads en clientes.                  </p>
                   <button className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base">
                     Comenzar ahora
                   </button>
