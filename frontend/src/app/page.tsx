@@ -78,35 +78,37 @@ export default function Home() {
     <div className="min-h-screen bg-white text-gray-900">
       {/* Navigation */}
       <nav className={`fixed top-0 left-0 right-0 z-50 border-b transition-colors duration-300 ${onLightSection ? 'backdrop-blur-xl bg-gray-900/80 border-white/10' : 'bg-transparent border-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <div className="h-12 w-12 flex items-center justify-center">
+              <div className="h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center">
                 <Image
                   src="/simbiosis-logo.svg"
                   alt="SimbiosisAI Logo"
                   width={32}
                   height={32}
-                  className="brightness-0 invert"
+                  className="brightness-0 invert h-6 w-6 sm:h-8 sm:w-8"
                 />
               </div>
-              <span className="ml-1 text-xl font-bold text-white">SimbiosisAI</span>
+              <span className="ml-1 text-lg sm:text-xl font-bold text-white">SimbiosisAI</span>
             </div>
             
             {/* CTAs */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link
                 href="/sign-in"
-                className="text-white hover:text-white/90 px-4 py-2 rounded-lg transition-colors"
+                className="text-white hover:text-white/90 px-2 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
               >
-                Iniciar Sesión
+                <span className="hidden sm:inline">Iniciar Sesión</span>
+                <span className="sm:hidden">Entrar</span>
               </Link>
               <Link
                 href="#demo"
-                className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 text-white px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(182,117,255,0.3)] hover:shadow-[0_0_30px_rgba(182,117,255,0.5)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50"
+                className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 text-white px-3 sm:px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(182,117,255,0.3)] hover:shadow-[0_0_30px_rgba(182,117,255,0.5)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base"
               >
-                Comenzar ahora
+                <span className="hidden sm:inline">Comenzar ahora</span>
+                <span className="sm:hidden">Demo</span>
               </Link>
             </div>
           </div>
@@ -136,28 +138,28 @@ export default function Home() {
               {/* Subtle vignette */}
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
               {/* Left/Right labels refined and centered relative to the beam */}
-              <div className="absolute inset-x-0 flex items-center justify-between px-12 md:px-48 select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
+              <div className="absolute inset-x-0 flex items-center justify-between px-6 sm:px-12 md:px-48 select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
                 <span
-                  className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-right`}
+                  className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-right`}
                 >
                   Tu equipo
                 </span>
                 <span
-                  className={`${sora.className} text-2xl sm:text-3xl md:text-5xl font-semibold tracking-wide bg-gradient-to-r from-violet-300 via-pink-300 to-fuchsia-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
+                  className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold tracking-wide bg-gradient-to-r from-violet-300 via-pink-300 to-fuchsia-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)]`}
                 >
                   y la IA
                 </span>
               </div>
 
               {/* Bottom pedestal grid with message */}
-              <div ref={pedestalRef} className="absolute left-0 right-0 bottom-16 h-[180px] md:h-[200px] rounded-[28px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden max-w-4xl mx-auto px-6 sm:px-8 lg:px-12">
+              <div ref={pedestalRef} className="absolute left-3 right-3 sm:left-6 sm:right-6 bottom-8 sm:bottom-16 h-[160px] sm:h-[180px] md:h-[200px] rounded-[20px] sm:rounded-[28px] border-2 border-[#C084FC] bg-[#0B0614] overflow-hidden max-w-2xl sm:max-w-3xl md:max-w-4xl mx-auto">
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
-                <div className="absolute inset-0 ring-1 ring-white/5 rounded-[28px]" />
-                <div className="relative h-full w-full flex flex-col items-center justify-center px-8 py-8 space-y-8">
-                  <p className={`text-white/95 text-sm md:text-lg lg:text-2xl text-center leading-relaxed ${sora.className}`}>
+                <div className="absolute inset-0 ring-1 ring-white/5 rounded-[20px] sm:rounded-[28px]" />
+                <div className="relative h-full w-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-8 space-y-4 sm:space-y-8">
+                  <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed ${sora.className}`}>
                     Trabajando en sintonía para aumentar tus ventas. La IA filtra y pasa a tu equipo solo las oportunidades reales.
                   </p>
-                  <button className="px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50">
+                  <button className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base">
                     Comenzar ahora
                   </button>
                 </div>
@@ -456,59 +458,59 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
             {/* Stat 1 */}
             <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+              <div className="relative mb-4 sm:mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
                     10,000+
                   </div>
-                  <div className="text-lg font-semibold text-gray-700 mb-1">Llamadas diarias</div>
-                  <div className="text-sm text-gray-500">Por agente IA</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Llamadas diarias</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Por agente IA</div>
                 </div>
               </div>
             </div>
             
             {/* Stat 2 */}
             <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+              <div className="relative mb-4 sm:mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
                     95%
                   </div>
-                  <div className="text-lg font-semibold text-gray-700 mb-1">Satisfacción</div>
-                  <div className="text-sm text-gray-500">De clientes</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Satisfacción</div>
+                  <div className="text-xs sm:text-sm text-gray-500">De clientes</div>
                 </div>
               </div>
             </div>
             
             {/* Stat 3 */}
             <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+              <div className="relative mb-4 sm:mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
                     10x
                   </div>
-                  <div className="text-lg font-semibold text-gray-700 mb-1">Reducción</div>
-                  <div className="text-sm text-gray-500">En costos operativos</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Reducción</div>
+                  <div className="text-xs sm:text-sm text-gray-500">En costos operativos</div>
                 </div>
               </div>
             </div>
             
             {/* Stat 4 */}
             <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+              <div className="relative mb-4 sm:mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
                     24/7
                   </div>
-                  <div className="text-lg font-semibold text-gray-700 mb-1">Disponibilidad</div>
-                  <div className="text-sm text-gray-500">Sin interrupciones</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Disponibilidad</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Sin interrupciones</div>
                 </div>
               </div>
             </div>
@@ -530,19 +532,20 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="relative max-w-5xl mx-auto text-center">
+          <div className="relative max-w-4xl sm:max-w-5xl mx-auto text-center">
             {/* Glowing border effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-xl"></div>
-            <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl px-8 py-16 shadow-[0_16px_64px_rgba(182,117,255,0.15)]">
-              <h2 className={`text-4xl md:text-6xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-2xl sm:rounded-3xl blur-xl"></div>
+            <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl px-4 sm:px-8 py-12 sm:py-16 shadow-[0_16px_64px_rgba(182,117,255,0.15)]">
+              <h2 className={`text-2xl sm:text-4xl md:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 ${sora.className}`}>
                 Tus clientes esperan.<br />
                 <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">Tu AI agent ya está listo.</span>
           </h2>
-              <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed">
+            Únete a las empresas que ya están transformando su atención al cliente con IA
           </p>
               
               {/* Garantía y beneficios */}
-              <div className="flex flex-wrap justify-center gap-6 mb-10 text-sm text-gray-500">
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-8 sm:mb-10 text-xs sm:text-sm text-gray-500">
                 <div className="flex items-center">
                   <div className="h-1 w-1 rounded-full bg-purple-600 mr-2"></div>
                   <span>Lo hacemos todo por ti</span>
@@ -558,20 +561,20 @@ export default function Home() {
               </div>
               
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
           <Link
             href="/sign-up"
-                  className="group relative px-10 py-5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_8px_32px_rgba(182,117,255,0.3)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.4)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50"
+                  className="group relative px-6 sm:px-10 py-3 sm:py-5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_8px_32px_rgba(182,117,255,0.3)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.4)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base w-full sm:w-auto"
                 >
                   <span className="relative z-10">Solicitar demo gratuita</span>
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </Link>
                 <Link
                   href="/contact"
-                  className="px-8 py-4 rounded-xl font-semibold text-gray-700 bg-white border border-gray-200 hover:border-purple-300 hover:text-purple-700 transition-all duration-300"
+                  className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-gray-700 bg-white border border-gray-200 hover:border-purple-300 hover:text-purple-700 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto"
                 >
                   Hablar con un experto
-            <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
           </Link>
               </div>
             </div>
