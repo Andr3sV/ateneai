@@ -195,7 +195,11 @@ export default function Home() {
           </p>
           
           {/* Horizontal scrolling logos */}
-          <div className="relative overflow-hidden">
+          <div className="relative overflow-hidden mx-auto w-3/5">
+            {/* Fade effect overlays */}
+            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#060010] to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#060010] to-transparent z-10 pointer-events-none"></div>
+            
             <div className="flex animate-scroll-horizontal">
               {/* Logo row 1 */}
               <div className="flex items-center space-x-20 whitespace-nowrap">
