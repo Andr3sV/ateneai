@@ -109,7 +109,7 @@ export default function Home() {
                   className="brightness-0 invert h-6 w-6 sm:h-8 sm:w-8"
                 />
               </div>
-              <span className="ml-1 text-lg sm:text-xl font-extralight text-white tracking-wide">Simbiosia</span>
+              <span className="ml-1 text-lg sm:text-xl font-normal text-white tracking-wide">Simbiosia</span>
             </div>
             
             {/* CTAs */}
@@ -158,7 +158,7 @@ export default function Home() {
               {/* Centered label */}
               <div className="absolute inset-x-0 flex items-center justify-center select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
                   <span
-                    className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-extralight tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-center`}
+                    className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-normal tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-center`}
                   >
                     Tus ventas potenciadas por IA 
                 </span>
@@ -169,7 +169,7 @@ export default function Home() {
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[20px] sm:rounded-[28px]" />
                 <div className="relative h-full w-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-8 space-y-4 sm:space-y-8">
-                  <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed font-extralight tracking-wide ${sora.className}`}>
+                  <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed font-normal tracking-wide ${sora.className}`}>
                   Automatiza el primer contacto sin perder el toque humano.
                   Ahorra horas a tu equipo y convierte más leads en clientes.                  </p>
                   <button className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base">
@@ -189,7 +189,7 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.02]" style={{backgroundImage:'radial-gradient(circle at 25% 25%, rgba(182,117,255,0.5) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
         
         <div className="max-w-7xl mx-auto text-center relative z-10">
-          <h3 className={`text-3xl md:text-4xl font-bold text-gray-900 mb-16 ${sora.className}`}>
+          <h3 className={`text-2xl md:text-3xl font-normal text-gray-900 mb-16 tracking-wide ${sora.className}`}>
             Líderes en el sector han <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">multiplicado</span> sus ventas
           </h3>
           
@@ -253,10 +253,10 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <h2 className={`text-5xl md:text-6xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>
               Soluciones para <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">todos los sectores</span>
             </h2>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
               Nuestros agentes IA hacen miles de llamadas en tiempo real, como un humano, pero sin límites.
             </p>
           </div>
@@ -273,7 +273,7 @@ export default function Home() {
                     <Zap className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Utilities</h3>
+                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Utilities</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
@@ -305,7 +305,7 @@ export default function Home() {
                     <Phone className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Telecomunicaciones</h3>
+                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Telecomunicaciones</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
@@ -337,7 +337,7 @@ export default function Home() {
                     <TrendingUp className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Finanzas & Cobranzas</h3>
+                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Finanzas & Cobranzas</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
@@ -369,7 +369,7 @@ export default function Home() {
                     <Shield className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Salud</h3>
+                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Salud</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
@@ -400,10 +400,10 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <h2 className={`text-5xl md:text-6xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>
               ¿Por qué elegir <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">SimbiosisAI</span>?
             </h2>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
               Ventajas únicas que te harán destacar en el mercado
             </p>
           </div>
@@ -416,7 +416,7 @@ export default function Home() {
                   <TrendingUp className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Escalabilidad infinita</h3>
+              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Escalabilidad infinita</h3>
               <p className="text-gray-600 leading-relaxed">Crece sin límites, tu AI agent se adapta</p>
             </div>
             
@@ -427,7 +427,7 @@ export default function Home() {
                   <Zap className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Costos reducidos hasta 10x</h3>
+              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Costos reducidos hasta 10x</h3>
               <p className="text-gray-600 leading-relaxed">Ahorra significativamente en operaciones</p>
             </div>
             
@@ -438,7 +438,7 @@ export default function Home() {
                   <Users className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Experiencia humana + velocidad AI</h3>
+              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Experiencia humana + velocidad AI</h3>
               <p className="text-gray-600 leading-relaxed">Lo mejor de ambos mundos</p>
             </div>
             
@@ -449,7 +449,7 @@ export default function Home() {
                   <Shield className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${sora.className}`}>Fácil integración</h3>
+              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Fácil integración</h3>
               <p className="text-gray-600 leading-relaxed">Conecta con tus canales actuales</p>
             </div>
           </div>
@@ -463,10 +463,10 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
-            <h2 className={`text-4xl md:text-5xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>
               Resultados que <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">hablan por sí solos</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto font-light tracking-wide">
               Muchas empresas ya han transformado sus operaciones con SimbiosisAI
             </p>
           </div>
@@ -549,11 +549,11 @@ export default function Home() {
             {/* Glowing border effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-2xl sm:rounded-3xl blur-xl"></div>
             <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl px-4 sm:px-8 py-12 sm:py-16 shadow-[0_16px_64px_rgba(182,117,255,0.15)]">
-              <h2 className={`text-2xl sm:text-4xl md:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 ${sora.className}`}>
+              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-normal text-gray-900 mb-4 sm:mb-6 tracking-wide ${sora.className}`}>
                 Tus clientes esperan.<br />
                 <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">Tu AI agent ya está listo.</span>
           </h2>
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed font-light tracking-wide">
             Únete a las empresas que ya están transformando su atención al cliente con IA
           </p>
               
