@@ -155,7 +155,7 @@ export default function Home() {
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[28px]" />
                 <div className="relative h-full w-full flex flex-col items-center justify-center px-8 py-8 space-y-8">
                   <p className={`text-white/95 text-sm md:text-lg lg:text-2xl text-center leading-relaxed ${sora.className}`}>
-                    Trabajando en sintonía para aumentar tus ventas, mejorar la experiencia del cliente y reducir costos operativos
+                    Trabajando en sintonía para aumentar tus ventas. La IA filtra y pasa a tu equipo solo las oportunidades reales.
                   </p>
                   <button className="px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50">
                     Comenzar ahora
@@ -187,41 +187,41 @@ export default function Home() {
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
                     <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
-                      <Image
-                        src="/intercard-logo.png"
-                        alt="Intercard Solutions Logo"
-                        width={240}
-                        height={120}
+              <Image
+                src="/intercard-logo.png"
+                alt="Intercard Solutions Logo"
+                width={240}
+                height={120}
                         className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
+              />
+            </div>
                   </div>
                 </div>
                 <div className="group flex justify-center">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
                     <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
-                      <Image
-                        src="/limforce-logo.png"
-                        alt="LIMFORCE Logo"
-                        width={240}
-                        height={120}
+              <Image
+                src="/limforce-logo.png"
+                alt="LIMFORCE Logo"
+                width={240}
+                height={120}
                         className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
+              />
+            </div>
                   </div>
                 </div>
                 <div className="group flex justify-center">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
                     <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
-                      <Image
-                        src="/fjdenegia-logo.png"
-                        alt="FJD Energía Logo"
-                        width={240}
-                        height={120}
+              <Image
+                src="/fjdenegia-logo.png"
+                alt="FJD Energía Logo"
+                width={240}
+                height={120}
                         className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                      />
+              />
                     </div>
                   </div>
                 </div>
@@ -257,25 +257,25 @@ export default function Home() {
                   <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <Zap className="h-8 w-8 text-white" />
                   </div>
-                </div>
+              </div>
                 <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Utilities</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Recordatorios de pago masivos
-                  </li>
+                  Recordatorios de pago masivos
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Notificaciones de cortes
-                  </li>
+                  Notificaciones de cortes
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Cualificación de leads - venta en frío
-                  </li>
-                </ul>
+                  Cualificación de leads - venta en frío
+                </li>
+              </ul>
                 <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
-                  "Procesos repetitivos resueltos de forma instantánea."
-                </p>
+                "Procesos repetitivos resueltos de forma instantánea."
+              </p>
               </div>
             </div>
             
@@ -289,25 +289,25 @@ export default function Home() {
                   <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <Phone className="h-8 w-8 text-white" />
                   </div>
-                </div>
+              </div>
                 <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Telecomunicaciones</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Retención de clientes
-                  </li>
+                  Retención de clientes
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Upselling de planes y bundles
-                  </li>
+                  Upselling de planes y bundles
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Avisos de facturación
-                  </li>
-                </ul>
+                  Avisos de facturación
+                </li>
+              </ul>
                 <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
-                  "Reduce tus costos de call center y aumenta la retención con IA."
-                </p>
+                "Reduce tus costos de call center y aumenta la retención con IA."
+              </p>
               </div>
             </div>
             
@@ -321,25 +321,25 @@ export default function Home() {
                   <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <TrendingUp className="h-8 w-8 text-white" />
                   </div>
-                </div>
+              </div>
                 <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Finanzas & Cobranzas</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Cobranza preventiva y reactiva
-                  </li>
+                  Cobranza preventiva y reactiva
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Negociación inicial de refinanciamientos
-                  </li>
+                  Negociación inicial de refinanciamientos
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Avisos de deuda vencida
-                  </li>
-                </ul>
+                  Avisos de deuda vencida
+                </li>
+              </ul>
                 <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
-                  "Miles de llamadas diarias sin necesidad de call centers gigantes."
-                </p>
+                "Miles de llamadas diarias sin necesidad de call centers gigantes."
+              </p>
               </div>
             </div>
             
@@ -353,25 +353,25 @@ export default function Home() {
                   <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <Shield className="h-8 w-8 text-white" />
                   </div>
-                </div>
+              </div>
                 <h3 className={`text-2xl font-bold text-gray-900 mb-6 ${sora.className}`}>Salud</h3>
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Recordatorios de citas
-                  </li>
+                  Recordatorios de citas
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Seguimiento post-consulta
-                  </li>
+                  Seguimiento post-consulta
+                </li>
                   <li className="flex items-center text-gray-700">
                     <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
-                    Adherencia a tratamientos
-                  </li>
-                </ul>
+                  Adherencia a tratamientos
+                </li>
+              </ul>
                 <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
-                  "Mejor experiencia del paciente, menos ausentismo."
-                </p>
+                "Mejor experiencia del paciente, menos ausentismo."
+              </p>
               </div>
             </div>
           </div>
@@ -441,45 +441,237 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Final */}
-      <section id="demo" className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="relative max-w-4xl mx-auto text-center rounded-[28px] p-[1px] bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600">
-          <div className="relative rounded-[28px] bg-white px-8 py-16 overflow-hidden">
-            <div className="pointer-events-none absolute inset-0 opacity-40" style={{background:"radial-gradient(1200px 400px at 50% 120%, rgba(29,78,216,.12), transparent), radial-gradient(600px 200px at 0% 0%, rgba(91,33,182,.12), transparent)"}} />
-            <h2 className="relative text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Tus clientes esperan. Tu AI agent ya está listo.
+      {/* Estadísticas Impresionantes */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 40% 60%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 60% 40%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className={`text-4xl md:text-5xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+              Resultados que <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">hablan por sí solos</span>
             </h2>
-            <p className="relative text-xl text-gray-600 mb-8">
-              Únete a las empresas que ya están transformando su atención al cliente con IA
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Muchas empresas ya han transformado sus operaciones con SimbiosisAI
             </p>
-            <Link
-              href="/sign-up"
-              className="relative inline-flex items-center px-8 py-4 rounded-xl text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient-x text-white shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
-            >
-              Solicita una demo gratuita
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Stat 1 */}
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                    10,000+
+                  </div>
+                  <div className="text-lg font-semibold text-gray-700 mb-1">Llamadas diarias</div>
+                  <div className="text-sm text-gray-500">Por agente IA</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stat 2 */}
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                    95%
+                  </div>
+                  <div className="text-lg font-semibold text-gray-700 mb-1">Satisfacción</div>
+                  <div className="text-sm text-gray-500">De clientes</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stat 3 */}
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                    10x
+                  </div>
+                  <div className="text-lg font-semibold text-gray-700 mb-1">Reducción</div>
+                  <div className="text-sm text-gray-500">En costos operativos</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stat 4 */}
+            <div className="group text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
+                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                    24/7
+                  </div>
+                  <div className="text-lg font-semibold text-gray-700 mb-1">Disponibilidad</div>
+                  <div className="text-sm text-gray-500">Sin interrupciones</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center mb-6">
+      {/* CTA Final Mejorado */}
+      <section id="demo" className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{backgroundImage:'radial-gradient(circle at 50% 50%, rgba(182,117,255,0.3) 0%, transparent 70%)'}} />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* Urgencia y Social Proof */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-violet-100 border border-purple-200/50 mb-6">
+              <div className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
+              <span className="text-sm font-medium text-purple-700">Únete a empresas top que ya transformaron sus operaciones</span>
+            </div>
+          </div>
+          
+          <div className="relative max-w-5xl mx-auto text-center">
+            {/* Glowing border effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-xl"></div>
+            <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl px-8 py-16 shadow-[0_16px_64px_rgba(182,117,255,0.15)]">
+              <h2 className={`text-4xl md:text-6xl font-bold text-gray-900 mb-6 ${sora.className}`}>
+                Tus clientes esperan.<br />
+                <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">Tu AI agent ya está listo.</span>
+          </h2>
+              <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+          </p>
+              
+              {/* Garantía y beneficios */}
+              <div className="flex flex-wrap justify-center gap-6 mb-10 text-sm text-gray-500">
+                <div className="flex items-center">
+                  <div className="h-1 w-1 rounded-full bg-purple-600 mr-2"></div>
+                  <span>Lo hacemos todo por ti</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="h-1 w-1 rounded-full bg-purple-600 mr-2"></div>
+                  <span>Sin compromiso</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="h-1 w-1 rounded-full bg-purple-600 mr-2"></div>
+                  <span>Configuración en 24h</span>
+                </div>
+              </div>
+              
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <Link
+            href="/sign-up"
+                  className="group relative px-10 py-5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_8px_32px_rgba(182,117,255,0.3)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.4)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50"
+                >
+                  <span className="relative z-10">Solicitar demo gratuita</span>
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </Link>
+                <Link
+                  href="/contact"
+                  className="px-8 py-4 rounded-xl font-semibold text-gray-700 bg-white border border-gray-200 hover:border-purple-300 hover:text-purple-700 transition-all duration-300"
+                >
+                  Hablar con un experto
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer Profesional */}
+      <footer className="bg-gray-900 relative overflow-hidden">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 20% 80%, rgba(182,117,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168,85,247,0.2) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Main Footer Content */}
+          <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            
+            {/* Brand Section */}
+            <div className="lg:col-span-1">
+              <div className="flex items-center mb-6">
             <div className="h-12 w-12 flex items-center justify-center">
               <Image
                 src="/simbiosis-logo.svg"
                 alt="SimbiosisAI Logo"
                 width={32}
                 height={32}
-              />
+                    className="brightness-0 invert"
+                  />
+                </div>
+                <span className="ml-2 text-xl font-bold text-white">SimbiosisAI</span>
+              </div>
+              <p className="text-gray-400 mb-6 leading-relaxed">
+                Transformamos la atención al cliente con inteligencia artificial que combina eficiencia y calidez humana.
+              </p>
+              {/* Social Links */}
+              <div className="flex space-x-4">
+                <a href="#" className="h-10 w-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-600 transition-all duration-300">
+                  <span className="sr-only">LinkedIn</span>
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.338 16.338H13.67V12.16c0-.995-.017-2.277-1.387-2.277-1.39 0-1.601 1.086-1.601 2.207v4.248H8.014v-8.59h2.559v1.174h.037c.356-.675 1.227-1.387 2.526-1.387 2.703 0 3.203 1.778 3.203 4.092v4.711zM5.005 6.575a1.548 1.548 0 11-.003-3.096 1.548 1.548 0 01.003 3.096zm-1.337 9.763H6.34v-8.59H3.667v8.59zM17.668 1H2.328C1.595 1 1 1.581 1 2.298v15.403C1 18.418 1.595 19 2.328 19h15.34c.734 0 1.332-.582 1.332-1.299V2.298C19 1.581 18.402 1 17.668 1z" clipRule="evenodd" />
+                  </svg>
+                </a>
+                <a href="#" className="h-10 w-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-purple-600 transition-all duration-300">
+                  <span className="sr-only">Twitter</span>
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84" />
+                  </svg>
+                </a>
+              </div>
             </div>
-            <span className="ml-1 text-xl font-bold text-white">SimbiosisAI</span>
+            
+            {/* Product Links */}
+            <div>
+              <h3 className="text-white font-semibold mb-6">Producto</h3>
+              <ul className="space-y-3">
+                <li><a href="#features" className="text-gray-400 hover:text-white transition-colors">Características</a></li>
+                <li><a href="#pricing" className="text-gray-400 hover:text-white transition-colors">Precios</a></li>
+                <li><a href="#demo" className="text-gray-400 hover:text-white transition-colors">Demo</a></li>
+                <li><a href="/integrations" className="text-gray-400 hover:text-white transition-colors">Integraciones</a></li>
+                <li><a href="/api" className="text-gray-400 hover:text-white transition-colors">API</a></li>
+              </ul>
+            </div>
+            
+            {/* Company Links */}
+            <div>
+              <h3 className="text-white font-semibold mb-6">Empresa</h3>
+              <ul className="space-y-3">
+                <li><a href="/about" className="text-gray-400 hover:text-white transition-colors">Acerca de</a></li>
+                <li><a href="/blog" className="text-gray-400 hover:text-white transition-colors">Blog</a></li>
+                <li><a href="/careers" className="text-gray-400 hover:text-white transition-colors">Carreras</a></li>
+                <li><a href="/contact" className="text-gray-400 hover:text-white transition-colors">Contacto</a></li>
+                <li><a href="/press" className="text-gray-400 hover:text-white transition-colors">Prensa</a></li>
+              </ul>
+            </div>
+            
+            {/* Support Links */}
+            <div>
+              <h3 className="text-white font-semibold mb-6">Soporte</h3>
+              <ul className="space-y-3">
+                <li><a href="/help" className="text-gray-400 hover:text-white transition-colors">Centro de Ayuda</a></li>
+                <li><a href="/docs" className="text-gray-400 hover:text-white transition-colors">Documentación</a></li>
+                <li><a href="/status" className="text-gray-400 hover:text-white transition-colors">Estado del Sistema</a></li>
+                <li><a href="/security" className="text-gray-400 hover:text-white transition-colors">Seguridad</a></li>
+                <li><a href="/compliance" className="text-gray-400 hover:text-white transition-colors">Cumplimiento</a></li>
+              </ul>
+            </div>
           </div>
-          <p className="text-gray-400">
+          
+          {/* Bottom Bar */}
+          <div className="py-8 border-t border-gray-800">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="flex flex-wrap gap-6 mb-4 md:mb-0">
+                <a href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">Política de Privacidad</a>
+                <a href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">Términos de Servicio</a>
+                <a href="/cookies" className="text-gray-400 hover:text-white text-sm transition-colors">Cookies</a>
+              </div>
+              <p className="text-gray-400 text-sm">
             © 2024 SimbiosisAI. Todos los derechos reservados.
           </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
