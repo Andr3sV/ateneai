@@ -87,14 +87,14 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando...</p>
+          <p className="mt-4 text-gray-300">Cargando...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-white text-white">
       {/* Navigation */}
       <nav className={`fixed top-0 left-0 right-0 z-50 border-b transition-colors duration-300 ${onLightSection ? 'backdrop-blur-xl bg-gray-900/80 border-white/10' : 'bg-transparent border-transparent'}`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -140,7 +140,7 @@ export default function Home() {
         <div className="relative z-10 mx-auto text-center h-[90vh] md:h-[95vh] max-w-none">
           <div className="px-0 py-0 h-full">
             {/* Dark hero panel stretched to fill the hero container */}
-            <div ref={panelRef} className="relative w-screen h-full rounded-none border-y border-white/10 bg-[#090414] overflow-visible">
+            <div ref={panelRef} className="relative w-screen h-full rounded-none bg-[#090414] overflow-visible">
               {/* LaserFlow canvas */}
               <div className="absolute inset-0 z-0">
                 <LaserFlow
@@ -185,10 +185,13 @@ export default function Home() {
       </section>
 
       {/* Social Proof - Minimalist Supabase Style */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-xl text-gray-500 mb-16 tracking-wide">
-            Líderes en el sector han <span className="text-purple-600 font-medium">multiplicado</span> sus ventas
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 20% 80%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto text-center relative z-10">
+          <p className="text-xl text-gray-300 mb-16 tracking-wide">
+            Líderes en el sector han <span className="text-purple-400 font-medium">multiplicado</span> sus ventas
           </p>
           
           {/* Horizontal scrolling logos */}
@@ -196,43 +199,43 @@ export default function Home() {
             <div className="flex animate-scroll-horizontal">
               {/* Logo row 1 */}
               <div className="flex items-center space-x-20 whitespace-nowrap">
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-60" />
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-60" />
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-60" />
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">Simbiosis</span>
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">AteneAI</span>
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">TechFlow</span>
                 </div>
               </div>
               {/* Duplicate for seamless loop */}
               <div className="flex items-center space-x-20 whitespace-nowrap ml-20">
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-60" />
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-60" />
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-60" />
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">Simbiosis</span>
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">AteneAI</span>
                 </div>
-                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">TechFlow</span>
             </div>
             </div>
@@ -242,8 +245,20 @@ export default function Home() {
       </section>
 
       {/* Magic Bento Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010]">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 30% 70%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 70% 30%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-20">
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+              ¿Por qué elegir <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">SimbiosisAI</span>?
+            </h2>
+            <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
+              Ventajas únicas que te harán destacar en el mercado
+            </p>
+          </div>
+          
           <MagicBento 
             textAutoHide={true}
             enableStars={true}
@@ -260,16 +275,16 @@ export default function Home() {
       </section>
 
       {/* Sectores y Casos de Uso */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
         {/* Subtle background elements */}
         <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 20% 80%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <h2 className={`text-3xl md:text-4xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>
-              Soluciones para <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">todos los sectores</span>
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+              Soluciones para <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">todos los sectores</span>
             </h2>
-            <p className="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
+            <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
               Nuestros agentes IA hacen miles de llamadas en tiempo real, como un humano, pero sin límites.
             </p>
           </div>
@@ -279,29 +294,29 @@ export default function Home() {
             <div className="group relative">
               {/* Glowing border effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+              <div className="relative bg-gray-900/90 backdrop-blur-sm border border-purple-400/30 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500 group-hover:border-purple-400/50">
                 <div className="relative mb-6">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
-                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-400 to-violet-400 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <Zap className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Utilities</h3>
+                <h3 className={`text-xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>Utilities</h3>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Recordatorios de pago masivos
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Notificaciones de cortes
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Cualificación de leads - venta en frío
                 </li>
               </ul>
-                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
+                <p className="text-sm text-gray-300 italic bg-gradient-to-r from-purple-900/50 to-violet-900/50 p-4 rounded-xl border border-purple-400/30">
                 "Procesos repetitivos resueltos de forma instantánea."
               </p>
               </div>
@@ -311,29 +326,29 @@ export default function Home() {
             <div className="group relative">
               {/* Glowing border effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+              <div className="relative bg-gray-900/90 backdrop-blur-sm border border-purple-400/30 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500 group-hover:border-purple-400/50">
                 <div className="relative mb-6">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
-                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-400 to-violet-400 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <Phone className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Telecomunicaciones</h3>
+                <h3 className={`text-xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>Telecomunicaciones</h3>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Retención de clientes
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Upselling de planes y bundles
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Avisos de facturación
                 </li>
               </ul>
-                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
+                <p className="text-sm text-gray-300 italic bg-gradient-to-r from-purple-900/50 to-violet-900/50 p-4 rounded-xl border border-purple-400/30">
                 "Reduce tus costos de call center y aumenta la retención con IA."
               </p>
               </div>
@@ -343,29 +358,29 @@ export default function Home() {
             <div className="group relative">
               {/* Glowing border effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+              <div className="relative bg-gray-900/90 backdrop-blur-sm border border-purple-400/30 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500 group-hover:border-purple-400/50">
                 <div className="relative mb-6">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
-                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-400 to-violet-400 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <TrendingUp className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Finanzas & Cobranzas</h3>
+                <h3 className={`text-xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>Finanzas & Cobranzas</h3>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Cobranza preventiva y reactiva
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Negociación inicial de refinanciamientos
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Avisos de deuda vencida
                 </li>
               </ul>
-                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
+                <p className="text-sm text-gray-300 italic bg-gradient-to-r from-purple-900/50 to-violet-900/50 p-4 rounded-xl border border-purple-400/30">
                 "Miles de llamadas diarias sin necesidad de call centers gigantes."
               </p>
               </div>
@@ -375,29 +390,29 @@ export default function Home() {
             <div className="group relative">
               {/* Glowing border effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.08)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500 group-hover:border-purple-300/70">
+              <div className="relative bg-gray-900/90 backdrop-blur-sm border border-purple-400/30 rounded-3xl p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500 group-hover:border-purple-400/50">
                 <div className="relative mb-6">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-md"></div>
-                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
+                  <div className="relative h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-400 to-violet-400 shadow-[0_4px_16px_rgba(182,117,255,0.3)]">
                     <Shield className="h-8 w-8 text-white" />
                   </div>
               </div>
-                <h3 className={`text-xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>Salud</h3>
+                <h3 className={`text-xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>Salud</h3>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Recordatorios de citas
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Seguimiento post-consulta
                 </li>
-                  <li className="flex items-center text-gray-700">
-                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-600 to-violet-600 mr-3"></div>
+                  <li className="flex items-center text-gray-300">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-violet-400 mr-3"></div>
                   Adherencia a tratamientos
                 </li>
               </ul>
-                <p className="text-sm text-gray-600 italic bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100/50">
+                <p className="text-sm text-gray-300 italic bg-gradient-to-r from-purple-900/50 to-violet-900/50 p-4 rounded-xl border border-purple-400/30">
                 "Mejor experiencia del paciente, menos ausentismo."
               </p>
               </div>
@@ -406,80 +421,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Por qué elegirnos */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
-        {/* Subtle background elements */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 30% 70%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 70% 30%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
-        
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-20">
-            <h2 className={`text-3xl md:text-4xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>
-              ¿Por qué elegir <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">SimbiosisAI</span>?
-            </h2>
-            <p className="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
-              Ventajas únicas que te harán destacar en el mercado
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
-                  <TrendingUp className="h-10 w-10 text-white" />
-                </div>
-              </div>
-              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Escalabilidad infinita</h3>
-              <p className="text-gray-600 leading-relaxed">Crece sin límites, tu AI agent se adapta</p>
-            </div>
-            
-            <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
-                  <Zap className="h-10 w-10 text-white" />
-                </div>
-              </div>
-              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Costos reducidos hasta 10x</h3>
-              <p className="text-gray-600 leading-relaxed">Ahorra significativamente en operaciones</p>
-            </div>
-            
-            <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
-                  <Users className="h-10 w-10 text-white" />
-                </div>
-              </div>
-              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Experiencia humana + velocidad AI</h3>
-              <p className="text-gray-600 leading-relaxed">Lo mejor de ambos mundos</p>
-            </div>
-            
-            <div className="group text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative h-20 w-20 rounded-2xl flex items-center justify-center mx-auto bg-gradient-to-br from-purple-600 to-violet-600 shadow-[0_8px_24px_rgba(182,117,255,0.25)] group-hover:shadow-[0_12px_32px_rgba(182,117,255,0.35)] transition-all duration-500">
-                  <Shield className="h-10 w-10 text-white" />
-                </div>
-              </div>
-              <h3 className={`text-lg font-normal text-gray-900 mb-3 tracking-wide ${sora.className}`}>Fácil integración</h3>
-              <p className="text-gray-600 leading-relaxed">Conecta con tus canales actuales</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Estadísticas Impresionantes */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
         {/* Subtle background elements */}
         <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 40% 60%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 60% 40%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-4xl font-normal text-gray-900 mb-6 tracking-wide ${sora.className}`}>
-              Resultados que <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">hablan por sí solos</span>
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+              Resultados que <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">hablan por sí solos</span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto font-light tracking-wide">
+            <p className="text-lg text-gray-300 max-w-3xl mx-auto font-light tracking-wide">
               Muchas empresas ya han transformado sus operaciones con SimbiosisAI
             </p>
           </div>
@@ -489,12 +442,12 @@ export default function Home() {
             <div className="group text-center">
               <div className="relative mb-4 sm:mb-6">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     10,000+
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Llamadas diarias</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Por agente IA</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Llamadas diarias</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Por agente IA</div>
                 </div>
               </div>
             </div>
@@ -503,12 +456,12 @@ export default function Home() {
             <div className="group text-center">
               <div className="relative mb-4 sm:mb-6">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     95%
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Satisfacción</div>
-                  <div className="text-xs sm:text-sm text-gray-500">De clientes</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Satisfacción</div>
+                  <div className="text-xs sm:text-sm text-gray-400">De clientes</div>
                 </div>
               </div>
             </div>
@@ -517,12 +470,12 @@ export default function Home() {
             <div className="group text-center">
               <div className="relative mb-4 sm:mb-6">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     10x
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Reducción</div>
-                  <div className="text-xs sm:text-sm text-gray-500">En costos operativos</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Reducción</div>
+                  <div className="text-xs sm:text-sm text-gray-400">En costos operativos</div>
                 </div>
               </div>
             </div>
@@ -531,12 +484,12 @@ export default function Home() {
             <div className="group text-center">
               <div className="relative mb-4 sm:mb-6">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-1 sm:mb-2 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
+                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     24/7
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-700 mb-1">Disponibilidad</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Sin interrupciones</div>
+                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Disponibilidad</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Sin interrupciones</div>
                 </div>
               </div>
             </div>
@@ -545,43 +498,43 @@ export default function Home() {
       </section>
 
       {/* CTA Final Mejorado */}
-      <section id="demo" className="py-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+      <section id="demo" className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
         {/* Subtle background elements */}
         <div className="absolute inset-0 opacity-[0.02]" style={{backgroundImage:'radial-gradient(circle at 50% 50%, rgba(182,117,255,0.3) 0%, transparent 70%)'}} />
         
         <div className="max-w-6xl mx-auto relative z-10">
           {/* Urgencia y Social Proof */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-violet-100 border border-purple-200/50 mb-6">
-              <div className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-              <span className="text-sm font-medium text-purple-700">Únete a empresas top que ya transformaron sus operaciones</span>
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-purple-900/50 to-violet-900/50 border border-purple-400/30 mb-6">
+              <div className="h-2 w-2 rounded-full bg-green-400 mr-2 animate-pulse"></div>
+              <span className="text-sm font-medium text-purple-300">Únete a empresas top que ya transformaron sus operaciones</span>
             </div>
           </div>
           
           <div className="relative max-w-4xl sm:max-w-5xl mx-auto text-center">
             {/* Glowing border effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 via-violet-600/20 to-purple-600/30 rounded-2xl sm:rounded-3xl blur-xl"></div>
-            <div className="relative bg-white/90 backdrop-blur-sm border border-purple-200/50 rounded-2xl sm:rounded-3xl px-4 sm:px-8 py-12 sm:py-16 shadow-[0_16px_64px_rgba(182,117,255,0.15)]">
-              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-normal text-gray-900 mb-4 sm:mb-6 tracking-wide ${sora.className}`}>
+            <div className="relative bg-gray-900/90 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl px-4 sm:px-8 py-12 sm:py-16 shadow-[0_16px_64px_rgba(182,117,255,0.25)]">
+              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-normal text-white mb-4 sm:mb-6 tracking-wide ${sora.className}`}>
                 Tus clientes esperan.<br />
-                <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">Tu AI agent ya está listo.</span>
+                <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">Tu AI agent ya está listo.</span>
           </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed font-light tracking-wide">
+              <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed font-light tracking-wide">
             Únete a las empresas que ya están transformando su atención al cliente con IA
           </p>
               
               {/* Garantía y beneficios */}
-              <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-8 sm:mb-10 text-xs sm:text-sm text-gray-500">
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-8 sm:mb-10 text-xs sm:text-sm text-gray-400">
                 <div className="flex items-center">
-                  <div className="h-1 w-1 rounded-full bg-purple-600 mr-2"></div>
+                  <div className="h-1 w-1 rounded-full bg-purple-400 mr-2"></div>
                   <span>Lo hacemos todo por ti</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="h-1 w-1 rounded-full bg-purple-600 mr-2"></div>
+                  <div className="h-1 w-1 rounded-full bg-purple-400 mr-2"></div>
                   <span>Sin compromiso</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="h-1 w-1 rounded-full bg-purple-600 mr-2"></div>
+                  <div className="h-1 w-1 rounded-full bg-purple-400 mr-2"></div>
                   <span>Configuración en 24h</span>
                 </div>
               </div>
@@ -597,7 +550,7 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/contact"
-                  className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-gray-700 bg-white border border-gray-200 hover:border-purple-300 hover:text-purple-700 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto"
+                  className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-gray-300 bg-white border border-gray-200 hover:border-purple-300 hover:text-purple-700 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto"
                 >
                   Hablar con un experto
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
