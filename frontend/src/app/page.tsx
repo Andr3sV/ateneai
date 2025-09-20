@@ -3,6 +3,23 @@
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+
+// Hook para detectar si es móvil
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  return isMobile;
+};
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star } from 'lucide-react'
@@ -19,6 +36,7 @@ export default function Home() {
   const [onLightSection, setOnLightSection] = useState(false)
   const [labelTop, setLabelTop] = useState<number>(120)
   const router = useRouter()
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -91,7 +109,7 @@ export default function Home() {
                   className="brightness-0 invert h-6 w-6 sm:h-8 sm:w-8"
                 />
               </div>
-              <span className="ml-1 text-lg sm:text-xl font-bold text-white">SimbiosisAI</span>
+              <span className="ml-1 text-lg sm:text-xl font-extralight text-white tracking-wide">Simbiosia</span>
             </div>
             
             {/* CTAs */}
@@ -128,7 +146,7 @@ export default function Home() {
                   className="w-full h-full"
                   color="#B675FF"
                   horizontalBeamOffset={0.0}
-                  verticalBeamOffset={-0.165}
+                  verticalBeamOffset={isMobile ? -0.212 : -0.165}
                   fogIntensity={0.95}
                   wispIntensity={8.0}
                   wispDensity={1.4}
@@ -139,10 +157,10 @@ export default function Home() {
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_700px_at_50%_10%,rgba(182,117,255,0.18),transparent_65%)]" />
               {/* Centered label */}
               <div className="absolute inset-x-0 flex items-center justify-center select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
-                <span
-                  className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-center`}
-                >
-                  Tus ventas, potenciadas por IA 
+                  <span
+                    className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-extralight tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-center`}
+                  >
+                    Tus ventas potenciadas por IA 
                 </span>
               </div>
 
@@ -151,7 +169,7 @@ export default function Home() {
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[20px] sm:rounded-[28px]" />
                 <div className="relative h-full w-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-8 space-y-4 sm:space-y-8">
-                  <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed ${sora.className}`}>
+                  <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed font-extralight tracking-wide ${sora.className}`}>
                   Automatiza el primer contacto sin perder el toque humano.
                   Ahorra horas a tu equipo y convierte más leads en clientes.                  </p>
                   <button className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base">
