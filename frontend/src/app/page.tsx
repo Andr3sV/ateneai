@@ -96,7 +96,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-white">
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 border-b transition-colors duration-300 ${onLightSection ? 'backdrop-blur-xl bg-gray-900/80 border-white/10' : 'bg-transparent border-transparent'}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${onLightSection ? 'backdrop-blur-xl' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
