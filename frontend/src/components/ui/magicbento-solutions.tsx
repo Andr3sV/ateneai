@@ -67,7 +67,6 @@ const cardData: BentoCardProps[] = [
   }
 ];
 
-// Resto del componente igual que el original...
 const MagicBentoSolutions: React.FC<BentoProps> = ({
   textAutoHide = false,
   enableStars = true,
@@ -136,11 +135,11 @@ const MagicBentoSolutions: React.FC<BentoProps> = ({
         />
       )}
 
-      <div className="bento-section grid gap-3 p-4 max-w-[80rem] select-none relative mx-auto" style={{ fontSize: 'clamp(1.2rem, 1.1rem + 0.6vw, 1.8rem)' }}>
-        <div className="card-responsive grid gap-3 grid-cols-1 md:grid-cols-3">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-3 max-w-5xl mx-auto">
           {cardData.map((card, index) => {
             // Todas las cards tienen el mismo tamaño
-            const baseClassName = `card flex flex-col justify-between relative aspect-[4/3] min-h-[320px] w-full max-w-full p-7 rounded-[24px] border border-solid font-light overflow-hidden transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_12px_35px_rgba(0,0,0,0.2)] ${
+            const baseClassName = `flex flex-col justify-between relative min-h-[320px] w-full p-7 rounded-[24px] border-[0.1px] border-white/20 border-solid font-light overflow-hidden transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_12px_35px_rgba(0,0,0,0.2)] ${
               enableBorderGlow ? 'card--border-glow' : ''
             }`;
 
@@ -237,8 +236,8 @@ const MagicBentoSolutions: React.FC<BentoProps> = ({
           content: '';
           position: absolute;
           inset: 0;
-          padding: 1px;
-          background: linear-gradient(45deg, rgba(182,117,255,0.3), rgba(168,85,247,0.3), rgba(182,117,255,0.3));
+          padding: 0.5px;
+          background: linear-gradient(45deg, rgba(182,117,255,0.45), rgba(168,85,247,0.45), rgba(182,117,255,0.45));
           border-radius: inherit;
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           mask-composite: xor;
