@@ -26,6 +26,7 @@ import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, Check
 import { Sora } from 'next/font/google'
 import LaserFlow from '@/components/ui/laserflow'
 import MagicBento from '@/components/ui/magicbento'
+import MagicBentoSolutions from '@/components/ui/magicbento-solutions'
 
 const sora = Sora({ subsets: ['latin'], weight: ['600','700','800'] })
 
@@ -245,6 +246,33 @@ export default function Home() {
             </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Soluciones Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 25% 75%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 75% 25%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-20">
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+              Las soluciones que necesitas para <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">escalar sin contratar</span>
+            </h2>
+          </div>
+          
+          <MagicBentoSolutions
+            textAutoHide={true}
+            enableStars={true}
+            enableSpotlight={true}
+            enableBorderGlow={true}
+            enableTilt={true}
+            enableMagnetism={true}
+            clickEffect={true}
+            spotlightRadius={300}
+            particleCount={12}
+            glowColor="132, 0, 255"
+          />
         </div>
       </section>
 
