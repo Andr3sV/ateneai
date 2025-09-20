@@ -183,64 +183,58 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-[0.02]" style={{backgroundImage:'radial-gradient(circle at 25% 25%, rgba(182,117,255,0.5) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
-        
-        <div className="max-w-7xl mx-auto text-center relative z-10">
-          <h3 className={`text-2xl md:text-3xl font-normal text-gray-900 mb-16 tracking-wide ${sora.className}`}>
-            Líderes en el sector han <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">multiplicado</span> sus ventas
-          </h3>
+      {/* Social Proof - Minimalist Supabase Style */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-xl text-gray-500 mb-16 tracking-wide">
+            Líderes en el sector han <span className="text-purple-600 font-medium">multiplicado</span> sus ventas
+          </p>
           
-          <div className="relative group">
-            {/* Glowing border effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-violet-600/20 to-purple-600/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-3xl p-12 shadow-[0_8px_32px_rgba(182,117,255,0.1)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.15)] transition-all duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
-                <div className="group flex justify-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                    <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
-              <Image
-                src="/intercard-logo.png"
-                alt="Intercard Solutions Logo"
-                width={240}
-                height={120}
-                        className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-                  </div>
+          {/* Horizontal scrolling logos */}
+          <div className="relative overflow-hidden">
+            <div className="flex animate-scroll-horizontal">
+              {/* Logo row 1 */}
+              <div className="flex items-center space-x-20 whitespace-nowrap">
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-60" />
                 </div>
-                <div className="group flex justify-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                    <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
-              <Image
-                src="/limforce-logo.png"
-                alt="LIMFORCE Logo"
-                width={240}
-                height={120}
-                        className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-                  </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-60" />
                 </div>
-                <div className="group flex justify-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                    <div className="relative bg-white/60 backdrop-blur-sm border border-purple-100/50 rounded-2xl p-6 shadow-[0_4px_16px_rgba(182,117,255,0.08)] group-hover:shadow-[0_8px_24px_rgba(182,117,255,0.12)] transition-all duration-500">
-              <Image
-                src="/fjdenegia-logo.png"
-                alt="FJD Energía Logo"
-                width={240}
-                height={120}
-                        className="h-20 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-              />
-                    </div>
-                  </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-60" />
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <span className="text-2xl font-medium">Simbiosis</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <span className="text-2xl font-medium">AteneAI</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <span className="text-2xl font-medium">TechFlow</span>
                 </div>
               </div>
+              {/* Duplicate for seamless loop */}
+              <div className="flex items-center space-x-20 whitespace-nowrap ml-20">
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-60" />
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-60" />
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-60" />
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <span className="text-2xl font-medium">Simbiosis</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <span className="text-2xl font-medium">AteneAI</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-400 hover:text-gray-600 transition-colors">
+                  <span className="text-2xl font-medium">TechFlow</span>
+            </div>
+            </div>
             </div>
           </div>
         </div>
