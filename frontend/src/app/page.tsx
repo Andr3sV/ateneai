@@ -263,11 +263,11 @@ export default function Home() {
           
           <MagicBentoSolutions
             textAutoHide={true}
-            enableStars={true}
-            enableSpotlight={true}
+            enableStars={false}
+            enableSpotlight={false}
             enableBorderGlow={true}
-            enableTilt={true}
-            enableMagnetism={true}
+            enableTilt={false}
+            enableMagnetism={false}
             clickEffect={true}
             spotlightRadius={300}
             particleCount={12}
