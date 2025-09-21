@@ -36,7 +36,7 @@ export default function Home() {
   const heroRef = useRef<HTMLDivElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const pedestalRef = useRef<HTMLDivElement | null>(null)
-  const [onLightSection, setOnLightSection] = useState(false)
+  const [hasScrolled, setHasScrolled] = useState(false)
   const [labelTop, setLabelTop] = useState<number>(120)
   const router = useRouter()
   const isMobile = useIsMobile()
@@ -49,17 +49,13 @@ export default function Home() {
 
   useEffect(() => {
     const update = () => {
-      const navApprox = 64
-      const rect = heroRef.current?.getBoundingClientRect()
-      if (!rect) return
-      setOnLightSection(rect.bottom <= navApprox + 8)
+      const scrollY = window.scrollY
+      setHasScrolled(scrollY > 0)
     }
     update()
     window.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update)
     return () => {
       window.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
     }
   }, [])
 
@@ -98,7 +94,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-white">
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${onLightSection ? 'backdrop-blur-xl' : 'bg-transparent'}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${hasScrolled ? 'backdrop-blur-xl bg-[#060010]/20' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
