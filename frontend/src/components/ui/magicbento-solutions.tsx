@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
-import { Phone, BarChart3, MessageSquare } from 'lucide-react';
+import { Phone, BarChart3, MessageSquare, Settings } from 'lucide-react';
 
 export interface BentoCardProps {
   color?: string;
@@ -64,6 +64,17 @@ const cardData: BentoCardProps[] = [
     ],
     label: 'WhatsApp',
     icon: <MessageSquare className="h-8 w-8 text-white" />
+  },
+  {
+    color: '#060010',
+    title: 'Otras automatizaciones',
+    description: [
+      'Reducimos tus costes operativos',
+      'Consultoría e implementación',
+      'Seguimiento continuo'
+    ],
+    label: 'Automatización',
+    icon: <Settings className="h-8 w-8 text-white" />
   }
 ];
 
@@ -136,10 +147,10 @@ const MagicBentoSolutions: React.FC<BentoProps> = ({
       )}
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-3 max-w-5xl mx-auto">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
           {cardData.map((card, index) => {
             // Todas las cards tienen el mismo tamaño
-            const baseClassName = `flex flex-col justify-between relative min-h-[320px] w-full p-7 rounded-[24px] border-[0.1px] border-white/20 border-solid font-light overflow-hidden transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_12px_35px_rgba(0,0,0,0.2)] ${
+            const baseClassName = `flex flex-col relative min-h-[320px] w-full p-7 rounded-[24px] border-[0.1px] border-white/20 border-solid font-light overflow-hidden transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_12px_35px_rgba(0,0,0,0.2)] ${
               enableBorderGlow ? 'card--border-glow' : ''
             }`;
 
@@ -192,13 +203,16 @@ const MagicBentoSolutions: React.FC<BentoProps> = ({
                 }}
               >
                 <div className={baseClassName} style={cardStyle}>
-                  <div className="card__header flex justify-between gap-3 relative text-white">
-                    <div className="card__label flex items-center justify-center">
+                  {/* Icono alineado a la izquierda arriba */}
+                  <div className="flex justify-start mb-6">
+                    <div className="flex items-center justify-center">
                       {card.icon}
                     </div>
                   </div>
-                  <div className="card__content flex flex-col relative text-white">
-                    <h3 className={`card__title font-normal text-lg m-0 mb-4 ${textAutoHide ? 'text-clamp-1' : ''}`}>
+                  
+                  {/* Contenido alineado a la izquierda */}
+                  <div className="flex flex-col text-white">
+                    <h3 className={`card__title font-normal text-lg m-0 mb-4 text-left ${textAutoHide ? 'text-clamp-1' : ''}`}>
                       {card.title}
                     </h3>
                     <div className="card__description">
@@ -214,7 +228,7 @@ const MagicBentoSolutions: React.FC<BentoProps> = ({
                           ))}
                         </ul>
                       ) : (
-                        <p className={`text-sm leading-6 opacity-90 ${textAutoHide ? 'text-clamp-3' : ''}`}>
+                        <p className={`text-sm leading-6 opacity-90 text-left ${textAutoHide ? 'text-clamp-3' : ''}`}>
                           {card.description}
                         </p>
                       )}
