@@ -125,7 +125,7 @@ export default function Home() {
                 <span className="sm:hidden">Entrar</span>
               </Link>
               <Link
-                href="#demo"
+                href="/demo"
                 className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 text-white px-3 sm:px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(182,117,255,0.3)] hover:shadow-[0_0_30px_rgba(182,117,255,0.5)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base"
               >
                 <span className="hidden sm:inline">Solicitar demo</span>
@@ -175,9 +175,9 @@ export default function Home() {
                   <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed font-normal tracking-wide ${sora.className}`}>
                   Automatiza el primer contacto sin perder el toque humano.
                   Ahorra horas a tu equipo y convierte más leads en clientes.                  </p>
-                  <button className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base">
+                  <Link href="/demo" className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base inline-block">
                     Solicitar una demo
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -573,21 +573,14 @@ export default function Home() {
                   </div>
                 </div>
                 
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+                {/* CTA Button */}
+                <div className="flex justify-center">
           <Link
-            href="/sign-up"
-                    className="group relative px-6 sm:px-10 py-3 sm:py-5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_8px_32px_rgba(182,117,255,0.3)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.4)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base w-full sm:w-auto"
-                  >
+                    href="/demo"
+                    className="group relative px-6 sm:px-10 py-3 sm:py-5 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_8px_32px_rgba(182,117,255,0.3)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.4)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base"
+          >
                     <span className="relative z-10">Solicitar demo gratuita</span>
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </Link>
-                  <Link
-                    href="/contact"
-                    className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-gray-300 bg-white border border-gray-200 hover:border-purple-300 hover:text-purple-700 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto"
-                  >
-                    Hablar con un experto
-                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
           </Link>
                 </div>
               </div>
