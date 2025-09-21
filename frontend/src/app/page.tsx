@@ -243,7 +243,7 @@ export default function Home() {
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">TechFlow</span>
             </div>
-            </div>
+              </div>
             </div>
           </div>
         </div>
@@ -275,8 +275,8 @@ export default function Home() {
             spotlightRadius={300}
             particleCount={12}
             glowColor="132, 0, 255"
-          />
-        </div>
+              />
+            </div>
       </section>
 
       {/* Casos de Uso Section */}
@@ -307,7 +307,7 @@ export default function Home() {
             ].map((tag, index) => (
               <div
                 key={index}
-                className="group relative px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:scale-105 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"
+                className="group relative px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300  hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"
               >
                 <span className="text-white text-sm md:text-base font-light tracking-wide group-hover:text-purple-300 transition-colors duration-300">
                   {tag}
@@ -346,8 +346,8 @@ export default function Home() {
             spotlightRadius={300}
             particleCount={12}
             glowColor="132, 0, 255"
-          />
-        </div>
+              />
+            </div>
       </section>
 
       {/* Sectores Section */}
@@ -365,28 +365,56 @@ export default function Home() {
             </p>
           </div>
           
-          {/* Tags Mosaic */}
-          <div className="flex flex-wrap justify-center gap-4 max-w-6xl mx-auto">
-            {[
-              'Utilities',
-              'Comunicaciones',
-              'Seguros',
-              'Real Estate',
-              'Salud',
-              'Finanzas',
-              'Cobranzas'
-            ].map((tag, index) => (
-              <div
-                key={index}
-                className="group relative px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:scale-105 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"
-              >
-                <span className="text-white text-sm md:text-base font-light tracking-wide group-hover:text-purple-300 transition-colors duration-300">
-                  {tag}
-                </span>
-                {/* Subtle glow effect on hover */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/20 to-violet-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+          {/* Tags Carousel */}
+          <div className="relative overflow-hidden mx-auto w-3/5">
+            {/* Fade effect overlays */}
+            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#060010] to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#060010] to-transparent z-10 pointer-events-none"></div>
+            
+            <div className="flex animate-scroll-horizontal">
+              {/* Tags row 1 */}
+              <div className="flex items-center space-x-8 whitespace-nowrap">
+                {[
+                  { name: 'Utilities', icon: '⚡' },
+                  { name: 'Comunicaciones', icon: '📡' },
+                  { name: 'Seguros', icon: '🛡️' },
+                  { name: 'Real Estate', icon: '🏢' },
+                  { name: 'Salud', icon: '🏥' },
+                  { name: 'Finanzas', icon: '💰' },
+                  { name: 'Cobranzas', icon: '📊' }
+                ].map((sector, index) => (
+                  <div key={index} className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                    <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300  hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer">
+                      <span className="text-white text-lg font-light tracking-wide group-hover:text-purple-300 transition-colors duration-300 flex items-center gap-2">
+                        <span className="text-xl">{sector.icon}</span>
+                        {sector.name}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+              {/* Duplicate for seamless loop */}
+              <div className="flex items-center space-x-8 whitespace-nowrap ml-8">
+                {[
+                  { name: 'Utilities', icon: '⚡' },
+                  { name: 'Comunicaciones', icon: '📡' },
+                  { name: 'Seguros', icon: '🛡️' },
+                  { name: 'Real Estate', icon: '🏢' },
+                  { name: 'Salud', icon: '🏥' },
+                  { name: 'Finanzas', icon: '💰' },
+                  { name: 'Cobranzas', icon: '📊' }
+                ].map((sector, index) => (
+                  <div key={`duplicate-${index}`} className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                    <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300  hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer">
+                      <span className="text-white text-lg font-light tracking-wide group-hover:text-purple-300 transition-colors duration-300 flex items-center gap-2">
+                        <span className="text-xl">{sector.icon}</span>
+                        {sector.name}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
