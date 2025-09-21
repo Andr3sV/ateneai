@@ -1,5 +1,6 @@
 import { SignUp } from '@clerk/nextjs'
 import { Sora } from "next/font/google"
+import Image from 'next/image'
 
 const sora = Sora({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700', '800'] })
 
@@ -27,15 +28,19 @@ export default function SignUpPage() {
         <div className="absolute bottom-20 right-20 w-2 h-2 bg-violet-400 rounded-full animate-ping" style={{animationDelay: '3.5s'}}></div>
       </div>
       
-      {/* Logo mejorado con efectos */}
+      {/* Logo igual que la landing page */}
       <div className="absolute top-8 left-8 z-10">
         <div className="flex items-center group cursor-pointer">
-          <div className="h-10 w-10 flex items-center justify-center">
-            <div className="h-8 w-8 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.3)] group-hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all duration-300 group-hover:scale-110">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
+          <div className="h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center">
+            <Image
+              src="/simbiosis-logo.svg"
+              alt="Simbiosia Logo"
+              width={32}
+              height={32}
+              className="brightness-0 invert h-6 w-6 sm:h-8 sm:w-8"
+            />
           </div>
-          <span className={`ml-2 text-xl font-light text-white tracking-wide group-hover:text-purple-200 transition-colors duration-300 ${sora.className}`}>
+          <span className={`ml-1 text-lg sm:text-xl font-normal text-white tracking-wide group-hover:text-purple-200 transition-colors duration-300 ${sora.className}`}>
             Simbiosia
           </span>
         </div>
@@ -78,6 +83,20 @@ export default function SignUpPage() {
               socialButtonsBlockButtonText: {
                 color: "#000000",
                 fontWeight: "500"
+              }
+            },
+            localization: {
+              locale: "es",
+              labels: {
+                signUp: {
+                  title: "Crear tu cuenta en Simbiosia",
+                  subtitle: "¡Bienvenido! Por favor completa los datos para comenzar",
+                  socialButtonsBlockButton: "Continuar con Google",
+                  signIn: {
+                    linkText: "¿Ya tienes una cuenta?",
+                    linkAction: "Iniciar sesión"
+                  }
+                }
               }
             }
           }}

@@ -52,6 +52,29 @@ const clerkAppearance = {
       color: "#000000",
       fontWeight: "500"
     }
+  },
+  localization: {
+    locale: "es",
+    labels: {
+      signIn: {
+        title: "Iniciar sesión en Simbiosia",
+        subtitle: "¡Bienvenido de vuelta! Por favor inicia sesión para continuar",
+        socialButtonsBlockButton: "Continuar con Google",
+        signUp: {
+          linkText: "¿No tienes una cuenta?",
+          linkAction: "Regístrate"
+        }
+      },
+      signUp: {
+        title: "Crear tu cuenta en Simbiosia",
+        subtitle: "¡Bienvenido! Por favor completa los datos para comenzar",
+        socialButtonsBlockButton: "Continuar con Google",
+        signIn: {
+          linkText: "¿Ya tienes una cuenta?",
+          linkAction: "Iniciar sesión"
+        }
+      }
+    }
   }
 }
 
