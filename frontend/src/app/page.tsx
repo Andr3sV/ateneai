@@ -350,6 +350,47 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Sectores Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 35% 65%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 65% 35%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-20">
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+              Agentes que hablan el idioma de <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">tu sector y empresa</span>
+            </h2>
+            <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
+              Sectores: Utilities, comunicaciones, seguros, real estate, salud, finanzas y cobranzas
+            </p>
+          </div>
+          
+          {/* Tags Mosaic */}
+          <div className="flex flex-wrap justify-center gap-4 max-w-6xl mx-auto">
+            {[
+              'Utilities',
+              'Comunicaciones',
+              'Seguros',
+              'Real Estate',
+              'Salud',
+              'Finanzas',
+              'Cobranzas'
+            ].map((tag, index) => (
+              <div
+                key={index}
+                className="group relative px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:scale-105 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"
+              >
+                <span className="text-white text-sm md:text-base font-light tracking-wide group-hover:text-purple-300 transition-colors duration-300">
+                  {tag}
+                </span>
+                {/* Subtle glow effect on hover */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/20 to-violet-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Sectores y Casos de Uso */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
         {/* Subtle background elements */}
