@@ -186,7 +186,7 @@ export default function Home() {
       </section>
 
       {/* Social Proof - Minimalist Supabase Style */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
+      <section className="pt-16 pb-8 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
         {/* Subtle background elements */}
         <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 20% 80%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
         
@@ -279,6 +279,46 @@ export default function Home() {
             </div>
       </section>
 
+      {/* Testimonial Cliente - Sección Clave */}
+      <section className="pt-1 pb-14 px-4 sm:px-6 lg:px-8 bg-[#060010] relative">
+        <div className="max-w-4xl mx-auto">
+          {/* Quote Icon - Minimalista */}
+          <div className="flex justify-center mb-8">
+            <div className="w-8 h-8 text-purple-400">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Quote text - Elegante y centrado */}
+          <blockquote className="text-center mb-12">
+            <p className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-light tracking-wide ${sora.className}`}>
+              "A diferencia de otras herramientas, en{' '}
+              <span className="text-purple-400 font-medium">
+                Simbiosia
+              </span>
+              {' '}no pierdo tiempo configurando nada. Se encarga de todo y me garantiza un seguimiento continuo para{' '}
+              <span className="text-purple-400 font-medium">
+                maximizar mis resultados
+              </span>
+              ."
+            </p>
+          </blockquote>
+
+          {/* Client info - Minimalista */}
+          <div className="flex items-center justify-center space-x-3">
+            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm font-medium">C</span>
+            </div>
+            <div className="text-left">
+              <p className="text-white text-sm font-medium">Cliente Satisfecho</p>
+              <p className="text-gray-400 text-xs">CEO, Empresa de Servicios</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Casos de Uso Section */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#060010] relative overflow-hidden">
         {/* Subtle background elements */}
@@ -314,10 +354,10 @@ export default function Home() {
                 </span>
                 {/* Subtle glow effect on hover */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/20 to-violet-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
-              </div>
+            </div>
             ))}
           </div>
-        </div>
+              </div>
       </section>
 
       {/* Magic Bento Section */}
@@ -332,9 +372,9 @@ export default function Home() {
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
               Ventajas únicas que te harán destacar en el mercado
-            </p>
-          </div>
-          
+              </p>
+            </div>
+            
           <MagicBento 
             textAutoHide={true}
             enableStars={true}
@@ -347,7 +387,7 @@ export default function Home() {
             particleCount={12}
             glowColor="132, 0, 255"
               />
-            </div>
+              </div>
       </section>
 
       {/* Sectores Section */}
@@ -362,8 +402,8 @@ export default function Home() {
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
               Sectores: Utilities, comunicaciones, seguros, real estate, salud, finanzas y cobranzas
-            </p>
-          </div>
+              </p>
+            </div>
           
           {/* Tags Carousel */}
           <div className="relative overflow-hidden mx-auto w-3/5">
@@ -411,7 +451,7 @@ export default function Home() {
                         {sector.name}
                       </span>
                     </div>
-                  </div>
+            </div>
                 ))}
               </div>
             </div>
@@ -425,7 +465,7 @@ export default function Home() {
         {/* Subtle background elements */}
         <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(circle at 40% 60%, rgba(182,117,255,0.4) 0%, transparent 50%), radial-gradient(circle at 60% 40%, rgba(168,85,247,0.3) 0%, transparent 50%)'}} />
         
-        <div className="max-w-7xl mx-auto relative z-10">
+        <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
               Resultados que <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">hablan por sí solos</span>
@@ -435,59 +475,55 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Stat 1 */}
             <div className="group text-center">
-              <div className="relative mb-4 sm:mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
+              <div className="relative">
+                <div className="relative border border-purple-400/30 rounded-xl p-3 sm:p-4 transition-all duration-500">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     10,000+
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Llamadas diarias</div>
-                  <div className="text-xs sm:text-sm text-gray-400">Por agente IA</div>
+                  <div className="text-xs sm:text-sm font-semibold text-gray-300 mb-1">Llamadas diarias</div>
+                  <div className="text-xs text-gray-400">Por agente IA</div>
                 </div>
               </div>
             </div>
             
             {/* Stat 2 */}
             <div className="group text-center">
-              <div className="relative mb-4 sm:mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
+              <div className="relative">
+                <div className="relative border border-purple-400/30 rounded-xl p-3 sm:p-4 transition-all duration-500">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     95%
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Satisfacción</div>
-                  <div className="text-xs sm:text-sm text-gray-400">De clientes</div>
+                  <div className="text-xs sm:text-sm font-semibold text-gray-300 mb-1">Satisfacción</div>
+                  <div className="text-xs text-gray-400">De clientes</div>
                 </div>
               </div>
             </div>
             
             {/* Stat 3 */}
             <div className="group text-center">
-              <div className="relative mb-4 sm:mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
+              <div className="relative">
+                <div className="relative border border-purple-400/30 rounded-xl p-3 sm:p-4 transition-all duration-500">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     10x
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Reducción</div>
-                  <div className="text-xs sm:text-sm text-gray-400">En costos operativos</div>
+                  <div className="text-xs sm:text-sm font-semibold text-gray-300 mb-1">Reducción</div>
+                  <div className="text-xs text-gray-400">En costos operativos</div>
                 </div>
               </div>
             </div>
             
             {/* Stat 4 */}
             <div className="group text-center">
-              <div className="relative mb-4 sm:mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-2xl sm:rounded-3xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-purple-400/30 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-[0_8px_32px_rgba(182,117,255,0.15)] hover:shadow-[0_16px_48px_rgba(182,117,255,0.25)] transition-all duration-500">
-                  <div className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-1 sm:mb-2 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
+              <div className="relative">
+                <div className="relative border border-purple-400/30 rounded-xl p-3 sm:p-4 transition-all duration-500">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
                     24/7
                   </div>
-                  <div className="text-sm sm:text-lg font-semibold text-gray-300 mb-1">Disponibilidad</div>
-                  <div className="text-xs sm:text-sm text-gray-400">Sin interrupciones</div>
+                  <div className="text-xs sm:text-sm font-semibold text-gray-300 mb-1">Disponibilidad</div>
+                  <div className="text-xs text-gray-400">Sin interrupciones</div>
                 </div>
               </div>
             </div>
