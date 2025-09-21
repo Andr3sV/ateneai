@@ -18,6 +18,8 @@ export const TABLES = {
   CONVERSATIONS_NEW: 'conversations_new',
   MESSAGES_NEW: 'messages_new',
   ANALYTICS: 'analytics',
+  // Demo leads
+  DEMO_LEADS: 'demo_leads',
 } as const;
 
 // Helper functions for common operations

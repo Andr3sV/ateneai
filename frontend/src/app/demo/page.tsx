@@ -39,11 +39,37 @@ export default function DemoPage() {
   const handleFinalStepCompleted = async () => {
     setIsSubmitting(true)
     
-    // Simular envío del formulario
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    setIsSubmitting(false)
-    setIsSubmitted(true)
+    try {
+      console.log('🚀 Enviando formulario...')
+      console.log('📋 Datos del formulario:', formData)
+      
+      // Opción 1: Guardar en Supabase
+      const response = await fetch('/api/demo-leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      console.log('📡 Respuesta del servidor:', response.status, response.statusText)
+      
+      const responseData = await response.json()
+      console.log('📄 Datos de respuesta:', responseData)
+
+      if (!response.ok) {
+        throw new Error(`Error al enviar el formulario: ${responseData.error || response.statusText}`)
+      }
+
+      console.log('✅ Formulario enviado exitosamente')
+      
+    } catch (error) {
+      console.error('❌ Error enviando formulario:', error)
+      alert(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    } finally {
+      setIsSubmitting(false)
+      setIsSubmitted(true)
+    }
   }
 
   const handleStepChange = (step: number) => {
@@ -144,15 +170,16 @@ export default function DemoPage() {
             </p>
           </div>
 
-          <Stepper
-            initialStep={1}
-            onStepChange={handleStepChange}
-            onFinalStepCompleted={handleFinalStepCompleted}
-            backButtonText="Anterior"
-            nextButtonText="Siguiente"
-            finalButtonText={isSubmitting ? "Enviando..." : "Solicitar demo"}
-            isSubmitting={isSubmitting}
-          >
+          <div className="mb-[50px]">
+            <Stepper
+              initialStep={1}
+              onStepChange={handleStepChange}
+              onFinalStepCompleted={handleFinalStepCompleted}
+              backButtonText="Anterior"
+              nextButtonText="Siguiente"
+              finalButtonText={isSubmitting ? "Enviando..." : "Solicitar demo"}
+              isSubmitting={isSubmitting}
+            >
             {/* Step 1: Información Personal */}
             <Step>
               <div className="text-center mb-10">
@@ -327,7 +354,8 @@ export default function DemoPage() {
               </div>
             </Step>
 
-          </Stepper>
+            </Stepper>
+          </div>
         </div>
       </div>
     </div>
