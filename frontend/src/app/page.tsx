@@ -127,7 +127,7 @@ export default function Home() {
                 href="#demo"
                 className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 text-white px-3 sm:px-6 py-2 rounded-lg shadow-[0_0_20px_rgba(182,117,255,0.3)] hover:shadow-[0_0_30px_rgba(182,117,255,0.5)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base"
               >
-                <span className="hidden sm:inline">Comenzar ahora</span>
+                <span className="hidden sm:inline">Solicitar demo</span>
                 <span className="sm:hidden">Demo</span>
               </Link>
             </div>
@@ -175,7 +175,7 @@ export default function Home() {
                   Automatiza el primer contacto sin perder el toque humano.
                   Ahorra horas a tu equipo y convierte más leads en clientes.                  </p>
                   <button className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base">
-                    Comenzar ahora
+                    Solicitar una demo
                   </button>
                 </div>
               </div>
@@ -205,34 +205,34 @@ export default function Home() {
               {/* Logo row 1 */}
               <div className="flex items-center space-x-20 whitespace-nowrap">
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
+                <span className="text-2xl font-medium">Prime Players</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
+                <span className="text-2xl font-medium">FJD Energía</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
+                <span className="text-2xl font-medium">Sirilum</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Simbiosis</span>
+                  <span className="text-2xl font-medium">Intercard</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">AteneAI</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">TechFlow</span>
+                  <span className="text-2xl font-medium">Limforce</span>
                 </div>
               </div>
               {/* Duplicate for seamless loop */}
               <div className="flex items-center space-x-20 whitespace-nowrap ml-20">
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
+                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-60 invert" />
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
+                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-60 invert" />
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-40 brightness-0 invert" />
+                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-60 invert" />
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">Simbiosis</span>
@@ -309,11 +309,11 @@ export default function Home() {
           {/* Client info - Minimalista */}
           <div className="flex items-center justify-center space-x-3">
             <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">C</span>
+              <span className="text-white text-sm font-medium">Z</span>
             </div>
             <div className="text-left">
-              <p className="text-white text-sm font-medium">Cliente Satisfecho</p>
-              <p className="text-gray-400 text-xs">CEO, Empresa de Servicios</p>
+              <p className="text-white text-sm font-medium">Ze Forjáz</p>
+              <p className="text-gray-400 text-xs">CCO, Prime Players</p>
             </div>
           </div>
         </div>
@@ -368,7 +368,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
             <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
-              ¿Por qué elegir <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">SimbiosisAI</span>?
+              ¿Por qué elegir <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">Simbiosia</span>?
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
               Ventajas únicas que te harán destacar en el mercado
@@ -401,7 +401,7 @@ export default function Home() {
               Agentes que hablan el idioma de <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">tu sector y empresa</span>
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
-              Sectores: Utilities, comunicaciones, seguros, real estate, salud, finanzas y cobranzas
+              Nuestros agentes pueden obtener un gran volumen de conocimiento de tu sector y empresa
               </p>
             </div>
           
@@ -684,7 +684,7 @@ export default function Home() {
                 <a href="/cookies" className="text-gray-400 hover:text-white text-sm transition-colors">Cookies</a>
               </div>
               <p className="text-gray-400 text-sm">
-            © 2024 SimbiosisAI. Todos los derechos reservados.
+            © 2024 Simbiosia. Todos los derechos reservados.
           </p>
             </div>
           </div>

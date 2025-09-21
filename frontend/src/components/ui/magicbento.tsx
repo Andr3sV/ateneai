@@ -33,37 +33,37 @@ const cardData: BentoCardProps[] = [
   {
     color: '#060010',
     title: 'Escalabilidad Infinita',
-    description: 'Crece sin límites, tu AI agent se adapta a cualquier volumen',
+    description: 'Crece sin límites, tu agente IA se adapta a cualquier volumen',
     label: 'Crecimiento'
   },
   {
     color: '#060010',
     title: 'Costos Reducidos 10x',
-    description: 'Ahorra significativamente en operaciones y recursos humanos',
+    description: 'Ahorra significativamente en operaciones y recursos',
     label: 'Ahorro'
   },
   {
     color: '#060010',
-    title: 'Experiencia Humana + IA',
+    title: 'Perfecta sincronización entre humanos y IA',
     description: 'Lo mejor de ambos mundos: calidez humana y velocidad de la IA',
     label: 'Híbrido'
   },
   {
     color: '#060010',
-    title: 'Integración Fácil',
-    description: 'Conecta con tus canales actuales en minutos, no meses',
-    label: 'Conectividad'
+    title: 'Lo hacemos todo por ti',
+    description: 'Nos encargamos de configurar el agente y mejorarlo continuamente',
+    label: 'Experiencia'
   },
   {
     color: '#060010',
     title: 'Análisis Inteligente',
-    description: 'IA que aprende de cada conversación para mejorar resultados',
+    description: 'IA que aprende de cada conversación para mejorar',
     label: 'Inteligencia'
   },
   {
     color: '#060010',
     title: 'Disponibilidad 24/7',
-    description: 'Nunca pierdas una oportunidad, tu AI agent nunca duerme',
+    description: 'Nunca pierdas una oportunidad, tu agente IA nunca duerme',
     label: 'Continuidad'
   }
 ];
