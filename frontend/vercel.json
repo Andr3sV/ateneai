@@ -1,35 +1,40 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "functions": {
-    "app/**/*.tsx": {
-      "includeFiles": "**"
-    }
-  },
-  "headers": [
+  "redirects": [
     {
       "source": "/(.*)",
-      "headers": [
+      "destination": "https://simbiosia.com/$1",
+      "permanent": true,
+      "has": [
         {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
+          "type": "host",
+          "value": "app.ateneai.com"
         }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://ateneai-backend-production.up.railway.app/api/:path*"
+      "source": "/clerk-proxy/(.*)",
+      "destination": "https://clerk.simbiosia.com/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
     }
   ]
 }
