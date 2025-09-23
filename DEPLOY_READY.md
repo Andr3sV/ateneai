@@ -6,4 +6,4 @@
 ✅ **Database: Supabase Multi-tenant**
 ✅ **Social: Meta OAuth Integration**
 
-🎯 **Deploy URL:** https://app.ateneai.com
+🎯 **Deploy URL:** https://simbiosia.com
