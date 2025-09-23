@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Sora } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
 import { LayoutWrapper } from '@/components/layout-wrapper';
 import "./globals.css";
@@ -14,19 +14,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const sora = Sora({
-  variable: "--font-sora",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "AteneAI - Chatbot SaaS Platform",
-  description: "AI-powered chatbot platform for business automation",
+  title: "Simbiosia - IA que potencia tus ventas",
+  description: "Automatiza el primer contacto sin perder el toque humano. Ahorra horas a tu equipo y convierte más leads en clientes.",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 const clerkAppearance = {
-  baseTheme: "dark",
+      baseTheme: "dark",
   variables: {
     colorPrimary: "#a855f7", // purple-500
     colorBackground: "transparent", // transparente para que se vea el fondo oscuro
@@ -34,7 +37,7 @@ const clerkAppearance = {
     colorInputBackground: "rgba(255, 255, 255, 0.1)", // fondo de inputs semi-transparente
     colorInputText: "#ffffff", // texto de inputs blanco
     borderRadius: "0.75rem", // rounded-xl
-    fontFamily: "var(--font-sora)",
+        fontFamily: "var(--font-inter)",
   },
   elements: {
     // Botón de Google con fondo blanco y texto oscuro
@@ -94,7 +97,7 @@ export default function RootLayout({
     >
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
         >
           <LayoutWrapper>{children}</LayoutWrapper>
         </body>

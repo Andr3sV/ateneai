@@ -54,13 +54,13 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg overflow-hidden  border border-white/10">
+          <div className="flex h-5 w-5 items-center justify-center rounded-lg overflow-hidden  border border-white/10">
             <Image 
-              src="/simbiosis-logo.svg"
+              src="/simbiosialogotransparent.svg"
               alt="Simbiosia Logo"
-              width={28}
-              height={28}
-              className="h-6 w-6 object-contain"
+              width={24}
+              height={24}
+              className="h-5 w-5 object-contain"
             />
           </div>
           <div className="flex flex-col">

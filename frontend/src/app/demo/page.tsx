@@ -137,12 +137,12 @@ export default function DemoPage() {
       <nav className="relative z-10 px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <div className="h-10 w-10 flex items-center justify-center">
+            <div className="h-8 w-8 flex items-center justify-center">
               <Image
-                src="/simbiosis-logo.svg"
+                src="/simbiosialogotransparent.svg"
                 alt="Simbiosia Logo"
-                width={28}
-                height={28}
+                width={24}
+                height={24}
                 className="brightness-0 invert"
               />
             </div>

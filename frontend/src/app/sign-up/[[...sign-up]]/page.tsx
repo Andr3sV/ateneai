@@ -31,13 +31,13 @@ export default function SignUpPage() {
       {/* Logo igual que la landing page */}
       <div className="absolute top-8 left-8 z-10">
         <div className="flex items-center group cursor-pointer">
-          <div className="h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center">
+          <div className="h-7 w-7 sm:h-10 sm:w-10 flex items-center justify-center">
             <Image
-              src="/simbiosis-logo.svg"
+              src="/simbiosialogotransparent.svg"
               alt="Simbiosia Logo"
-              width={32}
-              height={32}
-              className="brightness-0 invert h-6 w-6 sm:h-8 sm:w-8"
+              width={28}
+              height={28}
+              className="brightness-0 invert h-5 w-5 sm:h-7 sm:w-7"
             />
           </div>
           <span className={`ml-1 text-lg sm:text-xl font-normal text-white tracking-wide group-hover:text-purple-200 transition-colors duration-300 ${sora.className}`}>

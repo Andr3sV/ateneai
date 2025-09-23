@@ -23,13 +23,13 @@ const useIsMobile = () => {
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Phone, MessageSquare, TrendingUp, Zap, Shield, Users, CheckCircle, Star } from 'lucide-react'
-import { Sora } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import LaserFlow from '@/components/ui/laserflow'
 import MagicBento from '@/components/ui/magicbento'
 import MagicBentoSolutions from '@/components/ui/magicbento-solutions'
 import ElectricBorder from '@/components/ui/electricBorder'
 
-const sora = Sora({ subsets: ['latin'], weight: ['600','700','800'] })
+const inter = Inter({ subsets: ['latin'], weight: ['400'] })
 
 export default function Home() {
   const { isSignedIn, isLoaded } = useAuth()
@@ -99,16 +99,16 @@ export default function Home() {
           <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <div className="h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center">
+              <div className="h-6 w-6 sm:h-8 sm:w-8 flex items-center justify-center">
                 <Image
-                  src="/simbiosis-logo.svg"
+                  src="/simbiosialogotransparent.svg"
                   alt="Simbiosia Logo"
-                  width={32}
-                  height={32}
-                  className="brightness-0 invert h-6 w-6 sm:h-8 sm:w-8"
+                  width={24}
+                  height={24}
+                  className="brightness-0 invert h-4 w-4 sm:h-6 sm:w-6"
                 />
               </div>
-              <span className="ml-1 text-lg sm:text-xl font-normal text-white tracking-wide">Simbiosia</span>
+              <span className={`ml-1 text-lg sm:text-xl font-normal text-white tracking-wide ${inter.className}`}>Simbiosia</span>
             </div>
             
             {/* CTAs */}
@@ -157,7 +157,7 @@ export default function Home() {
               {/* Centered label */}
               <div className="absolute inset-x-0 flex items-center justify-center select-none" style={{ top: '35%', transform: 'translateY(-50%)' }}>
                   <span
-                    className={`${sora.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-normal tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-center`}
+                    className={`${inter.className} text-xl sm:text-2xl md:text-3xl lg:text-5xl font-normal tracking-wide bg-gradient-to-r from-fuchsia-300 via-pink-300 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(182,117,255,0.25)] text-center`}
                   >
                     Tus ventas potenciadas por IA 
                 </span>
@@ -168,7 +168,7 @@ export default function Home() {
                 <div className="absolute inset-0 opacity-40" style={{backgroundImage:'radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px)',backgroundSize:'16px 16px',backgroundPosition:'0 0'}} />
                 <div className="absolute inset-0 ring-1 ring-white/5 rounded-[20px] sm:rounded-[28px]" />
                 <div className="relative h-full w-full flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-8 space-y-4 sm:space-y-8">
-                  <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed font-normal tracking-wide ${sora.className}`}>
+                  <p className={`text-white/95 text-sm sm:text-base md:text-lg lg:text-2xl text-center leading-relaxed font-normal tracking-wide ${inter.className}`}>
                   Automatiza el primer contacto sin perder el toque humano.
                   Ahorra horas a tu equipo y convierte más leads en clientes.                  </p>
                   <Link href="/demo" className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 shadow-[0_0_40px_rgba(182,117,255,0.35)] hover:shadow-[0_0_60px_rgba(182,117,255,0.6)] transition-all duration-300 border border-purple-400/30 hover:border-purple-300/50 text-sm sm:text-base inline-block">
@@ -253,7 +253,7 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${inter.className}`}>
               Lo que necesitas para <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">escalar sin contratar</span>
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
@@ -290,7 +290,7 @@ export default function Home() {
 
           {/* Quote text - Elegante y centrado */}
           <blockquote className="text-center mb-12">
-            <p className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-light tracking-wide ${sora.className}`}>
+            <p className={`text-xl md:text-2xl text-gray-300 leading-relaxed font-light tracking-wide ${inter.className}`}>
               "A diferencia de otras herramientas, en{' '}
               <span className="text-purple-400 font-medium">
                 Simbiosia
@@ -323,7 +323,7 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${inter.className}`}>
               Agentes flexibles para <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">muchos casos de uso</span>
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
@@ -364,7 +364,7 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${inter.className}`}>
               ¿Por qué elegir <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">Simbiosia</span>?
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
@@ -394,7 +394,7 @@ export default function Home() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${inter.className}`}>
               Agentes que hablan el idioma de <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">tu sector y empresa</span>
             </h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
@@ -464,7 +464,7 @@ export default function Home() {
         
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${sora.className}`}>
+            <h2 className={`text-3xl md:text-4xl font-normal text-white mb-6 tracking-wide ${inter.className}`}>
               Resultados que <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">hablan por sí solos</span>
             </h2>
             <p className="text-lg text-gray-300 max-w-3xl mx-auto font-light tracking-wide">
@@ -545,7 +545,7 @@ export default function Home() {
                 {/* Urgencia y Social Proof */}
 
                 
-                <h2 className={`text-2xl sm:text-3xl md:text-4xl font-normal text-white mb-4 sm:mb-6 tracking-wide ${sora.className}`}>
+                <h2 className={`text-2xl sm:text-3xl md:text-4xl font-normal text-white mb-4 sm:mb-6 tracking-wide ${inter.className}`}>
                   Tus clientes esperan.<br />
                   <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">Tu agente IA ya está listo.</span>
           </h2>
