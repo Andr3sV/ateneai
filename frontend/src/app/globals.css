@@ -12,7 +12,7 @@
 }
 
 .animate-scroll-horizontal {
-  animation: scroll-horizontal 30s linear infinite;
+  animation: scroll-horizontal 15s linear infinite;
 }
 
 /* Animación sutil para el degradado */
