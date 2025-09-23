@@ -202,34 +202,13 @@ export default function Home() {
               {/* Logo row 1 */}
               <div className="flex items-center space-x-20 whitespace-nowrap">
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                <span className="text-2xl font-medium">Prime Players</span>
+                  <span className="text-2xl font-medium">Prime Players</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                <span className="text-2xl font-medium">FJD Energía</span>
+                  <span className="text-2xl font-medium">FJD Energía</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                <span className="text-2xl font-medium">Sirilum</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Intercard</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">AteneAI</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Limforce</span>
-                </div>
-              </div>
-              {/* Duplicate for seamless loop */}
-              <div className="flex items-center space-x-20 whitespace-nowrap ml-20">
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/intercard-logo.png" alt="Intercard" width={240} height={80} className="h-16 w-auto opacity-60 invert" />
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/fjdenegia-logo.png" alt="FJD Energía" width={240} height={80} className="h-16 w-auto opacity-60 invert" />
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <Image src="/limforce-logo.png" alt="Limforce" width={240} height={80} className="h-16 w-auto opacity-60 invert" />
+                  <span className="text-2xl font-medium">Sirilum</span>
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">Simbiosis</span>
@@ -239,7 +218,40 @@ export default function Home() {
                 </div>
                 <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
                   <span className="text-2xl font-medium">TechFlow</span>
-            </div>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">Intercard</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">Limforce</span>
+                </div>
+              </div>
+              {/* Duplicate for seamless loop */}
+              <div className="flex items-center space-x-20 whitespace-nowrap">
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">Prime Players</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">FJD Energía</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">Sirilum</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">Simbiosis</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">AteneAI</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">TechFlow</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">Intercard</span>
+                </div>
+                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
+                  <span className="text-2xl font-medium">Limforce</span>
+                </div>
               </div>
             </div>
           </div>
@@ -431,7 +443,7 @@ export default function Home() {
                 ))}
               </div>
               {/* Duplicate for seamless loop */}
-              <div className="flex items-center space-x-8 whitespace-nowrap ml-8">
+              <div className="flex items-center space-x-8 whitespace-nowrap">
                 {[
                   { name: 'Utilities', icon: '⚡' },
                   { name: 'Comunicaciones', icon: '📡' },

@@ -21,8 +21,20 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Simbiosia - IA que potencia tus ventas",
-  description: "Automatiza el primer contacto sin perder el toque humano. Ahorra horas a tu equipo y convierte más leads en clientes.",
+  title: "Simbiosia - IA que potencia tus ventas sin perder la calidez humana",
+  description: "Revoluciona tu negocio con agentes IA que hacen miles de llamadas en tiempo real, como un humano, pero sin límites. Automatiza el primer contacto, ahorra horas a tu equipo y convierte más leads en clientes.",
+  keywords: "IA, inteligencia artificial, automatización, llamadas, CRM, ventas, leads, agentes virtuales, Simbiosia",
+  openGraph: {
+    title: "Simbiosia - IA que potencia tus ventas sin perder la calidez humana",
+    description: "Revoluciona tu negocio con agentes IA que hacen miles de llamadas en tiempo real, como un humano, pero sin límites. Automatiza el primer contacto, ahorra horas a tu equipo y convierte más leads en clientes.",
+    type: "website",
+    locale: "es_ES",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Simbiosia - IA que potencia tus ventas sin perder la calidez humana",
+    description: "Revoluciona tu negocio con agentes IA que hacen miles de llamadas en tiempo real, como un humano, pero sin límites.",
+  },
   icons: {
     icon: '/favicon.ico',
   },
