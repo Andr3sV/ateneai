@@ -22,7 +22,7 @@ router.get('/:workspaceId/:conversationId/link', async (req, res): Promise<void>
       return;
     }
 
-    const baseUrl = process.env.FRONTEND_URL || 'https://app.ateneai.com';
+    const baseUrl = process.env.FRONTEND_URL || 'https://simbiosia.com';
     const directLink = `${baseUrl}/messages/conversations?open=${conversationId}`;
 
     const contactName = (conversation as any)?.contact?.name || (conversation as any)?.contact_name || 'Cliente';

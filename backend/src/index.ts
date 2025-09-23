@@ -101,8 +101,14 @@ const publicLimiter = rateLimit({
 
 // Middleware
 app.use(helmet());
+// CORS configuration
+const corsOrigins = [
+  ...(process.env.CORS_ORIGIN?.split(',').map(url => url.trim()) || []),
+  ...(process.env.CORS_ADDITIONAL_ORIGINS?.split(',').map(url => url.trim()) || [])
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',').map(url => url.trim()) || 'http://localhost:3000',
+  origin: corsOrigins.length > 0 ? corsOrigins : 'http://localhost:3000',
   credentials: true,
 }));
 app.use(morgan('combined'));
