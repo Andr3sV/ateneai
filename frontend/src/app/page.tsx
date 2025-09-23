@@ -28,8 +28,32 @@ import LaserFlow from '@/components/ui/laserflow'
 import MagicBento from '@/components/ui/magicbento'
 import MagicBentoSolutions from '@/components/ui/magicbento-solutions'
 import ElectricBorder from '@/components/ui/electricBorder'
+import LogoLoop from '@/components/ui/logoloop'
 
 const inter = Inter({ subsets: ['latin'], weight: ['400'] })
+
+// Datos para el carrusel de Social Proof
+const socialProofLogos = [
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">Prime Players</span> },
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">FJD Energía</span> },
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">Sirilum</span> },
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">Simbiosis</span> },
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">AteneAI</span> },
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">TechFlow</span> },
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">Intercard</span> },
+  { node: <span className="text-2xl font-medium text-gray-300 hover:text-white transition-colors">Limforce</span> },
+];
+
+// Datos para el carrusel de Sectores
+const sectorTags = [
+  { node: <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"><span className="text-white text-lg font-light tracking-wide flex items-center gap-2"><span className="text-xl">⚡</span>Utilities</span></div> },
+  { node: <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"><span className="text-white text-lg font-light tracking-wide flex items-center gap-2"><span className="text-xl">📡</span>Comunicaciones</span></div> },
+  { node: <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"><span className="text-white text-lg font-light tracking-wide flex items-center gap-2"><span className="text-xl">🛡️</span>Seguros</span></div> },
+  { node: <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"><span className="text-white text-lg font-light tracking-wide flex items-center gap-2"><span className="text-xl">🏢</span>Real Estate</span></div> },
+  { node: <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"><span className="text-white text-lg font-light tracking-wide flex items-center gap-2"><span className="text-xl">🏥</span>Salud</span></div> },
+  { node: <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"><span className="text-white text-lg font-light tracking-wide flex items-center gap-2"><span className="text-xl">💰</span>Finanzas</span></div> },
+  { node: <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer"><span className="text-white text-lg font-light tracking-wide flex items-center gap-2"><span className="text-xl">📊</span>Cobranzas</span></div> },
+];
 
 export default function Home() {
   const { isSignedIn, isLoaded } = useAuth()
@@ -193,67 +217,22 @@ export default function Home() {
           </p>
           
           {/* Horizontal scrolling logos */}
-          <div className="relative overflow-hidden mx-auto w-3/5">
+          <div className="relative overflow-hidden mx-auto w-3/5 sm:w-4/5 h-20">
             {/* Fade effect overlays */}
-            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#060010] to-transparent z-10 pointer-events-none"></div>
-            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#060010] to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#060010] via-[#060010]/80 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#060010] via-[#060010]/80 to-transparent z-10 pointer-events-none"></div>
             
-            <div className="flex animate-scroll-horizontal">
-              {/* Logo row 1 */}
-              <div className="flex items-center space-x-20 whitespace-nowrap">
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Prime Players</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">FJD Energía</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Sirilum</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Simbiosis</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">AteneAI</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">TechFlow</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Intercard</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Limforce</span>
-                </div>
-              </div>
-              {/* Duplicate for seamless loop */}
-              <div className="flex items-center space-x-20 whitespace-nowrap">
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Prime Players</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">FJD Energía</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Sirilum</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Simbiosis</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">AteneAI</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">TechFlow</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Intercard</span>
-                </div>
-                <div className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                  <span className="text-2xl font-medium">Limforce</span>
-                </div>
-              </div>
-            </div>
+            <LogoLoop
+              logos={socialProofLogos}
+              speed={40}
+              direction="left"
+              logoHeight={32}
+              gap={80}
+              pauseOnHover
+              fadeOut
+              fadeOutColor="#060010"
+              ariaLabel="Empresas que confían en Simbiosia"
+            />
           </div>
         </div>
       </section>
@@ -415,55 +394,22 @@ export default function Home() {
             </div>
           
           {/* Tags Carousel */}
-          <div className="relative overflow-hidden mx-auto w-3/5">
+          <div className="relative overflow-hidden mx-auto w-3/5 sm:w-4/5 h-16">
             {/* Fade effect overlays */}
-            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#060010] to-transparent z-10 pointer-events-none"></div>
-            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#060010] to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#060010] via-[#060010]/80 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#060010] via-[#060010]/80 to-transparent z-10 pointer-events-none"></div>
             
-            <div className="flex animate-scroll-horizontal">
-              {/* Tags row 1 */}
-              <div className="flex items-center space-x-8 whitespace-nowrap">
-                {[
-                  { name: 'Utilities', icon: '⚡' },
-                  { name: 'Comunicaciones', icon: '📡' },
-                  { name: 'Seguros', icon: '🛡️' },
-                  { name: 'Real Estate', icon: '🏢' },
-                  { name: 'Salud', icon: '🏥' },
-                  { name: 'Finanzas', icon: '💰' },
-                  { name: 'Cobranzas', icon: '📊' }
-                ].map((sector, index) => (
-                  <div key={index} className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                    <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300  hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer">
-                      <span className="text-white text-lg font-light tracking-wide group-hover:text-purple-300 transition-colors duration-300 flex items-center gap-2">
-                        <span className="text-xl">{sector.icon}</span>
-                        {sector.name}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Duplicate for seamless loop */}
-              <div className="flex items-center space-x-8 whitespace-nowrap">
-                {[
-                  { name: 'Utilities', icon: '⚡' },
-                  { name: 'Comunicaciones', icon: '📡' },
-                  { name: 'Seguros', icon: '🛡️' },
-                  { name: 'Real Estate', icon: '🏢' },
-                  { name: 'Salud', icon: '🏥' },
-                  { name: 'Finanzas', icon: '💰' },
-                  { name: 'Cobranzas', icon: '📊' }
-                ].map((sector, index) => (
-                  <div key={`duplicate-${index}`} className="flex items-center space-x-4 text-gray-300 hover:text-white transition-colors">
-                    <div className="px-6 py-3 rounded-full bg-gray-900/80 border border-white/20 hover:border-purple-400/50 transition-all duration-300  hover:shadow-[0_8px_25px_rgba(182,117,255,0.15)] cursor-pointer">
-                      <span className="text-white text-lg font-light tracking-wide group-hover:text-purple-300 transition-colors duration-300 flex items-center gap-2">
-                        <span className="text-xl">{sector.icon}</span>
-                        {sector.name}
-                      </span>
-                    </div>
-            </div>
-                ))}
-              </div>
-            </div>
+            <LogoLoop
+              logos={sectorTags}
+              speed={30}
+              direction="left"
+              logoHeight={48}
+              gap={32}
+              pauseOnHover
+              fadeOut
+              fadeOutColor="#060010"
+              ariaLabel="Sectores que atendemos"
+            />
           </div>
         </div>
       </section>
