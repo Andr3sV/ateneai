@@ -142,6 +142,7 @@ interface CallItem {
   phone_to: string | null
   agent: { id: number; name: string } | null
   city: string | null
+  postal_code?: string | null
   status: 'lead' | 'mql' | 'client' | 'agendado' | 'no_contesta' | null
   interest: 'energy' | 'alarm' | 'telco' | 'insurance' | 'investment' | null
   type: 'outbound' | 'inbound' | null

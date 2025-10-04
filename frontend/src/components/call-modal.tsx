@@ -21,8 +21,8 @@ type CallDetail = {
   phone_to: string | null
   status: 'lead' | 'mql' | 'client' | 'agendado' | null
   interest: 'energy' | 'alarm' | 'telco' | 'insurance' | 'investment' | null
-  type: 'outbound' | 'inbound' | null
   city: string | null
+  postal_code: string | null
   created_at: string
   transcript?: string | null
   criteria_evaluation?: string[] | null
@@ -320,10 +320,11 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
                   {call?.contact?.name || 'Call details'}
                 </SheetTitle>
                 <SheetDescription className="text-left text-muted-foreground text-sm">
-                  {call?.contact?.phone && `📱 ${call.contact.phone}`}
+                  {call?.phone_from && `📞 From: ${call.phone_from}`}
+                  {call?.phone_to && ` • 📱 To: ${call.phone_to}`}
                   {call?.agent?.name && ` • 👤 ${call.agent.name}`}
-                  {call?.type && ` • ☎️ ${call.type === 'inbound' ? 'Inbound' : 'Outbound'}`}
                   {call?.city && ` • 🏙️ ${call.city}`}
+                  {call?.postal_code && ` • 📮 ${call.postal_code}`}
                   {typeof call?.duration === 'number' && ` • ⏱️ ${Math.floor((call.duration || 0) / 60)}m ${Math.floor((call.duration || 0) % 60)}s`}
                 </SheetDescription>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
