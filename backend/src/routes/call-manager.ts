@@ -48,8 +48,25 @@ router.post('/submit', requireWorkspaceContext, async (req, res): Promise<void> 
       callManagerPayload.phone_provider = phone_provider;
     }
 
+    console.log('📤 Sending to Call Manager:', {
+      url: `${CALL_MANAGER_BASE_URL}/submit`,
+      payload: {
+        ...callManagerPayload,
+        recipients: `[${callManagerPayload.recipients.length} recipients]`
+      }
+    });
+
     // Forward request to call-manager
     const callManagerResponse = await axios.post(`${CALL_MANAGER_BASE_URL}/submit`, callManagerPayload);
+
+    console.log('📥 Call Manager Response:', {
+      success: callManagerResponse.data?.success,
+      status: callManagerResponse.status,
+      batchId: callManagerResponse.data?.data?.id,
+      batchStatus: callManagerResponse.data?.data?.status,
+      totalScheduled: callManagerResponse.data?.data?.total_calls_scheduled,
+      totalDispatched: callManagerResponse.data?.data?.total_calls_dispatched
+    });
 
     if (!callManagerResponse.data?.success) {
       res.status(500).json({
@@ -150,13 +167,20 @@ router.post('/:batchId/cancel', requireWorkspaceContext, async (req, res): Promi
       return;
     }
 
+    console.log(`📤 Canceling batch in Call Manager: ${externalBatchId}`);
+
     // Cancel in call-manager
     const callManagerResponse = await axios.post(`${CALL_MANAGER_BASE_URL}/${externalBatchId}/cancel`);
 
+    console.log('📥 Cancel response:', {
+      success: callManagerResponse.data?.success,
+      status: callManagerResponse.status
+    });
+
     if (!callManagerResponse.data?.success) {
-      res.status(500).json({
+      res.status(400).json({
         success: false,
-        error: callManagerResponse.data?.error || 'Call-manager returned an error'
+        error: callManagerResponse.data?.error || 'Failed to cancel batch'
       });
       return;
     }
@@ -165,8 +189,8 @@ router.post('/:batchId/cancel', requireWorkspaceContext, async (req, res): Promi
 
     // Update database
     await db.updateBatchCall(req.workspaceContext.workspaceId, batchId, {
-      status: updatedBatchData.status || 'cancelled',
-      processed_recipients: updatedBatchData.total_calls_dispatched || batch.processed_recipients
+      status: updatedBatchData?.status || 'cancelled',
+      processed_recipients: updatedBatchData?.total_calls_dispatched || batch.processed_recipients
     });
 
     console.log(`✅ Batch cancelled: ${externalBatchId}`);
@@ -186,12 +210,35 @@ router.post('/:batchId/cancel', requireWorkspaceContext, async (req, res): Promi
     if (axios.isAxiosError(error)) {
       const status = error.response?.status || 500;
       const errorData = error.response?.data;
+      console.error('Axios error details:', {
+        status,
+        data: errorData,
+        message: error.message
+      });
+      
+      // Extract error message, handling [object Object] issue
+      let errorMessage = 'Call-manager API error';
+      if (errorData?.error) {
+        if (typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        } else if (typeof errorData.error === 'object') {
+          errorMessage = JSON.stringify(errorData.error);
+        }
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+      
       res.status(status).json({
         success: false,
-        error: errorData?.error || 'Call-manager API error',
+        error: errorMessage,
         details: errorData
       });
     } else {
+      console.error('Non-axios error:', {
+        message: error.message,
+        stack: error.stack
+      });
+      
       res.status(500).json({
         success: false,
         error: error.message || 'Internal server error'
@@ -221,6 +268,8 @@ router.get('/:batchId/status', requireWorkspaceContext, async (req, res): Promis
       return;
     }
 
+    console.log(`🔍 Getting status for batch ${batchId}, file_url:`, batch.file_url);
+
     // Extract external_batch_id from metadata
     let externalBatchId: string | null = null;
     if (batch.file_url && batch.file_url.includes('metadata:')) {
@@ -228,15 +277,17 @@ router.get('/:batchId/status', requireWorkspaceContext, async (req, res): Promis
         const metadataStr = batch.file_url.split('metadata:')[1];
         const metadata = JSON.parse(metadataStr);
         externalBatchId = metadata.external_batch_id;
+        console.log(`✅ Found external_batch_id: ${externalBatchId}`);
       } catch (e) {
-        console.warn('Failed to parse metadata:', e);
+        console.warn('⚠️ Failed to parse metadata:', e);
       }
     }
 
     if (!externalBatchId) {
+      console.log(`❌ No external_batch_id found for batch ${batchId}. This batch was not created with call-manager.`);
       res.status(400).json({
         success: false,
-        error: 'Batch does not have external_batch_id (not created with call-manager)'
+        error: 'This campaign was not created with the new call-manager system and cannot be managed through this interface.'
       });
       return;
     }

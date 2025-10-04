@@ -67,7 +67,13 @@ export const useAuthenticatedFetch = () => {
         if (muteErrors) {
           return { success: false, status, error: errorData.error || response.statusText }
         }
-        throw new Error(errorData.error || `HTTP ${status}: ${response.statusText}`)
+        
+        // Format error message properly (handle objects)
+        let errorMessage = errorData.error || response.statusText
+        if (typeof errorMessage === 'object') {
+          errorMessage = JSON.stringify(errorMessage)
+        }
+        throw new Error(`${errorMessage} (Status: ${status})`)
       }
     } catch (error) {
       const shouldMute = (options as any)?.muteErrors

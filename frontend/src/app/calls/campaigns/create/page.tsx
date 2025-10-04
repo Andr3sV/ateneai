@@ -222,6 +222,19 @@ export default function CreateBatchCallPage() {
     (scheduleType === 'immediate' || (scheduledDate && scheduledTime)) &&
     !submitting
 
+  // Normalize phone number to E.164 format (add + if missing)
+  function normalizePhoneNumber(phone: string | number): string {
+    // Convert to string first (in case it's a number from Excel)
+    let normalized = String(phone).trim().replace(/\s+/g, '')
+    
+    // If it doesn't start with +, add it
+    if (!normalized.startsWith('+')) {
+      normalized = '+' + normalized
+    }
+    
+    return normalized
+  }
+
   async function handleSubmit() {
     if (!canSubmit) return
     
@@ -236,9 +249,9 @@ export default function CreateBatchCallPage() {
         throw new Error('No valid phone numbers found in the file')
       }
 
-      // Prepare recipients for call-manager API
+      // Prepare recipients for call-manager API (normalize phone numbers to E.164)
       const recipients = valid.map(row => ({
-        phone_number: row.phone_number,
+        phone_number: normalizePhoneNumber(row.phone_number),
         conversation_initiation_client_data: {
           dynamic_variables: row.dynamic_variables
         }
@@ -574,7 +587,8 @@ export default function CreateBatchCallPage() {
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>• File must contain a <strong>phone_number</strong> column (or phone, telefono, mobile)</p>
                 <p>• All other columns will be sent as dynamic variables to the agent</p>
-                <p>• Phone numbers should be in E.164 format: +34631021622</p>
+                <p>• Phone numbers will be auto-formatted to E.164 (+ will be added if missing)</p>
+                <p className="text-green-600">• Example: 34631021622 → +34631021622 ✓</p>
               </div>
             </CardContent>
           </Card>
@@ -606,11 +620,25 @@ export default function CreateBatchCallPage() {
                     <tbody>
                       {rowsPreview.map((r, idx) => (
                         <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
-                          {headers.map(h => (
-                            <td key={h} className="py-2 px-3 text-gray-700">
-                              {r[h] || ""}
-                            </td>
-                          ))}
+                          {headers.map(h => {
+                            const value = r[h] || ""
+                            const isPhoneColumn = h === phoneHeader
+                            const normalizedPhone = isPhoneColumn && value ? normalizePhoneNumber(value) : null
+                            const phoneChanged = normalizedPhone && normalizedPhone !== value
+                            
+                            return (
+                              <td key={h} className="py-2 px-3 text-gray-700">
+                                {isPhoneColumn && phoneChanged ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-400 line-through text-xs">{value}</span>
+                                    <span className="text-green-600 font-medium">{normalizedPhone}</span>
+                                  </div>
+                                ) : (
+                                  value
+                                )}
+                              </td>
+                            )
+                          })}
                         </tr>
                       ))}
                     </tbody>
