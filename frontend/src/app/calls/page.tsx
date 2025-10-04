@@ -156,7 +156,7 @@ export default function CallsPage() {
   // Header title in layout
   usePageTitle('Conversations')
   const authenticatedFetch = useAuthenticatedFetch()
-  const { role } = useWorkspaceContext()
+  const { role, workspaceId } = useWorkspaceContext()
 
   const [calls, setCalls] = useState<CallItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -495,39 +495,111 @@ export default function CallsPage() {
 
   // Realtime subscription to calls (workspace-scoped)
   useEffect(() => {
-    // Only subscribe if we have calls loaded
-    if (!supabase || calls.length === 0) return
+    // Only subscribe if we have supabase client and workspaceId
+    if (!supabase || !workspaceId) return
 
-    console.log('🔌 Setting up realtime subscription for calls');
+    console.log('🔌 Setting up realtime subscription for calls in workspace:', workspaceId);
+    console.log('🔌 Current time:', new Date().toISOString());
     
     const channel = supabase
-      .channel('realtime:calls')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, (payload: any) => {
+      .channel(`workspace:${workspaceId}:calls`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'calls',
+        filter: `workspace_id=eq.${workspaceId}` // Filter by workspace_id at database level
+      }, async (payload: any) => {
+        console.log('📡 Realtime payload received (full):', payload);
+        
+        // Supabase realtime uses 'eventType' not 'event'
+        const event = payload.eventType
         const row = payload.new || payload.old
-        if (!row) return
         
-        console.log('📡 Realtime update received:', payload.event, row.id);
+        console.log('📡 Event type:', event);
+        console.log('📡 Row data:', row);
         
-        setCalls(prev => {
-          // If the row is visible, update fields; if new and matches current filters, we could prepend (omitted for simplicity)
-          const idx = prev.findIndex(r => r.id === row.id)
-          if (idx === -1) return prev
-          const next = [...prev]
-          next[idx] = {
-            ...next[idx],
-            status: row.status ?? next[idx].status,
-            assigned_user_id: row.assigned_user_id ?? next[idx].assigned_user_id,
-            duration: typeof row.duration === 'number' ? row.duration : next[idx].duration,
-            // reflect scheduled_at if present; frontend reads it via scheduledByCall mapping for now
-          } as any
-          return next
-        })
-        // Also update scheduled map if scheduled_at arrived
-        if (row.scheduled_at) {
-          setScheduledByCall(prev => ({ ...prev, [row.id]: row.scheduled_at }))
+        if (!row) {
+          console.warn('⚠️ No row data in payload');
+          return
+        }
+        
+        console.log('📡 Realtime update received:', event, 'ID:', row.id);
+        
+        // Handle different event types
+        if (event === 'INSERT') {
+          // Fetch complete call data with relations
+          try {
+            const fullCall = await authenticatedFetch(getApiUrl(`calls/${row.id}`), { muteErrors: true } as any)
+            if (fullCall?.success && fullCall.data) {
+              console.log('✅ New call received, adding to list:', fullCall.data);
+              setCalls(prev => [fullCall.data, ...prev]) // Prepend new call
+              
+              // Trigger celebration if it's a qualified lead
+              const status = (fullCall.data.status || '').toLowerCase()
+              if ((status === 'mql' || status === 'client' || status === 'agendado') && celebrateEnabled) {
+                if (!celebratedIdsRef.current.has(fullCall.data.id)) {
+                  fireConfetti()
+                  playCelebrationSound(true)
+                  celebratedIdsRef.current.add(fullCall.data.id)
+                }
+              }
+            }
+          } catch (e) {
+            console.error('❌ Error fetching new call details:', e);
+          }
+        } else if (event === 'UPDATE') {
+          // Update existing call in the list
+          setCalls(prev => {
+            const idx = prev.findIndex(r => r.id === row.id)
+            if (idx === -1) return prev // Call not in current view
+            
+            const next = [...prev]
+            next[idx] = {
+              ...next[idx],
+              status: row.status ?? next[idx].status,
+              assigned_user_id: row.assigned_user_id ?? next[idx].assigned_user_id,
+              duration: typeof row.duration === 'number' ? row.duration : next[idx].duration,
+              interest: row.interest ?? next[idx].interest,
+              // reflect scheduled_at if present
+              scheduled_at: row.scheduled_at ?? next[idx].scheduled_at,
+            } as any
+            
+            console.log('✅ Call updated in list:', next[idx]);
+            return next
+          })
+          
+          // Update scheduled map if scheduled_at arrived
+          if (row.scheduled_at) {
+            setScheduledByCall(prev => ({ ...prev, [row.id]: row.scheduled_at }))
+          }
+          
+          // Check for qualification celebration
+          const status = (row.status || '').toLowerCase()
+          if ((status === 'mql' || status === 'client' || status === 'agendado') && celebrateEnabled) {
+            if (!celebratedIdsRef.current.has(row.id)) {
+              fireConfetti()
+              playCelebrationSound(true)
+              celebratedIdsRef.current.add(row.id)
+            }
+          }
+        } else if (event === 'DELETE') {
+          // Remove deleted call from the list
+          setCalls(prev => prev.filter(r => r.id !== row.id))
+          console.log('✅ Call removed from list:', row.id);
         }
       })
-      .subscribe()
+      .subscribe((status: string) => {
+        console.log('📡 Realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to realtime updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Channel error - check Supabase configuration');
+        } else if (status === 'TIMED_OUT') {
+          console.error('❌ Subscription timed out');
+        } else if (status === 'CLOSED') {
+          console.warn('⚠️ Channel closed');
+        }
+      })
 
     return () => { 
       console.log('🔌 Cleaning up realtime subscription');
@@ -537,7 +609,7 @@ export default function CallsPage() {
         console.warn('⚠️ Error cleaning up realtime:', e);
       }
     }
-  }, [supabase, calls.length]) // Only re-subscribe when calls array length changes
+  }, [supabase, workspaceId, authenticatedFetch, celebrateEnabled]) // Re-subscribe when workspace changes
 
   const formatDueDate = (s?: string | null) => {
     if (!s) return '-'
