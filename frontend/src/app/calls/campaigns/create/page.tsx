@@ -358,16 +358,6 @@ export default function CreateBatchCallPage() {
 
   return (
     <div className="flex flex-1 flex-col p-6 gap-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Create Campaign</h1>
-        <p className="text-muted-foreground">
-          Launch a batch calling campaign with ElevenLabs call-manager
-        </p>
-      </div>
-
-      <Separator />
-
       {success ? (
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
