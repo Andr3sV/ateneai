@@ -20,7 +20,7 @@ type CallDetail = {
   phone_from: string | null
   phone_to: string | null
   status: 'lead' | 'mql' | 'client' | 'agendado' | null
-  interest: 'energy' | 'alarm' | 'telco' | null
+  interest: 'energy' | 'alarm' | 'telco' | 'insurance' | 'investment' | null
   type: 'outbound' | 'inbound' | null
   city: string | null
   created_at: string
@@ -289,6 +289,14 @@ export function CallModal({ callId, open, onOpenChange }: CallModalProps) {
           <DropdownMenuItem onClick={() => onChange('telco')}>
             <span className="text-blue-600">●</span>
             <span className="ml-2 text-blue-700 font-medium">Telco</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('insurance')}>
+            <span className="text-green-600">●</span>
+            <span className="ml-2 text-green-700 font-medium">Insurance</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('investment')}>
+            <span className="text-purple-600">●</span>
+            <span className="ml-2 text-purple-700 font-medium">Investment</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(null)}>
             <span className="text-gray-500">●</span>

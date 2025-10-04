@@ -773,7 +773,7 @@ export const db = {
     return data;
   },
 
-  async updateCallInterest(workspaceId: number, callId: number, interest: 'energy' | 'alarm' | 'telco' | null) {
+  async updateCallInterest(workspaceId: number, callId: number, interest: 'energy' | 'alarm' | 'telco' | 'insurance' | 'investment' | null) {
     const { data, error } = await supabase
       .from(TABLES.CALLS)
       .update({ interest })

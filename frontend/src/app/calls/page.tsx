@@ -143,7 +143,7 @@ interface CallItem {
   agent: { id: number; name: string } | null
   city: string | null
   status: 'lead' | 'mql' | 'client' | 'agendado' | 'no_contesta' | null
-  interest: 'energy' | 'alarm' | 'telco' | null
+  interest: 'energy' | 'alarm' | 'telco' | 'insurance' | 'investment' | null
   type: 'outbound' | 'inbound' | null
   call_type?: 'transfer' | 'call_later' | null
   created_at: string
@@ -668,28 +668,29 @@ export default function CallsPage() {
     setModalOpen(true)
   }, [])
 
-  // Polling for calls - reduced frequency and visibility-aware
-  useEffect(() => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    const pollInterval = 60000; // Poll every 60 seconds instead of 20
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        pollTimerRef.current = setInterval(() => {
-          fetchCalls(pagination.page, true);
-        }, pollInterval);
-      } else {
-        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      }
-    };
-
-    handleVisibilityChange(); // Initial check
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [pagination.page]); // Only depend on page changes, not filters
+  // Polling for calls - DISABLED because realtime is active
+  // If you need polling as fallback, uncomment and add filters to dependencies
+  // useEffect(() => {
+  //   if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+  //   const pollInterval = 60000; // Poll every 60 seconds
+  //   const handleVisibilityChange = () => {
+  //     if (document.visibilityState === 'visible') {
+  //       pollTimerRef.current = setInterval(() => {
+  //         fetchCalls(pagination.page, true);
+  //       }, pollInterval);
+  //     } else {
+  //       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+  //     }
+  //   };
+  //
+  //   handleVisibilityChange(); // Initial check
+  //   document.addEventListener('visibilitychange', handleVisibilityChange);
+  //
+  //   return () => {
+  //     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+  //     document.removeEventListener('visibilitychange', handleVisibilityChange);
+  //   };
+  // }, [pagination.page, fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
 
   const applyQuickDateRange = (days: number) => {
     setDateStart(subDays(new Date(), days))
@@ -781,6 +782,14 @@ export default function CallsPage() {
             <span className="text-blue-600">●</span>
             <span className="ml-2 text-blue-700 font-medium">Telco</span>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('insurance')}>
+            <span className="text-green-600">●</span>
+            <span className="ml-2 text-green-700 font-medium">Insurance</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('investment')}>
+            <span className="text-purple-600">●</span>
+            <span className="ml-2 text-purple-700 font-medium">Investment</span>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(null)}>
             <span className="text-gray-500">●</span>
             <span className="ml-2 text-gray-700 font-medium">None</span>
@@ -830,6 +839,8 @@ export default function CallsPage() {
                   <SelectItem value="energy">Energy</SelectItem>
                   <SelectItem value="alarm">Alarm</SelectItem>
                   <SelectItem value="telco">Telco</SelectItem>
+                  <SelectItem value="insurance">Insurance</SelectItem>
+                  <SelectItem value="investment">Investment</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -993,7 +1004,7 @@ export default function CallsPage() {
                     Status
                   </div>
                 </TableHead>
-                <TableHead className="text-left font-semibold text-gray-900">Servicios</TableHead>
+                <TableHead className="text-left font-semibold text-gray-900">Services</TableHead>
                 <TableHead className="text-left font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
                     <TagIcon className="h-4 w-4" />

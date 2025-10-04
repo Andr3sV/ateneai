@@ -135,13 +135,13 @@ router.put('/:id(\\d+)/interest', requireWorkspaceContext, async (req, res): Pro
     const body = req.body as { interest?: string | null }
     const next = body.interest ?? null
     
-    const allowed = ['energy', 'alarm', 'telco', null]
+    const allowed = ['energy', 'alarm', 'telco', 'insurance', 'investment', null]
     if (!allowed.includes(next)) {
       res.status(400).json({ success: false, error: `Invalid interest. Allowed: ${allowed.filter(Boolean).join(', ')}, or null` })
       return;
     }
     
-    const updated = await db.updateCallInterest(req.workspaceContext.workspaceId, id, next as 'energy' | 'alarm' | 'telco' | null)
+    const updated = await db.updateCallInterest(req.workspaceContext.workspaceId, id, next as 'energy' | 'alarm' | 'telco' | 'insurance' | 'investment' | null)
     res.json({ success: true, data: updated })
   } catch (error: any) {
     console.error('❌ Error in PUT /calls/:id/interest:', error)
