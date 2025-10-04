@@ -548,39 +548,57 @@ export default function CallsPage() {
             console.error('❌ Error fetching new call details:', e);
           }
         } else if (event === 'UPDATE') {
-          // Update existing call in the list
-          setCalls(prev => {
-            const idx = prev.findIndex(r => r.id === row.id)
-            if (idx === -1) return prev // Call not in current view
-            
-            const next = [...prev]
-            next[idx] = {
-              ...next[idx],
-              status: row.status ?? next[idx].status,
-              assigned_user_id: row.assigned_user_id ?? next[idx].assigned_user_id,
-              duration: typeof row.duration === 'number' ? row.duration : next[idx].duration,
-              interest: row.interest ?? next[idx].interest,
-              // reflect scheduled_at if present
-              scheduled_at: row.scheduled_at ?? next[idx].scheduled_at,
-            } as any
-            
-            console.log('✅ Call updated in list:', next[idx]);
-            return next
-          })
-          
-          // Update scheduled map if scheduled_at arrived
-          if (row.scheduled_at) {
-            setScheduledByCall(prev => ({ ...prev, [row.id]: row.scheduled_at }))
-          }
-          
-          // Check for qualification celebration
-          const status = (row.status || '').toLowerCase()
-          if ((status === 'mql' || status === 'client' || status === 'agendado') && celebrateEnabled) {
-            if (!celebratedIdsRef.current.has(row.id)) {
-              fireConfetti()
-              playCelebrationSound(true)
-              celebratedIdsRef.current.add(row.id)
+          // Update existing call - fetch complete data with relations
+          try {
+            const fullCall = await authenticatedFetch(getApiUrl(`calls/${row.id}`), { muteErrors: true } as any)
+            if (fullCall?.success && fullCall.data) {
+              console.log('✅ Updated call received, updating in list:', fullCall.data);
+              
+              setCalls(prev => {
+                const idx = prev.findIndex(r => r.id === row.id)
+                if (idx === -1) return prev // Call not in current view
+                
+                const next = [...prev]
+                next[idx] = fullCall.data // Replace with complete data
+                
+                console.log('✅ Call updated in list with full data:', next[idx]);
+                return next
+              })
+              
+              // Update scheduled map if scheduled_at arrived
+              if (fullCall.data.scheduled_at) {
+                setScheduledByCall(prev => ({ ...prev, [row.id]: fullCall.data.scheduled_at }))
+              }
+              
+              // Check for qualification celebration
+              const status = (fullCall.data.status || '').toLowerCase()
+              if ((status === 'mql' || status === 'client' || status === 'agendado') && celebrateEnabled) {
+                if (!celebratedIdsRef.current.has(row.id)) {
+                  fireConfetti()
+                  playCelebrationSound(true)
+                  celebratedIdsRef.current.add(row.id)
+                }
+              }
             }
+          } catch (e) {
+            console.error('❌ Error fetching updated call details:', e);
+            // Fallback: update with available data from payload
+            setCalls(prev => {
+              const idx = prev.findIndex(r => r.id === row.id)
+              if (idx === -1) return prev
+              
+              const next = [...prev]
+              next[idx] = {
+                ...next[idx],
+                status: row.status ?? next[idx].status,
+                assigned_user_id: row.assigned_user_id ?? next[idx].assigned_user_id,
+                duration: typeof row.duration === 'number' ? row.duration : next[idx].duration,
+                interest: row.interest ?? next[idx].interest,
+                scheduled_at: row.scheduled_at ?? next[idx].scheduled_at,
+              } as any
+              
+              return next
+            })
           }
         } else if (event === 'DELETE') {
           // Remove deleted call from the list
