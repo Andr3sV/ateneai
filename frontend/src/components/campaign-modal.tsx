@@ -209,7 +209,7 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
     completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle2, label: 'Completed' },
     in_progress: { color: 'bg-blue-100 text-blue-800', icon: Loader2, label: 'In Progress' },
     pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Pending' },
-    cancelled: { color: 'bg-gray-100 text-gray-800', icon: XCircle, label: 'Cancelled' },
+    cancelled: { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Cancelled' },
     failed: { color: 'bg-red-100 text-red-800', icon: AlertCircle, label: 'Failed' },
   }
 
@@ -229,65 +229,15 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
+        <SheetHeader className="px-6">
           <SheetTitle className="text-xl">{campaign.name || 'Campaign Details'}</SheetTitle>
           <SheetDescription className="flex items-center gap-2">
             <StatusIcon className={`h-4 w-4 ${isInProgress ? 'animate-spin' : ''}`} />
             <Badge className={currentStatus.color}>{currentStatus.label}</Badge>
-            {isCallManagerCampaign && (
-              <Badge variant="outline" className="ml-2">Call Manager</Badge>
-            )}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
-          {/* Actions */}
-          {isCallManagerCampaign && (isInProgress || isPending) && (
-            <Card>
-              <CardContent className="pt-6 space-y-3">
-                {cancelError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{cancelError}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button 
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={handleCancel}
-                  disabled={canceling || isFailed}
-                >
-                  {canceling ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Canceling...
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Cancel Campaign
-                    </>
-                  )}
-                </Button>
-                
-                <p className="text-xs text-muted-foreground text-center">
-                  This will stop all pending calls in this campaign
-                </p>
-              </CardContent>
-            </Card>
-          )}
-          
-          {/* Info for completed/cancelled campaigns */}
-          {isCallManagerCampaign && (isCompleted || isCancelled) && (
-            <Alert>
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
-                This campaign is {status} and cannot be cancelled.
-              </AlertDescription>
-            </Alert>
-          )}
-
+        <div className="mt-1 px-6 space-y-6">
           {/* Progress */}
           <Card>
             <CardHeader>
@@ -413,86 +363,130 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
             </Alert>
           )}
 
-          {/* Debug Information - Call Manager Data */}
-          {isCallManagerCampaign && callManagerData && (
-            <Card className="border-blue-200 bg-blue-50/50">
+          {/* Call Recipients Status */}
+          {isCallManagerCampaign && callManagerData?.recipients && callManagerData.recipients.length > 0 && (
+            <Card>
               <CardHeader>
-                <CardTitle className="text-base text-blue-900">🔍 Debug Info - Call Manager Response</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-xs space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="font-semibold">Batch ID:</span>
-                      <code className="ml-1 bg-white px-1 rounded">{callManagerData.id}</code>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Status:</span>
-                      <code className="ml-1 bg-white px-1 rounded">{callManagerData.status}</code>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Phone Number ID:</span>
-                      <code className="ml-1 bg-white px-1 rounded text-[10px]">{callManagerData.phone_number_id}</code>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Agent ID:</span>
-                      <code className="ml-1 bg-white px-1 rounded text-[10px]">{callManagerData.agent_id}</code>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Provider:</span>
-                      <code className="ml-1 bg-white px-1 rounded">{callManagerData.phone_provider || 'N/A'}</code>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Agent Name:</span>
-                      <code className="ml-1 bg-white px-1 rounded">{callManagerData.agent_name || 'N/A'}</code>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Total Scheduled:</span>
-                      <code className="ml-1 bg-white px-1 rounded">{callManagerData.total_calls_scheduled}</code>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Total Dispatched:</span>
-                      <code className="ml-1 bg-white px-1 rounded">{callManagerData.total_calls_dispatched}</code>
-                    </div>
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span>Call Recipients ({callManagerData.recipients.length})</span>
+                  <div className="flex gap-2 text-xs">
+                    <Badge variant="outline" className="bg-green-50 text-green-700">
+                      ✓ {callManagerData.recipients.filter(r => r.status === 'completed').length} Completed
+                    </Badge>
+                    <Badge variant="outline" className="bg-red-50 text-red-700">
+                      ✗ {callManagerData.recipients.filter(r => r.status === 'failed').length} Failed
+                    </Badge>
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                      ⏳ {callManagerData.recipients.filter(r => r.status === 'pending').length} Pending
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      ↻ {callManagerData.recipients.filter(r => r.status === 'in_progress').length} In Progress
+                    </Badge>
                   </div>
-
-                  {callManagerData.recipients && callManagerData.recipients.length > 0 && (
-                    <div className="pt-2 border-t border-blue-200">
-                      <div className="font-semibold mb-2">Recipients Details:</div>
-                      <div className="space-y-1 max-h-40 overflow-y-auto bg-white p-2 rounded">
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="max-h-96 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 sticky top-0 border-b">
+                        <tr>
+                          <th className="text-left py-2 px-3 font-medium text-gray-700">#</th>
+                          <th className="text-left py-2 px-3 font-medium text-gray-700">Phone Number</th>
+                          <th className="text-left py-2 px-3 font-medium text-gray-700">Status</th>
+                          <th className="text-left py-2 px-3 font-medium text-gray-700">Conversation ID</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
                         {callManagerData.recipients.map((recipient, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-[10px] border-b border-gray-100 pb-1">
-                            <span className="font-mono">{recipient.phone_number}</span>
-                            <span className={`px-2 py-0.5 rounded ${
-                              recipient.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              recipient.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                              recipient.status === 'failed' ? 'bg-red-100 text-red-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {recipient.status}
-                            </span>
-                            {recipient.conversation_id && (
-                              <code className="text-[9px] text-gray-500">{recipient.conversation_id.substring(0, 8)}...</code>
-                            )}
-                          </div>
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="py-2 px-3 text-gray-500">{idx + 1}</td>
+                            <td className="py-2 px-3 font-mono text-sm">{recipient.phone_number}</td>
+                            <td className="py-2 px-3">
+                              <Badge className={`
+                                ${recipient.status === 'completed' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                  recipient.status === 'in_progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                  recipient.status === 'failed' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
+                                  'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                }
+                              `}>
+                                {recipient.status}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3">
+                              {recipient.conversation_id ? (
+                                <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                                  {recipient.conversation_id.substring(0, 12)}...
+                                </code>
+                              ) : (
+                                <span className="text-gray-400 text-xs">-</span>
+                              )}
+                            </td>
+                          </tr>
                         ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-2 border-t border-blue-200">
-                    <details className="cursor-pointer">
-                      <summary className="font-semibold text-blue-900">Raw JSON Response</summary>
-                      <pre className="mt-2 text-[9px] bg-white p-2 rounded overflow-x-auto">
-                        {JSON.stringify(callManagerData, null, 2)}
-                      </pre>
-                    </details>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
+                {callManagerData.recipients.length > 50 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 Showing {callManagerData.recipients.length} recipients. Scroll to see all.
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
+
+          {/* Actions - Cancel Button */}
+          {isCallManagerCampaign && (isInProgress || isPending) && (
+            <Card className="border-red-200">
+              <CardContent className="pt-6 space-y-3">
+                {cancelError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{cancelError}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <Button 
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={handleCancel}
+                  disabled={canceling || isFailed}
+                >
+                  {canceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Canceling...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Cancel Campaign
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  This will stop all pending calls in this campaign
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Info for completed/cancelled campaigns */}
+          {isCallManagerCampaign && (isCompleted || isCancelled) && (
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>
+                This campaign is {status} and cannot be cancelled.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
+        
+        {/* Bottom padding for better scroll experience */}
+        <div className="h-6" />
       </SheetContent>
     </Sheet>
   )

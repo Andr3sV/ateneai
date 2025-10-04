@@ -163,8 +163,13 @@ export default function CampaignsPage() {
         ? Math.round((b.processed_recipients / b.total_recipients) * 100) 
         : 0)
       
-      const isCompleted = progressPercentage >= 100
-      const isInProgress = progressPercentage > 0 && progressPercentage < 100
+      // Use database status for campaigns (especially call-manager campaigns)
+      const status = b.status || 'pending'
+      const isCompleted = status === 'completed'
+      const isCancelled = status === 'cancelled'
+      const isFailed = status === 'failed'
+      const isInProgress = status === 'in_progress' || status === 'processing'
+      const isPending = status === 'pending'
       
       const agentName = b.agent_external_id ? (agentsMap[b.agent_external_id] || b.agent_external_id) : ''
       
@@ -182,12 +187,16 @@ export default function CampaignsPage() {
                 {agentName ? <> · {agentName}</> : null}
               </div>
             </div>
-            <span className={`text-xs px-2 py-1 rounded-full ${
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
               isCompleted ? 'bg-emerald-100 text-emerald-800' : 
-              isInProgress ? 'bg-amber-100 text-amber-800' : 
+              isCancelled || isFailed ? 'bg-red-100 text-red-800' :
+              isInProgress ? 'bg-blue-100 text-blue-800' : 
               'bg-gray-100 text-gray-800'
             }`}>
-              {isCompleted ? 'Completed' : isInProgress ? 'In progress' : 'Pending'}
+              {isCompleted ? 'Completed' : 
+               isCancelled ? 'Cancelled' :
+               isFailed ? 'Failed' :
+               isInProgress ? 'In progress' : 'Pending'}
             </span>
           </div>
           
