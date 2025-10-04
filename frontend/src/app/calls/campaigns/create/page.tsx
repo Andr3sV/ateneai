@@ -48,6 +48,7 @@ export default function CreateBatchCallPage() {
   const [scheduleType, setScheduleType] = useState<"immediate" | "scheduled">("immediate")
   const [scheduledDate, setScheduledDate] = useState<Date>()
   const [scheduledTime, setScheduledTime] = useState<string>("09:00")
+  const [timezone, setTimezone] = useState<string>("Europe/Madrid")
   
   // Data
   const [agents, setAgents] = useState<Agent[]>([])
@@ -272,9 +273,42 @@ export default function CreateBatchCallPage() {
       // Only add scheduled_time_unix if scheduled (don't send null)
       if (scheduleType === 'scheduled' && scheduledDate && scheduledTime) {
         const [hours, minutes] = scheduledTime.split(':').map(Number)
-        const scheduledDateTime = new Date(scheduledDate)
-        scheduledDateTime.setHours(hours, minutes, 0, 0)
-        payload.scheduled_time_unix = Math.floor(scheduledDateTime.getTime() / 1000)
+        
+        // Create date string in format YYYY-MM-DD HH:mm for the selected timezone
+        const year = scheduledDate.getFullYear()
+        const month = String(scheduledDate.getMonth() + 1).padStart(2, '0')
+        const day = String(scheduledDate.getDate()).padStart(2, '0')
+        const dateTimeString = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+        
+        // Convert to unix timestamp using the selected timezone
+        // Use Intl API to interpret the date in the selected timezone
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })
+        
+        // Create a date in the selected timezone
+        const parts = dateTimeString.split('T')
+        const datePart = parts[0]
+        const timePart = parts[1]
+        const [y, m, d] = datePart.split('-').map(Number)
+        const [h, min, s] = timePart.split(':').map(Number)
+        
+        // Create date as if it's in UTC, then adjust for the timezone offset
+        const utcDate = new Date(Date.UTC(y, m - 1, d, h, min, s))
+        
+        // Get the offset for the selected timezone at this date
+        const tzDate = new Date(utcDate.toLocaleString('en-US', { timeZone: timezone }))
+        const localDate = new Date(utcDate.toLocaleString('en-US', { timeZone: 'UTC' }))
+        const offset = localDate.getTime() - tzDate.getTime()
+        
+        payload.scheduled_time_unix = Math.floor((utcDate.getTime() + offset) / 1000)
       }
 
       // Only add phone_provider if available (don't send null)
@@ -480,7 +514,12 @@ export default function CreateBatchCallPage() {
                           mode="single"
                           selected={scheduledDate}
                           onSelect={setScheduledDate}
-                          disabled={(date) => date < new Date()}
+                          disabled={(date) => {
+                            // Only disable dates before today (not today itself)
+                            const today = new Date()
+                            today.setHours(0, 0, 0, 0)
+                            return date < today
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -497,11 +536,37 @@ export default function CreateBatchCallPage() {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">Timezone *</Label>
+                    <Select value={timezone} onValueChange={setTimezone}>
+                      <SelectTrigger id="timezone">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Europe/Madrid">🇪🇸 Madrid (CET/CEST)</SelectItem>
+                        <SelectItem value="Europe/London">🇬🇧 London (GMT/BST)</SelectItem>
+                        <SelectItem value="Europe/Paris">🇫🇷 Paris (CET/CEST)</SelectItem>
+                        <SelectItem value="America/New_York">🇺🇸 New York (EST/EDT)</SelectItem>
+                        <SelectItem value="America/Los_Angeles">🇺🇸 Los Angeles (PST/PDT)</SelectItem>
+                        <SelectItem value="America/Chicago">🇺🇸 Chicago (CST/CDT)</SelectItem>
+                        <SelectItem value="America/Mexico_City">🇲🇽 Mexico City (CST)</SelectItem>
+                        <SelectItem value="America/Bogota">🇨🇴 Bogotá (COT)</SelectItem>
+                        <SelectItem value="America/Lima">🇵🇪 Lima (PET)</SelectItem>
+                        <SelectItem value="America/Buenos_Aires">🇦🇷 Buenos Aires (ART)</SelectItem>
+                        <SelectItem value="America/Sao_Paulo">🇧🇷 São Paulo (BRT)</SelectItem>
+                        <SelectItem value="Asia/Tokyo">🇯🇵 Tokyo (JST)</SelectItem>
+                        <SelectItem value="Asia/Shanghai">🇨🇳 Shanghai (CST)</SelectItem>
+                        <SelectItem value="Asia/Dubai">🇦🇪 Dubai (GST)</SelectItem>
+                        <SelectItem value="Australia/Sydney">🇦🇺 Sydney (AEDT/AEST)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {scheduledDate && scheduledTime && (
                     <Alert className="border-blue-200 bg-blue-50">
                       <CalendarIcon className="h-4 w-4 text-blue-600" />
                       <AlertDescription className="text-blue-800">
-                        Campaign will start on <strong>{format(scheduledDate, "PPP")}</strong> at <strong>{scheduledTime}</strong>
+                        Campaign will start on <strong>{format(scheduledDate, "PPP")}</strong> at <strong>{scheduledTime}</strong> ({timezone.split('/')[1].replace('_', ' ')})
                       </AlertDescription>
                     </Alert>
                   )}

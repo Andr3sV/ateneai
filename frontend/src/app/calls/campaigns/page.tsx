@@ -29,9 +29,8 @@ const CampaignCardSkeleton = () => (
       <div className="h-1.5 bg-gray-200 rounded"></div>
     </div>
     
-    <div className="flex items-center justify-between">
-      <div className="h-3 bg-gray-200 rounded w-20"></div>
-      <div className="h-3 bg-gray-200 rounded w-24"></div>
+    <div className="flex items-center justify-end">
+      <div className="h-3 bg-gray-200 rounded w-32"></div>
     </div>
   </Card>
 )
@@ -45,6 +44,7 @@ type BatchRow = {
   phone_external_id?: string | null
   agent_external_id?: string | null
   created_at: string
+  scheduled_time?: string | null
   campaign_id?: string | null
   file_url?: string | null
 }
@@ -208,12 +208,12 @@ export default function CampaignsPage() {
             <Progress value={progressPercentage} className="h-1.5" />
           </div>
           
-          {/* VO totals */}
-          <div className="flex items-center justify-between text-xs">
+          {/* Start time - show scheduled_time if available, otherwise created_at */}
+          <div className="flex items-center justify-end text-xs">
             <span className="text-gray-500">
-              Total calls (VO): <span className="font-medium text-blue-600">{vo?.total ?? 0}</span>
+              {b.scheduled_time ? 'Scheduled for ' : 'Started '}
+              {new Date(b.scheduled_time || b.created_at).toLocaleString()}
             </span>
-            <span className="text-gray-500">Started {new Date(b.created_at).toLocaleString()}</span>
           </div>
         </Card>
       )
