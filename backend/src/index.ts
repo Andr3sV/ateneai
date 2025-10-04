@@ -28,6 +28,7 @@ import agentsWorkspaceRoutes from './routes/agents-workspace';
 import callsWorkspaceRoutes from './routes/calls-workspace';
 import tasksWorkspaceRoutes from './routes/tasks-workspace';
 import notesWorkspaceRoutes from './routes/notes-workspace';
+import callManagerRoutes from './routes/call-manager';
 import { MIGRATION_CONFIG, logMigrationEvent } from './config/migration';
 
 // Load environment variables
@@ -172,6 +173,7 @@ if (MIGRATION_CONFIG.ENABLE_WORKSPACE_ROUTES) {
   app.use('/api/calls', callsWorkspaceRoutes);
   app.use('/api/tasks', tasksWorkspaceRoutes);
   app.use('/api/notes', notesWorkspaceRoutes);
+  app.use('/api/call-manager', callManagerRoutes);
   console.log('🚀 Using NEW workspace-based routes as primary');
 } else {
   // Primary routes use legacy system

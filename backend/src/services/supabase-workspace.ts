@@ -864,6 +864,33 @@ export const db = {
     return data;
   },
 
+  async getBatchCallById(workspaceId: number, batchId: number) {
+    const { data, error } = await supabase
+      .from(TABLES.BATCH_CALLS)
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .eq('id', batchId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateBatchCall(
+    workspaceId: number,
+    batchId: number,
+    updates: Partial<{ status: string; total_recipients: number; processed_recipients: number }>
+  ) {
+    const { data, error } = await supabase
+      .from(TABLES.BATCH_CALLS)
+      .update(updates as any)
+      .eq('workspace_id', workspaceId)
+      .eq('id', batchId)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   async getBatchCallsTotalRecipients(
     workspaceId: number,
     startDate?: string,

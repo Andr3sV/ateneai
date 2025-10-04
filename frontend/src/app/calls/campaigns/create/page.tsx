@@ -1,79 +1,71 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useAuth } from '@clerk/nextjs'
+import { useRouter } from "next/navigation"
 import * as XLSX from "xlsx"
 import Papa from "papaparse"
 import { usePageTitle } from "@/hooks/usePageTitle"
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { X } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { CalendarIcon, Upload, AlertCircle, CheckCircle2, Loader2, Phone, Users, Clock, Zap } from "lucide-react"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 type Agent = {
   id: number
   name: string
   external_id?: string | null
-  phone?: string | null
-  phone_external_id?: string | null
 }
 
-type PhoneCatalog = {
+type PhoneNumber = {
   id: number
   external_id: string
   phone: string
   label?: string | null
+  provider?: string | null
 }
 
 type CsvRow = Record<string, string>
 
-type CallType = 'bulk' | 'priority'
-
 export default function CreateBatchCallPage() {
-  usePageTitle("Create a batch call")
+  usePageTitle("Create Campaign")
   const authenticatedFetch = useAuthenticatedFetch()
-  const { getToken } = useAuth()
+  const router = useRouter()
 
-  const [batchName, setBatchName] = useState("")
-  const [callType, setCallType] = useState<CallType>('bulk')
+  // Form fields
+  const [callName, setCallName] = useState("")
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("")
+  const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string>("")
+  const [scheduleType, setScheduleType] = useState<"immediate" | "scheduled">("immediate")
+  const [scheduledDate, setScheduledDate] = useState<Date>()
+  const [scheduledTime, setScheduledTime] = useState<string>("09:00")
   
-  // Multiple agents and phones support
-  const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([])
-  // Map agentId -> phone_external_id chosen for that agent
-  const [agentPhoneMap, setAgentPhoneMap] = useState<Record<string, string>>({})
-  
-  // AMD Configuration
-  const [enableMachineDetection, setEnableMachineDetection] = useState(true)
-  const [machineDetectionTimeout, setMachineDetectionTimeout] = useState(6)
-  const [concurrency, setConcurrency] = useState(10)
-  
-  // Time Window Configuration
-  const [startTime, setStartTime] = useState("09:00")
-  const [endTime, setEndTime] = useState("17:00")
-  const [timezone, setTimezone] = useState("America/New_York")
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]) // Mon-Fri by default
-  
+  // Data
   const [agents, setAgents] = useState<Agent[]>([])
-  const [phones, setPhones] = useState<PhoneCatalog[]>([])
-
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([])
   const [rowsPreview, setRowsPreview] = useState<CsvRow[]>([])
   const [rowCount, setRowCount] = useState<number>(0)
   const [headers, setHeaders] = useState<string[]>([])
   const [phoneHeader, setPhoneHeader] = useState<string | null>(null)
-  const [uploadError, setUploadError] = useState<string>("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  
+  // UI state
+  const [uploadError, setUploadError] = useState<string>("")
   const [submitting, setSubmitting] = useState(false)
-  const [campaignId, setCampaignId] = useState<string>("")
-  const [toastMsg, setToastMsg] = useState<string>("")
-  const [progress, setProgress] = useState<{ queued: number; in_progress: number; completed: number; failed: number; total: number; done: boolean } | null>(null)
-  const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const [success, setSuccess] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
+  // Load agents
   useEffect(() => {
-    // Load agents of type call scoped to current workspace.
     authenticatedFetch(`/api/v2/agents?type=call`).then((res) => {
       if (res?.success) {
         const apiAgents = Array.isArray(res.data) ? res.data : []
@@ -84,56 +76,20 @@ export default function CreateBatchCallPage() {
     }).catch(() => {
       setAgents([])
     })
-    // Load phone numbers catalog for current workspace
-    authenticatedFetch(`/api/calls/phones`).then((res) => {
-      if (res?.success && Array.isArray(res.data)) {
-        setPhones(res.data as PhoneCatalog[])
-      } else {
-        setPhones([])
-      }
-    }).catch(() => setPhones([]))
   }, [authenticatedFetch])
 
-  // Clear polling when unmounting
+  // Load phone numbers
   useEffect(() => {
-    return () => {
-      if (progressTimerRef.current) clearInterval(progressTimerRef.current)
-    }
-  }, [])
-
-  const phoneOptions = useMemo(() => {
-    // Build phone list from phone_numbers catalog
-    return (phones || []).map(p => ({ label: p.label ? `${p.label} (${p.phone})` : p.phone, value: p.external_id, phone: p.phone }))
-  }, [phones])
-
-  const agentOptions = useMemo(() => {
-    return agents
-      .filter(a => a.external_id)
-      .map(a => ({ label: `${a.name}`, value: String(a.external_id) }))
-  }, [agents])
-
-  // Helper functions for multiple selection
-  const addAgent = (agentId: string) => {
-    if (!selectedAgentIds.includes(agentId)) {
-      setSelectedAgentIds(prev => [...prev, agentId])
-    }
-  }
-
-  const removeAgent = (agentId: string) => {
-    setSelectedAgentIds(prev => prev.filter(id => id !== agentId))
-  }
-
-  const addPhoneForAgent = (agentId: string, phoneId: string) => {
-    setAgentPhoneMap(prev => ({ ...prev, [agentId]: phoneId }))
-  }
-
-  const removePhoneForAgent = (agentId: string) => {
-    setAgentPhoneMap(prev => {
-      const next = { ...prev }
-      delete next[agentId]
-      return next
+    authenticatedFetch(`/api/calls/phones`).then((res) => {
+      if (res?.success && Array.isArray(res.data)) {
+        setPhoneNumbers(res.data as PhoneNumber[])
+      } else {
+        setPhoneNumbers([])
+      }
+    }).catch(() => {
+      setPhoneNumbers([])
     })
-  }
+  }, [authenticatedFetch])
 
   function detectPhoneHeader(hs: string[]): string | null {
     const candidates = [
@@ -143,7 +99,6 @@ export default function CreateBatchCallPage() {
     const set = new Set(hs.map(norm))
     for (const c of candidates.map(norm)) {
       if (set.has(c)) {
-        // return the actual header name as it appears
         const idx = hs.findIndex(h => norm(h) === c)
         return hs[idx]
       }
@@ -163,7 +118,6 @@ export default function CreateBatchCallPage() {
         if (!headerRef.current) headerRef.current = results.meta.fields || []
         const chunkRows = results.data as CsvRow[]
         total += chunkRows.length
-        // collect up to 20 rows for preview
         for (let i = 0; i < chunkRows.length && preview.length < 20; i++) {
           preview.push(chunkRows[i])
         }
@@ -173,12 +127,12 @@ export default function CreateBatchCallPage() {
         setHeaders(hs)
         const detected = detectPhoneHeader(hs)
         setPhoneHeader(detected)
-        setUploadError(detected ? "" : "El archivo no contiene una columna de teléfono. Añade 'phone_number' (o 'phone', 'telefono', 'mobile').")
+        setUploadError(detected ? "" : "File must contain a phone_number column (or 'phone', 'telefono', 'mobile').")
         setRowsPreview(preview)
         setRowCount(total)
       },
       error: () => {
-        // Fallback: do nothing
+        setUploadError("Error parsing CSV file")
       }
     })
   }
@@ -196,18 +150,17 @@ export default function CreateBatchCallPage() {
       setHeaders(header)
       const detected = detectPhoneHeader(header)
       setPhoneHeader(detected)
-      setUploadError(detected ? "" : "El archivo no contiene una columna de teléfono. Añade 'phone_number' (o 'phone', 'telefono', 'mobile').")
+      setUploadError(detected ? "" : "File must contain a phone_number column (or 'phone', 'telefono', 'mobile').")
       setRowsPreview(json.slice(0, 20))
       setRowCount(json.length)
     }
     reader.readAsArrayBuffer(file)
   }
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-
   function handleFile(file: File) {
     const name = file.name.toLowerCase()
     setSelectedFile(file)
+    setUploadError("")
     if (name.endsWith('.csv')) {
       parseCsv(file)
       return
@@ -216,47 +169,27 @@ export default function CreateBatchCallPage() {
       parseSheet(file)
       return
     }
+    setUploadError("Please upload a CSV or Excel file")
   }
 
-  const hasData = rowsPreview.length > 0
-  const isPriority = callType === 'priority'
-  const allAgentsHavePhone = selectedAgentIds.length > 0 && selectedAgentIds.every(id => !!agentPhoneMap[id])
-  const canSubmit = hasData && 
-    // Agents/phones: bulk allows many; priority requires exactly one with phone
-    (isPriority ? (selectedAgentIds.length === 1 && !!agentPhoneMap[selectedAgentIds[0]]) : allAgentsHavePhone) &&
-    !!phoneHeader &&
-    machineDetectionTimeout >= 1 && 
-    machineDetectionTimeout <= 30 &&
-    concurrency >= 1 && 
-    concurrency <= 100 &&
-    startTime < endTime &&
-    selectedDays.length > 0
-
-  function resolveFromNumber(phoneExternalId?: string): string | undefined {
-    if (!phoneExternalId) return undefined
-    const match = phones.find(p => p.external_id === phoneExternalId)
-    return match?.phone || undefined
-  }
-
-  async function buildAllRows(): Promise<Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, unknown> }>> {
+  async function buildAllRows(): Promise<Array<{ phone_number: string; dynamic_variables: Record<string, string> }>> {
     if (!selectedFile || !phoneHeader) return []
     const name = selectedFile.name.toLowerCase()
-    const toPayload = (row: CsvRow, idx: number) => {
-      const toNumber = (row[phoneHeader!] || "").toString().trim()
-      const variables: Record<string, string> = {}
+    const toPayload = (row: CsvRow) => {
+      const phone_number = (row[phoneHeader!] || "").toString().trim()
+      const dynamic_variables: Record<string, string> = {}
       headers.forEach(h => {
         if (h !== phoneHeader) {
           const val = (row[h] ?? "").toString()
-          if (val !== "") variables[h] = val
+          if (val !== "") dynamic_variables[h] = val
         }
       })
-      return { toNumber, variables, metadata: { externalRowId: idx + 1 } }
+      return { phone_number, dynamic_variables }
     }
 
     if (name.endsWith('.csv')) {
       return await new Promise((resolve) => {
-        const result: Array<{ toNumber: string; variables?: Record<string, string>; metadata?: Record<string, unknown> }> = []
-        let idxBase = 0
+        const result: Array<{ phone_number: string; dynamic_variables: Record<string, string> }> = []
         Papa.parse(selectedFile, {
           header: true,
           worker: true,
@@ -264,9 +197,8 @@ export default function CreateBatchCallPage() {
           chunk: (res: Papa.ParseResult<CsvRow>) => {
             const chunkRows = res.data as CsvRow[]
             for (let i = 0; i < chunkRows.length; i++) {
-              result.push(toPayload(chunkRows[i], idxBase + i))
+              result.push(toPayload(chunkRows[i]))
             }
-            idxBase += chunkRows.length
           },
           complete: () => resolve(result),
         })
@@ -278,161 +210,84 @@ export default function CreateBatchCallPage() {
     const wb = XLSX.read(buf)
     const ws = wb.Sheets[wb.SheetNames[0]]
     const json: CsvRow[] = XLSX.utils.sheet_to_json(ws, { defval: "" })
-    return json.map((row, idx) => toPayload(row, idx))
+    return json.map((row) => toPayload(row))
   }
+
+  const hasData = rowsPreview.length > 0
+  const canSubmit = hasData && 
+    callName.trim() !== '' &&
+    selectedAgentId !== '' &&
+    selectedPhoneNumberId !== '' &&
+    !!phoneHeader &&
+    (scheduleType === 'immediate' || (scheduledDate && scheduledTime)) &&
+    !submitting
 
   async function handleSubmit() {
     if (!canSubmit) return
-    // validate phone per agent
-    for (const agentId of selectedAgentIds) {
-      if (!agentPhoneMap[agentId]) {
-        setUploadError('Selecciona un teléfono para cada agente agregado.')
-        return
-      }
-    }
+    
     setSubmitting(true)
     setUploadError("")
-    const cid = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `cmp_${Date.now()}`
-    setCampaignId(cid)
+    
     try {
       const rows = await buildAllRows()
-      // Filtra filas sin teléfono
-      const valid = rows.filter(r => r.toNumber && r.toNumber.length > 0)
-      const useServerMode = rowCount > 1000 || (selectedFile && selectedFile.size > 2 * 1024 * 1024)
-      if (useServerMode && selectedFile) {
-        // Server-mode: upload file with FormData, immediate schedule
-        const fd = new FormData()
-        fd.append('file', selectedFile)
-        fd.append('campaignName', batchName || 'Bulk Campaign')
-        fd.append('agents', JSON.stringify(selectedAgentIds.map(agentId => ({ agentId, agentPhoneNumberId: agentPhoneMap[agentId], fromNumber: resolveFromNumber(agentPhoneMap[agentId]) }))))
-        fd.append('agentPhoneNumberId', '')
-        fd.append('fromNumber', '')
-        fd.append('concurrency', String(concurrency))
-        fd.append('timeWindow', JSON.stringify({ startTime, endTime, timezone, daysOfWeek: selectedDays }))
-
-        // Use fetch directly to override JSON header from hook
-        const token = await getToken()
-        const api = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/calls/bulk/upload`
-        const upResp = await fetch(api, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : undefined, body: fd })
-        const res = { ok: upResp.ok, data: await upResp.json().catch(() => ({})) as any }
-
-        if (!res.ok || !res.data?.success) {
-          throw new Error(res.data?.error || 'Upload failed')
-        }
-        setToastMsg('Campaign scheduled. Redirecting…')
-        // Redirect immediately; background worker and VO will handle progress
-        window.location.href = '/calls/campaigns'
-        return
-      }
+      const valid = rows.filter(r => r.phone_number && r.phone_number.length > 0)
       
-      // Prepare payload based on call type
-      let payload: {
-        campaignName: string
-        campaignId: string
-        agents: Array<{ agentId: string; agentPhoneNumberId: string; fromNumber: string }>
-        calls: Array<{
-          toNumber: string
-          variables?: Record<string, string>
-          metadata?: Record<string, unknown>
-        }>
-        timeWindow: {
-          startTime: string
-          endTime: string
-          timezone: string
-          daysOfWeek: number[]
-        }
-        concurrency?: number
-      }
-      
-      if (callType === 'priority') {
-        // Priority: immediately place a single 1:1 call using first recipient
-        const first = valid[0]
-        if (!first) {
-          throw new Error('No valid recipients found for priority call')
-        }
-        const phoneId = agentPhoneMap[selectedAgentIds[0]]
-        const priorityBody = {
-          agentId: selectedAgentIds[0],
-          agentPhoneNumberId: phoneId,
-          fromNumber: resolveFromNumber(phoneId),
-          toNumber: first.toNumber,
-          variables: first.variables,
-          campaignId: cid,
-          concurrency: Math.min(concurrency, 100)
-        }
-        const res = await authenticatedFetch('/api/calls/priority', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(priorityBody)
-        })
-        if (!res?.success) {
-          throw new Error(res?.error || 'Priority call failed')
-        }
-        // Do not proceed with bulk flow after priority
-        setSubmitting(false)
-        return
-      } else {
-        // Bulk calls
-        payload = {
-          campaignName: batchName || 'Bulk Campaign',
-          campaignId: cid,
-          agents: selectedAgentIds.map(agentId => {
-            const phoneId = agentPhoneMap[agentId]
-            return {
-              agentId,
-              agentPhoneNumberId: phoneId,
-              fromNumber: resolveFromNumber(phoneId) as string,
-            }
-          }),
-          calls: valid.map(row => ({
-            toNumber: row.toNumber,
-            variables: row.variables,
-            metadata: row.metadata
-          })),
-          concurrency,
-          // Time Window Configuration
-          timeWindow: {
-            startTime,
-            endTime,
-            timezone,
-            daysOfWeek: selectedDays
-          }
-        }
+      if (valid.length === 0) {
+        throw new Error('No valid phone numbers found in the file')
       }
 
-      const res = await authenticatedFetch('/api/calls/bulk', {
+      // Prepare recipients for call-manager API
+      const recipients = valid.map(row => ({
+        phone_number: row.phone_number,
+        conversation_initiation_client_data: {
+          dynamic_variables: row.dynamic_variables
+        }
+      }))
+
+      // Get phone provider from selected phone number
+      const selectedPhone = phoneNumbers.find(p => p.external_id === selectedPhoneNumberId)
+      const phone_provider = selectedPhone?.provider || null
+
+      // Build payload
+      const payload: any = {
+        call_name: callName,
+        agent_id: selectedAgentId,
+        agent_phone_number_id: selectedPhoneNumberId,
+        recipients
+      }
+
+      // Only add scheduled_time_unix if scheduled (don't send null)
+      if (scheduleType === 'scheduled' && scheduledDate && scheduledTime) {
+        const [hours, minutes] = scheduledTime.split(':').map(Number)
+        const scheduledDateTime = new Date(scheduledDate)
+        scheduledDateTime.setHours(hours, minutes, 0, 0)
+        payload.scheduled_time_unix = Math.floor(scheduledDateTime.getTime() / 1000)
+      }
+
+      // Only add phone_provider if available (don't send null)
+      if (phone_provider) {
+        payload.phone_provider = phone_provider
+      }
+
+      // Submit to backend proxy
+      const res = await authenticatedFetch('/api/call-manager/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      
+
       if (!res?.success) {
-        throw new Error(res?.error || 'Bulk failed')
+        throw new Error(res?.error || 'Failed to submit batch')
       }
+
+      console.log('✅ Batch created:', res.data)
+      setSuccess(true)
       
-      // Start polling progress
-      if (progressTimerRef.current) clearInterval(progressTimerRef.current)
-      progressTimerRef.current = setInterval(async () => {
-        try {
-          const pr = await authenticatedFetch(`/api/calls/bulk/progress?campaignId=${encodeURIComponent(cid)}`, { muteErrors: true })
-          // Stop polling if backend or orchestrator reports 404 (campaign not found)
-          if (pr && pr.status === 404) {
-            clearInterval(progressTimerRef.current as NodeJS.Timeout)
-            // Navigate to list once finished or unavailable
-            window.location.href = '/calls/campaigns'
-            return
-          }
-          if (pr?.success) {
-            setProgress(pr.data)
-            if (pr.data?.done) {
-              clearInterval(progressTimerRef.current as NodeJS.Timeout)
-              window.location.href = '/calls/campaigns'
-            }
-          }
-        } catch {
-          // ignore
-        }
-      }, 5000)
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        router.push('/calls/campaigns')
+      }, 2000)
+      
     } catch (e: unknown) {
       setUploadError(e instanceof Error ? e.message : 'Error while submitting batch')
     } finally {
@@ -440,362 +295,332 @@ export default function CreateBatchCallPage() {
     }
   }
 
+  const agentOptions = useMemo(() => {
+    return agents
+      .filter(a => a.external_id)
+      .map(a => ({ label: a.name, value: String(a.external_id) }))
+  }, [agents])
+
+  const phoneNumberOptions = useMemo(() => {
+    return phoneNumbers.map(p => ({
+      label: p.label ? `${p.label} (${p.phone})` : p.phone,
+      value: p.external_id,
+      provider: p.provider
+    }))
+  }, [phoneNumbers])
+
   return (
-    <div className="flex flex-1 p-6 gap-6">
-      {/* Left form */}
-      <div className="w-full max-w-md space-y-6">
-        {/* Recipients Section - Moved to top */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Recipients</label>
-            <div className="text-xs text-muted-foreground">CSV/XLS/XLSX</div>
-          </div>
-          <Card className="p-6">
-            <div className="flex items-center justify-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleFile(file)
-                }}
-              />
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>Upload</Button>
-            </div>
-            <div className="mt-3 text-xs text-muted-foreground">
-              The phone_number column is required. Any other columns will be saved as dynamic variables.
-            </div>
-            {uploadError && (
-              <div className="mt-3 text-xs text-red-600">{uploadError}</div>
-            )}
-          </Card>
-        </div>
-
-        {/* Basic Configuration */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Basic Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Campaign Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Campaign name</label>
-              <Input placeholder="Untitled Campaign" value={batchName} onChange={e => setBatchName(e.target.value)} />
-            </div>
-
-            {/* Call Type Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Call Type</label>
-              <Select value={callType} onValueChange={(value: CallType) => setCallType(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bulk">Bulk Calls (High volume, optimized)</SelectItem>
-                  <SelectItem value="priority">Priority Calls (Individual, immediate)</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="text-xs text-muted-foreground">
-                {callType === 'bulk' 
-                  ? 'Optimized for high-volume campaigns with AMD and concurrency control'
-                  : 'Individual calls with immediate processing and limited concurrency'
-                }
-              </div>
-            </div>
-
-            {/* Multiple Agents Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select Agents</label>
-              <Select onValueChange={addAgent} value="">
-                <SelectTrigger>
-                  <SelectValue placeholder="Add an agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {agentOptions
-                    .filter(opt => !selectedAgentIds.includes(opt.value))
-                    .map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
-              
-              {/* Selected Agents with per-agent phone selection */}
-              {selectedAgentIds.length > 0 && (
-                <div className="space-y-3">
-                  {selectedAgentIds.map(agentId => {
-                    const agent = agentOptions.find(opt => opt.value === agentId)
-                    // For now, allow choosing ANY phone from catalog regardless of agent
-                    const phonesForAgent = phoneOptions
-                    return (
-                      <div key={agentId} className="p-3 bg-muted rounded-md space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{agent?.label}</span>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => { removeAgent(agentId); removePhoneForAgent(agentId) }}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="text-xs text-muted-foreground">Select phone for this agent</div>
-                        <Select value={agentPhoneMap[agentId] || ''} onValueChange={(val) => addPhoneForAgent(agentId, val)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose phone" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {phonesForAgent.map(p => (
-                              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-              
-              {agents.length === 0 && (
-                <div className="text-xs text-muted-foreground">No hay agentes de tipo call en este workspace.</div>
-              )}
-            </div>
-
-            {/* Removed global phone selector; now phone is selected per agent */}
-
-            {/* Concurrency */}
-            <div className="space-y-2">
-              <Label htmlFor="concurrency">Concurrency</Label>
-              <Select value={String(concurrency)} onValueChange={(value) => setConcurrency(Number(value))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 25 }, (_, i) => i + 1).map(conc => (
-                    <SelectItem key={conc} value={String(conc)}>
-                      {conc} {conc === 1 ? 'call' : 'calls'}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="50">50 calls</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="text-xs text-muted-foreground">
-                {concurrency <= 25 
-                  ? 'Low concurrency, stable but slower'
-                  : concurrency <= 50
-                  ? 'Medium concurrency, balanced performance'
-                  : 'High concurrency, faster but may have delays'
-                }
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AMD Configuration */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">AMD Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Enable Machine Detection */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="enable-amd">Enable Machine Detection</Label>
-                <div className="text-xs text-muted-foreground">
-                  Detect answering machines and hang up automatically
-                </div>
-              </div>
-              <Switch
-                id="enable-amd"
-                checked={enableMachineDetection}
-                onCheckedChange={setEnableMachineDetection}
-              />
-            </div>
-
-            {/* Machine Detection Timeout */}
-            {enableMachineDetection && (
-              <div className="space-y-2">
-                <Label htmlFor="amd-timeout">AMD Timeout (seconds)</Label>
-                <Select value={String(machineDetectionTimeout)} onValueChange={(value) => setMachineDetectionTimeout(Number(value))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30].map(timeout => (
-                      <SelectItem key={timeout} value={String(timeout)}>
-                        {timeout}s {timeout === 6 && '(default)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-muted-foreground">
-                  {machineDetectionTimeout <= 5 
-                    ? 'Fast detection, may have false positives'
-                    : machineDetectionTimeout <= 10
-                    ? 'Balanced detection, recommended for most campaigns'
-                    : 'Conservative detection, fewer false positives but slower'
-                  }
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Time Window Configuration */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Time Window Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Start and End Time */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-time">Start Time</Label>
-                <Input
-                  id="start-time"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-time">End Time</Label>
-                <Input
-                  id="end-time"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Timezone */}
-            <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
-              <Select value={timezone} onValueChange={setTimezone}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                  <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                  <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                  <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                  <SelectItem value="Europe/London">London (GMT/BST)</SelectItem>
-                  <SelectItem value="Europe/Paris">Paris (CET/CEST)</SelectItem>
-                  <SelectItem value="Europe/Madrid">Madrid (CET/CEST)</SelectItem>
-                  <SelectItem value="Europe/Berlin">Berlin (CET/CEST)</SelectItem>
-                  <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                  <SelectItem value="Asia/Shanghai">Shanghai (CST)</SelectItem>
-                  <SelectItem value="Australia/Sydney">Sydney (AEST/AEDT)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Days of Week - Improved width */}
-            <div className="space-y-2">
-              <Label>Days of Week</Label>
-              <div className="grid grid-cols-7 gap-1">
-                {[
-                  { value: 1, label: 'Mon' },
-                  { value: 2, label: 'Tue' },
-                  { value: 3, label: 'Wed' },
-                  { value: 4, label: 'Thu' },
-                  { value: 5, label: 'Fri' },
-                  { value: 6, label: 'Sat' },
-                  { value: 7, label: 'Sun' }
-                ].map(({ value, label }) => (
-                  <Button
-                    key={value}
-                    type="button"
-                    variant={selectedDays.includes(value) ? "default" : "outline"}
-                    size="sm"
-                    className="h-10 w-full p-0 text-xs"
-                    onClick={() => {
-                      if (selectedDays.includes(value)) {
-                        setSelectedDays(prev => prev.filter(d => d !== value))
-                      } else {
-                        setSelectedDays(prev => [...prev, value])
-                      }
-                    }}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Summary */}
-            {startTime && endTime && selectedDays.length > 0 && (
-              <div className="p-3 bg-muted rounded-md">
-                <div className="text-sm font-medium mb-1">Time Window Summary</div>
-                <div className="text-xs text-muted-foreground">
-                  Calls will be made from <span className="font-medium">{startTime}</span> to <span className="font-medium">{endTime}</span> 
-                  on {selectedDays.sort().map(day => {
-                    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                    return dayNames[day - 1]
-                  }).join(', ')} 
-                  ({timezone})
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="flex items-center gap-3">
-          <Button variant="outline" disabled>Test call</Button>
-          <Button disabled={!canSubmit || !batchName || submitting} onClick={handleSubmit}>
-            {submitting ? 'Submitting…' : `Submit ${callType === 'priority' ? 'Priority' : 'Bulk'} Calls`}
-          </Button>
-        </div>
+    <div className="flex flex-1 flex-col p-6 gap-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Create Campaign</h1>
+        <p className="text-muted-foreground">
+          Launch a batch calling campaign with ElevenLabs call-manager
+        </p>
       </div>
 
-      {/* Right preview */}
-      <div className="flex-1">
-        <Card className="p-4 min-h-[400px]">
-          {!hasData ? (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              No recipients yet
-            </div>
-          ) : (
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    {headers.map(h => (
-                      <th key={h} className="text-left py-2 px-2 font-medium">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rowsPreview.map((r, idx) => (
-                    <tr key={idx} className="border-b last:border-0">
-                      {headers.map(h => (
-                        <td key={h} className="py-2 px-2 text-gray-700">{r[h] || ""}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {rowCount > rowsPreview.length && (
-                <div className="text-xs text-muted-foreground mt-2">Showing first {rowsPreview.length} of {rowCount} rows</div>
-              )}
-              {campaignId && (
-                <div className="mt-4 text-sm">
-                  <div className="font-medium">Campaign: {campaignId}</div>
-                  {progress ? (
-                    <div className="text-muted-foreground">
-                      queued: {progress.queued} · in_progress: {progress.in_progress} · completed: {progress.completed} · failed: {progress.failed} · total: {progress.total} {progress.done ? '· done' : ''}
+      <Separator />
+
+      {success ? (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Campaign created successfully! Redirecting...
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Form */}
+        <div className="space-y-6">
+          {/* Campaign Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="h-5 w-5" />
+                Campaign Details
+              </CardTitle>
+              <CardDescription>Basic information about your calling campaign</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="call-name">Campaign Name *</Label>
+                <Input
+                  id="call-name"
+                  placeholder="Q4 2025 Outreach Campaign"
+                  value={callName}
+                  onChange={e => setCallName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="agent">Agent *</Label>
+                <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+                  <SelectTrigger id="agent">
+                    <SelectValue placeholder="Select an agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agentOptions.length === 0 ? (
+                      <SelectItem value="none" disabled>No agents available</SelectItem>
+                    ) : (
+                      agentOptions.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {agents.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No call agents found in this workspace.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone-number">Phone Number *</Label>
+                <Select value={selectedPhoneNumberId} onValueChange={setSelectedPhoneNumberId}>
+                  <SelectTrigger id="phone-number">
+                    <SelectValue placeholder="Select a phone number" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {phoneNumberOptions.length === 0 ? (
+                      <SelectItem value="none" disabled>No phone numbers available</SelectItem>
+                    ) : (
+                      phoneNumberOptions.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{opt.label}</span>
+                            {opt.provider && (
+                              <span className="ml-2 text-xs text-muted-foreground">({opt.provider})</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {phoneNumbers.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No phone numbers found in this workspace.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Schedule */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Schedule
+              </CardTitle>
+              <CardDescription>
+                Start the campaign immediately or schedule it for later
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <RadioGroup value={scheduleType} onValueChange={(val: "immediate" | "scheduled") => setScheduleType(val)}>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <RadioGroupItem value="immediate" id="immediate" />
+                  <Label htmlFor="immediate" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Zap className="h-4 w-4 text-orange-500" />
+                    <div>
+                      <div className="font-medium">Send Immediately</div>
+                      <div className="text-xs text-muted-foreground">Start calling as soon as the campaign is created</div>
                     </div>
-                  ) : (
-                    submitting ? <div className="text-muted-foreground">Submitting…</div> : null
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <RadioGroupItem value="scheduled" id="scheduled" />
+                  <Label htmlFor="scheduled" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Clock className="h-4 w-4 text-blue-500" />
+                    <div>
+                      <div className="font-medium">Schedule for Later</div>
+                      <div className="text-xs text-muted-foreground">Pick a specific date and time</div>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              {scheduleType === 'scheduled' && (
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Date *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !scheduledDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {scheduledDate ? format(scheduledDate, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={scheduledDate}
+                          onSelect={setScheduledDate}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="scheduled-time">Time *</Label>
+                    <Input
+                      id="scheduled-time"
+                      type="time"
+                      value={scheduledTime}
+                      onChange={e => setScheduledTime(e.target.value)}
+                    />
+                  </div>
+
+                  {scheduledDate && scheduledTime && (
+                    <Alert className="border-blue-200 bg-blue-50">
+                      <CalendarIcon className="h-4 w-4 text-blue-600" />
+                      <AlertDescription className="text-blue-800">
+                        Campaign will start on <strong>{format(scheduledDate, "PPP")}</strong> at <strong>{scheduledTime}</strong>
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit */}
+          <Card>
+            <CardContent className="pt-6">
+              <Button 
+                size="lg" 
+                className="w-full" 
+                disabled={!canSubmit}
+                onClick={handleSubmit}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Campaign...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Create Campaign
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Recipients */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Recipients
+              </CardTitle>
+              <CardDescription>Upload a CSV or Excel file with phone numbers</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFile(file)
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload File
+                </Button>
+              </div>
+
+              {selectedFile && (
+                <Alert>
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription>
+                    <strong>{selectedFile.name}</strong> - {rowCount} contacts
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {uploadError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{uploadError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• File must contain a <strong>phone_number</strong> column (or phone, telefono, mobile)</p>
+                <p>• All other columns will be sent as dynamic variables to the agent</p>
+                <p>• Phone numbers should be in E.164 format: +34631021622</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          {hasData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Preview</CardTitle>
+                <CardDescription>
+                  Showing first {rowsPreview.length} of {rowCount} contacts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-auto max-h-[400px]">
+                  <table className="w-full text-sm">
+                    <thead className="border-b sticky top-0 bg-white">
+                      <tr>
+                        {headers.map(h => (
+                          <th key={h} className="text-left py-2 px-3 font-medium">
+                            {h}
+                            {h === phoneHeader && (
+                              <span className="ml-1 text-green-600">✓</span>
+                            )}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rowsPreview.map((r, idx) => (
+                        <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
+                          {headers.map(h => (
+                            <td key={h} className="py-2 px-3 text-gray-700">
+                              {r[h] || ""}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   )
 }
-
-

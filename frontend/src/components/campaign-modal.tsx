@@ -1,14 +1,15 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Phone, User, Clock, Calendar, Settings } from 'lucide-react'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Phone, User, Clock, Calendar, XCircle, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { CallManagerBatchResponse } from '@/services/call-manager'
 
 type CampaignDetail = {
   id: number
@@ -23,18 +24,6 @@ type CampaignDetail = {
   file_url?: string | null
 }
 
-type Agent = {
-  id: number
-  name: string
-  external_id: string
-}
-
-type PhoneNumber = {
-  id: number
-  phone: string
-  external_id: string
-}
-
 interface CampaignModalProps {
   campaign: CampaignDetail | null
   open: boolean
@@ -43,339 +32,323 @@ interface CampaignModalProps {
 
 export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalProps) {
   const authenticatedFetch = useAuthenticatedFetch()
-  const [agent, setAgent] = useState<Agent | null>(null)
   const [loading, setLoading] = useState(false)
-  const [metadata, setMetadata] = useState<any>(null)
+  const [callManagerData, setCallManagerData] = useState<CallManagerBatchResponse | null>(null)
   const [canceling, setCanceling] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  // Voice Orchestrator per-campaign metrics
-  const [voCreatedTotal, setVoCreatedTotal] = useState<number>(0)
-  const [voBreakdown, setVoBreakdown] = useState<Record<string, number>>({})
-  const [voProgressPct, setVoProgressPct] = useState<number | null>(null)
+  const [cancelError, setCancelError] = useState<string>("")
+  const [metadata, setMetadata] = useState<any>(null)
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Parse metadata from file_url
   useEffect(() => {
-    async function fetchDetails() {
-      if (!open || !campaign) return
+    if (!campaign?.file_url) {
+      setMetadata(null)
+      return
+    }
+
+    if (campaign.file_url.includes('metadata:')) {
+      try {
+        const metadataStr = campaign.file_url.split('metadata:')[1]
+        if (metadataStr) {
+          const parsed = JSON.parse(metadataStr)
+          setMetadata(parsed)
+        }
+      } catch (e) {
+        console.warn('Failed to parse campaign metadata:', e)
+        setMetadata(null)
+      }
+    }
+  }, [campaign])
+
+  // Fetch call-manager status
+  useEffect(() => {
+    async function fetchCallManagerStatus() {
+      if (!open || !campaign || !metadata?.external_batch_id) {
+        setCallManagerData(null)
+        return
+      }
       
       try {
         setLoading(true)
+        const res = await authenticatedFetch(`/api/call-manager/${campaign.id}/status`, { muteErrors: true })
         
-        // Fetch agent details
-        if (campaign.agent_external_id) {
-          const agentRes = await authenticatedFetch(`/api/v2/agents?type=call&external_id=${campaign.agent_external_id}`)
-          if (agentRes?.success && Array.isArray(agentRes.data) && agentRes.data.length > 0) {
-            setAgent(agentRes.data[0])
-          }
+        if (res?.success && res.data?.call_manager_response) {
+          setCallManagerData(res.data.call_manager_response)
         }
-        
-        // Parse metadata from file_url if available
-        if (campaign.file_url && campaign.file_url.includes('metadata:')) {
-          try {
-            const metadataStr = campaign.file_url.split('metadata:')[1]
-            if (metadataStr) {
-              const parsed = JSON.parse(metadataStr)
-              setMetadata(parsed)
-            }
-          } catch (e) {
-            console.warn('Failed to parse campaign metadata:', e)
-          }
-        }
-        
-        // Fetch Voice Orchestrator per-campaign report
-        try {
-          const campaignIdentifier = campaign.campaign_id
-          if (campaignIdentifier) {
-            const fromDate = new Date(campaign.created_at)
-            fromDate.setUTCHours(0, 0, 0, 0)
-            const toDate = new Date()
-            toDate.setUTCHours(23, 59, 59, 999)
-            const params = new URLSearchParams({
-              from: fromDate.toISOString(),
-              to: toDate.toISOString(),
-              groupBy: 'campaign',
-              campaignId: String(campaignIdentifier)
-            })
-            const voRes = await authenticatedFetch(`/api/calls/vo/report?${params.toString()}`, { muteErrors: true })
-            if (voRes?.success) {
-              // Find this campaign's group
-              const groups: Array<any> = Array.isArray(voRes.data?.groups) ? voRes.data.groups : []
-              const group = groups.find(g => g.key === campaignIdentifier) || groups[0]
-              if (group) {
-                const tally: Record<string, number> = {}
-                let total = 0
-                for (const key of Object.keys(group)) {
-                  if (key === 'key') continue
-                  const v = group[key]
-                  if (typeof v === 'number') {
-                    total += v
-                    tally[key] = (tally[key] || 0) + v
-                  }
-                }
-                setVoCreatedTotal(total)
-                setVoBreakdown(tally)
-                const queued = tally['queued'] || 0
-                const processed = Math.max(total - queued, 0)
-                const pct = total > 0 ? Math.round((processed / total) * 100) : 0
-                setVoProgressPct(pct)
-              } else {
-                setVoCreatedTotal(0)
-                setVoBreakdown({})
-                setVoProgressPct(null)
-              }
-            }
-          }
-        } catch (err) {
-          // ignore VO errors to avoid breaking modal
-        }
-
+      } catch (error) {
+        console.error('Error fetching call-manager status:', error)
       } finally {
         setLoading(false)
       }
     }
-    
-    fetchDetails()
-  }, [open, campaign, authenticatedFetch])
 
-  if (!campaign) return null
+    fetchCallManagerStatus()
 
-  const progressPercentage = campaign.total_recipients > 0 
-    ? Math.round((campaign.processed_recipients / campaign.total_recipients) * 100) 
-    : 0
-
-  const isCompleted = progressPercentage >= 100
-  const isInProgress = progressPercentage > 0 && progressPercentage < 100
-  const isPending = progressPercentage === 0
-
-  const getStatusColor = () => {
-    if (isCompleted) return 'bg-emerald-100 text-emerald-800'
-    if (isInProgress) return 'bg-amber-100 text-amber-800'
-    return 'bg-gray-100 text-gray-800'
-  }
-
-  const getStatusText = () => {
-    if (isCompleted) return 'Completed'
-    if (isInProgress) return 'In Progress'
-    return 'Pending'
-  }
-
-  async function cancelCampaign() {
-    if (!campaign?.campaign_id) return
-    try {
-      setCanceling(true)
-      // Backend proxy: reuse our existing /calls/vo/report auth header pattern
-      const res = await authenticatedFetch(`/api/calls/vo/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaignId: String(campaign.campaign_id) })
-      })
-      if (!res?.success) {
-        throw new Error(res?.error || 'Cancel failed')
+    // Set up polling every 5 seconds if campaign is in progress
+    if (open && campaign && metadata?.external_batch_id) {
+      const status = callManagerData?.status || campaign.status
+      if (status === 'in_progress' || status === 'pending') {
+        pollingRef.current = setInterval(fetchCallManagerStatus, 5000)
       }
-      onOpenChange(false)
-    } catch (e) {
-      console.error('Cancel campaign error:', e)
-      alert('Could not cancel campaign. Please try again.')
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [open, campaign, metadata?.external_batch_id, authenticatedFetch, callManagerData?.status])
+
+  async function handleCancel() {
+    if (!campaign || !metadata?.external_batch_id) return
+    
+    setCanceling(true)
+    setCancelError("")
+    
+    try {
+      const res = await authenticatedFetch(`/api/call-manager/${campaign.id}/cancel`, {
+        method: 'POST'
+      })
+      
+      if (!res?.success) {
+        throw new Error(res?.error || 'Failed to cancel campaign')
+      }
+      
+      // Update local state
+      if (res.data?.call_manager_response) {
+        setCallManagerData(res.data.call_manager_response)
+      }
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        onOpenChange(false)
+      }, 2000)
+      
+    } catch (error) {
+      setCancelError(error instanceof Error ? error.message : 'Error canceling campaign')
     } finally {
       setCanceling(false)
     }
   }
 
+  if (!campaign) return null
+
+  const hasCallManagerData = !!callManagerData
+  const externalBatchId = metadata?.external_batch_id || null
+  const isCallManagerCampaign = !!externalBatchId
+
+  // Use call-manager data if available, otherwise fall back to database
+  const status = callManagerData?.status || campaign.status
+  const totalScheduled = callManagerData?.total_calls_scheduled || campaign.total_recipients
+  const totalDispatched = callManagerData?.total_calls_dispatched || campaign.processed_recipients
+  const progressPercentage = totalScheduled > 0 ? Math.round((totalDispatched / totalScheduled) * 100) : 0
+
+  const isCompleted = status === 'completed'
+  const isInProgress = status === 'in_progress'
+  const isPending = status === 'pending'
+  const isCancelled = status === 'cancelled'
+  const isFailed = status === 'failed'
+
+  const statusConfig = {
+    completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle2, label: 'Completed' },
+    in_progress: { color: 'bg-blue-100 text-blue-800', icon: Loader2, label: 'In Progress' },
+    pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Pending' },
+    cancelled: { color: 'bg-gray-100 text-gray-800', icon: XCircle, label: 'Cancelled' },
+    failed: { color: 'bg-red-100 text-red-800', icon: AlertCircle, label: 'Failed' },
+  }
+
+  const currentStatus = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
+  const StatusIcon = currentStatus.icon
+
+  // Parse scheduled time
+  let scheduledTimeDisplay = null
+  if (callManagerData?.scheduled_time_unix) {
+    const scheduledDate = new Date(callManagerData.scheduled_time_unix * 1000)
+    scheduledTimeDisplay = scheduledDate.toLocaleString()
+  } else if (metadata?.scheduled_time) {
+    const scheduledDate = new Date(metadata.scheduled_time * 1000)
+    scheduledTimeDisplay = scheduledDate.toLocaleString()
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[900px] sm:w-[1050px] overflow-y-auto p-6">
-        <SheetHeader className="pb-6">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-xl font-semibold">{campaign.name || 'Untitled Campaign'}</SheetTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className={getStatusColor()}>
-              {getStatusText()}
-            </Badge>
-            <span className="text-sm text-gray-500">
-              Started {new Date(campaign.created_at).toLocaleString()}
-            </span>
-          </div>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="text-xl">{campaign.name || 'Campaign Details'}</SheetTitle>
+          <SheetDescription className="flex items-center gap-2">
+            <StatusIcon className={`h-4 w-4 ${isInProgress ? 'animate-spin' : ''}`} />
+            <Badge className={currentStatus.color}>{currentStatus.label}</Badge>
+            {isCallManagerCampaign && (
+              <Badge variant="outline" className="ml-2">Call Manager</Badge>
+            )}
+          </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6">
-          {/* Progress Section */}
+        <div className="mt-6 space-y-6">
+          {/* Actions */}
+          {isCallManagerCampaign && !isCompleted && !isCancelled && (
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                {cancelError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{cancelError}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <Button 
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={handleCancel}
+                  disabled={canceling}
+                >
+                  {canceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Canceling...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Cancel Campaign
+                    </>
+                  )}
+                </Button>
+                
+                {(isInProgress || isPending) && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    This will stop all pending calls in this campaign
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Progress */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Campaign Progress
-              </CardTitle>
+            <CardHeader>
+              <CardTitle className="text-base">Progress</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">{campaign.total_recipients}</div>
-                  <div className="text-xs text-gray-500">Total Recipients</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">{voCreatedTotal}</div>
-                  <div className="text-xs text-gray-500">Total Calls (VO)</div>
-                </div>
-              </div>
-
-              {/* Progress bar using VO when available */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Progress</span>
-                  <span className="font-medium">{voProgressPct ?? progressPercentage}%</span>
+                  <span className="text-muted-foreground">Calls Dispatched</span>
+                  <span className="font-medium">{totalDispatched} / {totalScheduled}</span>
                 </div>
-                <Progress value={voProgressPct ?? progressPercentage} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Configuration Section */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Campaign Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <User className="h-4 w-4" />
-                    <span>Agent</span>
-                  </div>
-                  <div className="font-medium">
-                    {agent ? agent.name : campaign.agent_external_id || 'Not specified'}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="h-4 w-4" />
-                    <span>Phone Number</span>
-                  </div>
-                  <div className="font-medium break-all">
-                    {campaign.phone_external_id || 'Not specified'}
-                  </div>
+                <Progress value={progressPercentage} className="h-2" />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{progressPercentage}% Complete</span>
+                  {isInProgress && <span className="text-blue-600 animate-pulse">● Live</span>}
                 </div>
               </div>
 
-              {/* Metadata Configuration */}
-              {metadata && (
-                <div className="pt-4 border-t">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Advanced Configuration</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    {metadata.callType && (
-                      <div>
-                        <span className="text-gray-600">Call Type:</span>
-                        <span className="ml-2 font-medium capitalize">{metadata.callType}</span>
-                      </div>
-                    )}
-                    {metadata.concurrency && (
-                      <div>
-                        <span className="text-gray-600">Concurrency:</span>
-                        <span className="ml-2 font-medium">{metadata.concurrency}</span>
-                      </div>
-                    )}
-                    {metadata.enableMachineDetection !== undefined && (
-                      <div>
-                        <span className="text-gray-600">AMD:</span>
-                        <span className="ml-2 font-medium">{metadata.enableMachineDetection ? 'Enabled' : 'Disabled'}</span>
-                      </div>
-                    )}
-                    {metadata.machineDetectionTimeout && (
-                      <div>
-                        <span className="text-gray-600">AMD Timeout:</span>
-                        <span className="ml-2 font-medium">{metadata.machineDetectionTimeout}s</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Time Window Configuration */}
-                  {metadata.timeWindow && (
-                    <div className="pt-4 border-t">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Time Window
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Time Range:</span>
-                          <span className="ml-2 font-medium">
-                            {metadata.timeWindow.startTime} - {metadata.timeWindow.endTime}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Timezone:</span>
-                          <span className="ml-2 font-medium break-all">{metadata.timeWindow.timezone}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-gray-600">Days:</span>
-                          <span className="ml-2 font-medium">
-                            {metadata.timeWindow.daysOfWeek?.map((day: number) => {
-                              const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                              return dayNames[day - 1]
-                            }).join(', ')}
-                          </span>
-                        </div>
-                      </div>
+              {/* Recipients breakdown if available */}
+              {callManagerData?.recipients && callManagerData.recipients.length > 0 && (
+                <div className="pt-4 border-t space-y-2">
+                  <div className="text-sm font-medium">Recipients Status</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                      <span>Pending</span>
+                      <span className="font-medium">
+                        {callManagerData.recipients.filter(r => r.status === 'pending').length}
+                      </span>
                     </div>
-                  )}
+                    <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                      <span>In Progress</span>
+                      <span className="font-medium">
+                        {callManagerData.recipients.filter(r => r.status === 'in_progress').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-green-50 rounded">
+                      <span>Completed</span>
+                      <span className="font-medium">
+                        {callManagerData.recipients.filter(r => r.status === 'completed').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-red-50 rounded">
+                      <span>Failed</span>
+                      <span className="font-medium">
+                        {callManagerData.recipients.filter(r => r.status === 'failed').length}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* VO Breakdown by status */}
-          {Object.keys(voBreakdown).length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Desglose por estado (VO)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {['queued','in_progress','completed','failed'].map((k) => (
-                  <div key={k} className="flex justify-between">
-                    <span className="text-gray-600 capitalize">{k.replace('_',' ')}:</span>
-                    <span className="font-semibold">{voBreakdown[k] || 0}</span>
+          {/* Campaign Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Campaign Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3 text-sm">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="font-medium">Phone Provider</div>
+                  <div className="text-muted-foreground">
+                    {callManagerData?.phone_provider || metadata?.phone_provider || 'N/A'}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="font-medium">Agent</div>
+                  <div className="text-muted-foreground">
+                    {callManagerData?.agent_name || metadata?.agent_name || campaign.agent_external_id || 'N/A'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 text-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="font-medium">Created At</div>
+                  <div className="text-muted-foreground">
+                    {new Date(campaign.created_at).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              {scheduledTimeDisplay && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">Scheduled For</div>
+                    <div className="text-muted-foreground">{scheduledTimeDisplay}</div>
+                  </div>
+                </div>
+              )}
+
+              {externalBatchId && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="font-medium text-xs text-muted-foreground">Batch ID</div>
+                  <code className="text-xs bg-gray-100 px-2 py-1 rounded">{externalBatchId}</code>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Loading state */}
+          {loading && !hasCallManagerData && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           )}
 
-          {/* Campaign ID + Cancel button */}
-          {campaign.campaign_id && !isCompleted && (
-            <Card>
-              <CardContent className="pt-4 flex items-center justify-between gap-3">
-                <div className="text-sm">
-                  <span className="text-gray-600">Campaign ID:</span>
-                  <span className="ml-2 font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                    {campaign.campaign_id}
-                  </span>
-                </div>
-                <Button variant="destructive" onClick={() => setConfirmOpen(true)} disabled={canceling}>
-                  {canceling ? 'Cancelling…' : 'Cancel Campaign'}
-                </Button>
-              </CardContent>
-            </Card>
+          {/* Not a call-manager campaign */}
+          {!isCallManagerCampaign && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                This campaign was created with the legacy system. Some features are not available.
+              </AlertDescription>
+            </Alert>
           )}
-          {/* Confirm cancel dialog */}
-          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Cancel this campaign?</DialogTitle>
-              </DialogHeader>
-              <div className="text-sm text-gray-600">
-                This will cancel all queued calls in this campaign. In-progress calls may continue.
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={canceling}>No, keep campaign</Button>
-                <Button variant="destructive" onClick={async () => { setConfirmOpen(false); await cancelCampaign(); }} disabled={canceling}>
-                  {canceling ? 'Cancelling…' : 'Yes, cancel campaign'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       </SheetContent>
     </Sheet>
