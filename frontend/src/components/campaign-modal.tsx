@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Phone, User, Clock, Calendar, XCircle, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { Phone, User, Clock, Calendar, XCircle, CheckCircle2, Loader2, AlertCircle, Download } from 'lucide-react'
 import { CallManagerBatchResponse } from '@/services/call-manager'
 
 type CampaignDetail = {
@@ -38,6 +38,44 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
   const [cancelError, setCancelError] = useState<string>("")
   const [metadata, setMetadata] = useState<any>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Function to download recipients as CSV
+  const downloadRecipientsCSV = () => {
+    if (!callManagerData?.recipients || callManagerData.recipients.length === 0) {
+      return
+    }
+
+    // Prepare CSV content
+    const headers = ['#', 'Phone Number', 'Status', 'Conversation ID']
+    const rows = callManagerData.recipients.map((recipient, index) => [
+      String(index + 1),
+      recipient.phone_number || '',
+      recipient.status || '',
+      recipient.conversation_id || ''
+    ])
+
+    // Build CSV string
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    
+    link.setAttribute('href', url)
+    const campaignNameSafe = (campaign?.name || 'recipients').replace(/[^a-z0-9]/gi, '_').toLowerCase()
+    link.setAttribute('download', `campaign_${campaignNameSafe}_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    URL.revokeObjectURL(url)
+  }
 
   // Parse metadata from file_url
   useEffect(() => {
@@ -367,23 +405,36 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
           {isCallManagerCampaign && callManagerData?.recipients && callManagerData.recipients.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center justify-between">
-                  <span>Call Recipients ({callManagerData.recipients.length})</span>
-                  <div className="flex gap-2 text-xs">
-                    <Badge variant="outline" className="bg-green-50 text-green-700">
-                      ✓ {callManagerData.recipients.filter(r => r.status === 'completed').length} Completed
-                    </Badge>
-                    <Badge variant="outline" className="bg-red-50 text-red-700">
-                      ✗ {callManagerData.recipients.filter(r => r.status === 'failed').length} Failed
-                    </Badge>
-                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
-                      ⏳ {callManagerData.recipients.filter(r => r.status === 'pending').length} Pending
-                    </Badge>
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                      ↻ {callManagerData.recipients.filter(r => r.status === 'in_progress').length} In Progress
-                    </Badge>
-                  </div>
-                </CardTitle>
+                <div className="flex items-start justify-between gap-4">
+                  <CardTitle className="text-base flex-1">
+                    <div className="flex items-center justify-between">
+                      <span>Call Recipients ({callManagerData.recipients.length})</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={downloadRecipientsCSV}
+                        className="ml-4"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download CSV
+                      </Button>
+                    </div>
+                    <div className="flex gap-2 text-xs mt-3">
+                      <Badge variant="outline" className="bg-green-50 text-green-700">
+                        ✓ {callManagerData.recipients.filter(r => r.status === 'completed').length} Completed
+                      </Badge>
+                      <Badge variant="outline" className="bg-red-50 text-red-700">
+                        ✗ {callManagerData.recipients.filter(r => r.status === 'failed').length} Failed
+                      </Badge>
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                        ⏳ {callManagerData.recipients.filter(r => r.status === 'pending').length} Pending
+                      </Badge>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                        ↻ {callManagerData.recipients.filter(r => r.status === 'in_progress').length} In Progress
+                      </Badge>
+                    </div>
+                  </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="border rounded-lg overflow-hidden">
