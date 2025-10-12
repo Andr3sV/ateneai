@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Bot, MessageSquare, FileText, Loader2, AlertCircle, CheckCircle2, X } from 'lucide-react'
+import { Bot, MessageSquare, FileText, Loader2, AlertCircle, CheckCircle2, X, ListChecks } from 'lucide-react'
 import { getApiUrl } from '@/config/features'
 
 type AgentDetail = {
@@ -17,6 +17,14 @@ type AgentDetail = {
   type?: string | null
   external_id?: string | null
   created_at?: string
+}
+
+type EvaluationCriteria = {
+  id?: string
+  name: string
+  conversation_goal_prompt: string
+  type?: string
+  use_knowledge_base?: boolean
 }
 
 type ElevenLabsAgentData = {
@@ -28,6 +36,11 @@ type ElevenLabsAgentData = {
       prompt: {
         prompt: string
       }
+    }
+  }
+  platform_settings?: {
+    evaluation?: {
+      criteria?: EvaluationCriteria[]
     }
   }
 }
@@ -49,13 +62,18 @@ export function AgentModal({ agent, open, onOpenChange }: AgentModalProps) {
   // Form fields
   const [firstMessage, setFirstMessage] = useState('')
   const [prompt, setPrompt] = useState('')
+  const [evaluationCriteria, setEvaluationCriteria] = useState<EvaluationCriteria[]>([])
   
   // Original values to detect changes
   const [originalFirstMessage, setOriginalFirstMessage] = useState('')
   const [originalPrompt, setOriginalPrompt] = useState('')
+  const [originalEvaluationCriteria, setOriginalEvaluationCriteria] = useState<EvaluationCriteria[]>([])
   
   // Check if there are changes
-  const hasChanges = firstMessage !== originalFirstMessage || prompt !== originalPrompt
+  const hasChanges = 
+    firstMessage !== originalFirstMessage || 
+    prompt !== originalPrompt ||
+    JSON.stringify(evaluationCriteria) !== JSON.stringify(originalEvaluationCriteria)
 
   // Fetch ElevenLabs agent details
   useEffect(() => {
@@ -77,16 +95,21 @@ export function AgentModal({ agent, open, onOpenChange }: AgentModalProps) {
           setElevenLabsData(data)
           const initialFirstMessage = data.conversation_config?.agent?.first_message || ''
           const initialPrompt = data.conversation_config?.agent?.prompt?.prompt || ''
+          const initialEvaluationCriteria = data.platform_settings?.evaluation?.criteria || []
+          
           setFirstMessage(initialFirstMessage)
           setPrompt(initialPrompt)
+          setEvaluationCriteria(initialEvaluationCriteria)
+          
           setOriginalFirstMessage(initialFirstMessage)
           setOriginalPrompt(initialPrompt)
+          setOriginalEvaluationCriteria(initialEvaluationCriteria)
         } else {
-          setError(response?.error || 'Failed to load agent details')
+          setError(response?.error || 'Failed to load agent configuration')
         }
       } catch (err: any) {
-        console.error('Error fetching agent details:', err)
-        setError(err.message || 'Failed to load agent details')
+        console.error('Error fetching agent configuration:', err)
+        setError(err.message || 'Failed to load agent configuration')
       } finally {
         setLoading(false)
       }
@@ -109,7 +132,8 @@ export function AgentModal({ agent, open, onOpenChange }: AgentModalProps) {
           method: 'PATCH',
           body: JSON.stringify({
             first_message: firstMessage,
-            prompt: prompt
+            prompt: prompt,
+            evaluation_criteria: evaluationCriteria
           })
         }
       )
@@ -122,11 +146,11 @@ export function AgentModal({ agent, open, onOpenChange }: AgentModalProps) {
           onOpenChange(false)
         }, 2000)
       } else {
-        setError(response?.error || 'Failed to update agent')
+        setError(response?.error || 'Failed to update agent configuration')
       }
     } catch (err: any) {
       console.error('Error updating agent:', err)
-      setError(err.message || 'Failed to update agent')
+      setError(err.message || 'Failed to update agent configuration')
     } finally {
       setSaving(false)
     }
@@ -139,9 +163,17 @@ export function AgentModal({ agent, open, onOpenChange }: AgentModalProps) {
     setElevenLabsData(null)
     setFirstMessage('')
     setPrompt('')
+    setEvaluationCriteria([])
     setOriginalFirstMessage('')
     setOriginalPrompt('')
+    setOriginalEvaluationCriteria([])
     onOpenChange(false)
+  }
+
+  const handleEvaluationCriteriaPromptChange = (index: number, newPrompt: string) => {
+    const updated = [...evaluationCriteria]
+    updated[index] = { ...updated[index], conversation_goal_prompt: newPrompt }
+    setEvaluationCriteria(updated)
   }
 
   // Extract dynamic variables from prompt
@@ -246,7 +278,7 @@ export function AgentModal({ agent, open, onOpenChange }: AgentModalProps) {
                   </div>
                   {agent.external_id && (
                     <div className="flex items-center gap-3 text-sm">
-                      <div className="font-medium text-xs text-muted-foreground">ID</div>
+                      <div className="font-medium text-xs text-muted-foreground">Agent ID</div>
                       <code className="text-xs bg-gray-100 px-2 py-1 rounded">{agent.external_id}</code>
                     </div>
                   )}
@@ -321,6 +353,44 @@ export function AgentModal({ agent, open, onOpenChange }: AgentModalProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Evaluation Criteria */}
+              {evaluationCriteria.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ListChecks className="h-4 w-4" />
+                      Evaluation Criteria
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-xs text-muted-foreground">
+                        Configure the prompts for each evaluation criterion. Names are read-only.
+                      </p>
+                      {evaluationCriteria.map((criteria, index) => (
+                        <div key={criteria.id || index} className="space-y-2 p-3 border rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold text-gray-900">
+                              {criteria.name}
+                            </Label>
+                            <span className="text-xs text-muted-foreground">
+                              #{index + 1}
+                            </span>
+                          </div>
+                          <Textarea
+                            value={criteria.conversation_goal_prompt}
+                            onChange={(e) => handleEvaluationCriteriaPromptChange(index, e.target.value)}
+                            placeholder="Enter evaluation prompt..."
+                            className="min-h-[80px] resize-y text-sm bg-white"
+                            disabled={saving || success}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">

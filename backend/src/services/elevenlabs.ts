@@ -9,6 +9,14 @@ if (!ELEVENLABS_API_KEY) {
   console.warn('⚠️  ELEVENLABS_API_KEY is not set. ElevenLabs features will not work.');
 }
 
+interface EvaluationCriteria {
+  id?: string;
+  name: string;
+  conversation_goal_prompt: string;
+  type?: string;
+  use_knowledge_base?: boolean;
+}
+
 interface ElevenLabsAgentConfig {
   agent_id: string;
   name: string;
@@ -18,6 +26,11 @@ interface ElevenLabsAgentConfig {
       prompt: {
         prompt: string;
       };
+    };
+  };
+  platform_settings?: {
+    evaluation?: {
+      criteria?: EvaluationCriteria[];
     };
   };
 }
@@ -54,6 +67,7 @@ export async function updateElevenLabsAgent(
   updates: {
     first_message?: string;
     prompt?: string;
+    evaluation_criteria?: EvaluationCriteria[];
   }
 ): Promise<ElevenLabsAgentConfig> {
   if (!ELEVENLABS_API_KEY) {
@@ -63,9 +77,10 @@ export async function updateElevenLabsAgent(
   // Build the update payload according to ElevenLabs API structure
   const payload: any = {};
 
+  // Update agent config (first_message and prompt)
   if (updates.first_message !== undefined || updates.prompt !== undefined) {
     payload.conversation_config = {
-      agent: {},
+      agent: {}
     };
 
     if (updates.first_message !== undefined) {
@@ -77,6 +92,15 @@ export async function updateElevenLabsAgent(
         prompt: updates.prompt,
       };
     }
+  }
+
+  // Update evaluation criteria in platform_settings
+  if (updates.evaluation_criteria !== undefined) {
+    payload.platform_settings = {
+      evaluation: {
+        criteria: updates.evaluation_criteria
+      }
+    };
   }
 
   const response = await fetch(`${ELEVENLABS_API_URL}/convai/agents/${agentId}`, {

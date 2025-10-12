@@ -81,7 +81,7 @@ router.get('/:id/elevenlabs', requireWorkspaceContext, async (req, res): Promise
     }
 
     if (!agent.external_id) {
-      res.status(400).json({ success: false, error: 'Agent does not have an ElevenLabs external_id' });
+      res.status(400).json({ success: false, error: 'Agent does not have an external_id' });
       return;
     }
 
@@ -125,16 +125,17 @@ router.patch('/:id/elevenlabs', requireWorkspaceContext, async (req, res): Promi
     }
 
     if (!agent.external_id) {
-      res.status(400).json({ success: false, error: 'Agent does not have an ElevenLabs external_id' });
+      res.status(400).json({ success: false, error: 'Agent does not have an external_id' });
       return;
     }
 
-    const { first_message, prompt } = req.body;
+    const { first_message, prompt, evaluation_criteria } = req.body;
 
     // Update agent in ElevenLabs
     const updatedAgent = await updateElevenLabsAgent(agent.external_id, {
       first_message,
-      prompt
+      prompt,
+      evaluation_criteria
     });
     
     res.json({ 
