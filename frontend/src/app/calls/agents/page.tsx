@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { User, Tag as TagIcon, Calendar as CalendarIcon } from 'lucide-react'
+import { AgentModal } from '@/components/agent-modal'
 
 // Skeleton Component for loading state
 const TableRowSkeleton = () => (
@@ -29,6 +30,7 @@ interface Agent {
   name: string
   type?: string | null
   key?: string | null
+  external_id?: string | null
   created_at?: string
 }
 
@@ -37,6 +39,8 @@ export default function CallsAgentsPage() {
   const authenticatedFetch = useAuthenticatedFetch()
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const fetchAgents = async () => {
     try {
@@ -60,6 +64,11 @@ export default function CallsAgentsPage() {
       : 'bg-slate-100 text-slate-800'
     const text = t.replace('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase())
     return <Badge className={styles}>{text}</Badge>
+  }
+
+  const handleAgentClick = (agent: Agent) => {
+    setSelectedAgent(agent)
+    setModalOpen(true)
   }
 
   return (
@@ -104,7 +113,11 @@ export default function CallsAgentsPage() {
                 </TableRow>
               ) : (
                 agents.map(a => (
-                  <TableRow key={a.id} className="hover:bg-gray-50 transition-colors">
+                  <TableRow 
+                    key={a.id} 
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => handleAgentClick(a)}
+                  >
                     <TableCell className="py-4">
                       <span className="font-medium text-gray-900">{a.name}</span>
                     </TableCell>
@@ -121,6 +134,13 @@ export default function CallsAgentsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Agent Modal */}
+      <AgentModal 
+        agent={selectedAgent}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
     </div>
   )
 }
