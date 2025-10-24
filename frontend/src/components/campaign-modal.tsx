@@ -80,6 +80,20 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
     URL.revokeObjectURL(url)
   }
 
+  // Helper function to format status for display
+  const formatStatusLabel = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      'initiated': 'No Answer',
+      'voicemail': 'Voicemail',
+      'pending': 'Pending',
+      'in_progress': 'In Progress',
+      'completed': 'Completed',
+      'failed': 'Failed',
+      'cancelled': 'Cancelled'
+    }
+    return statusMap[status] || status
+  }
+
   // Parse metadata from file_url
   useEffect(() => {
     if (!campaign?.file_url) {
@@ -378,9 +392,15 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-2 bg-cyan-50 rounded">
-                      <span>Initiated</span>
+                      <span>No Answer</span>
                       <span className="font-medium">
                         {callManagerData.recipients.filter(r => r.status === 'initiated').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-purple-50 rounded">
+                      <span>Voicemail</span>
+                      <span className="font-medium">
+                        {callManagerData.recipients.filter(r => r.status === 'voicemail').length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
@@ -508,7 +528,10 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                         ⏳ {callManagerData.recipients.filter(r => r.status === 'pending').length} Pending
                       </Badge>
                       <Badge variant="outline" className="bg-cyan-50 text-cyan-700">
-                        🔄 {callManagerData.recipients.filter(r => r.status === 'initiated').length} Initiated
+                        📵 {callManagerData.recipients.filter(r => r.status === 'initiated').length} No Answer
+                      </Badge>
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                        📞 {callManagerData.recipients.filter(r => r.status === 'voicemail').length} Voicemail
                       </Badge>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700">
                         ↻ {callManagerData.recipients.filter(r => r.status === 'in_progress').length} In Progress
@@ -539,11 +562,12 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                                 ${recipient.status === 'completed' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
                                   recipient.status === 'in_progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
                                   recipient.status === 'initiated' ? 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200' :
+                                  recipient.status === 'voicemail' ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' :
                                   recipient.status === 'failed' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
                                   'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                 }
                               `}>
-                                {recipient.status}
+                                {formatStatusLabel(recipient.status)}
                               </Badge>
                             </td>
                             <td className="py-2 px-3">
