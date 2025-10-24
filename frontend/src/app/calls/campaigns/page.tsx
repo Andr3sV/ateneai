@@ -67,6 +67,50 @@ export default function CampaignsPage() {
       const res = await authenticatedFetch('/api/calls/bulk/list', { muteErrors: true })
       if (res?.success && Array.isArray(res.data)) {
         setItems(res.data)
+        
+        // Update progress for active campaigns from call-manager
+        const activeCampaigns = res.data.filter((c: BatchRow) => 
+          c.status === 'in_progress' || c.status === 'pending'
+        )
+        
+        // Limit to maximum 20 active campaigns to avoid performance issues
+        const campaignsToUpdate = activeCampaigns.slice(0, 20)
+        
+        if (campaignsToUpdate.length === 0) return
+        
+        // Fetch real-time progress from call-manager for active campaigns IN PARALLEL
+        const statusPromises = campaignsToUpdate.map((campaign: BatchRow) =>
+          authenticatedFetch(`/api/call-manager/${campaign.id}/status`, { muteErrors: true })
+            .then(statusRes => ({ campaign, statusRes }))
+            .catch(err => {
+              console.debug(`Could not fetch status for campaign ${campaign.id}`)
+              return null
+            })
+        )
+        
+        // Wait for all requests to complete (in parallel, not sequential)
+        const results = await Promise.all(statusPromises)
+        
+        // Update all campaigns at once (single state update, better performance)
+        setItems(prevItems => {
+          const updates: Record<number, Partial<BatchRow>> = {}
+          
+          results.forEach(result => {
+            if (result && result.statusRes?.success && result.statusRes.data?.call_manager_response) {
+              const cmData = result.statusRes.data.call_manager_response
+              updates[result.campaign.id] = {
+                status: cmData.status,
+                processed_recipients: cmData.total_calls_dispatched || result.campaign.processed_recipients,
+                total_recipients: cmData.total_calls_scheduled || result.campaign.total_recipients
+              }
+            }
+          })
+          
+          // Apply all updates in a single pass
+          return prevItems.map(item => 
+            updates[item.id] ? { ...item, ...updates[item.id] } : item
+          )
+        })
       }
     } catch (error) {
       console.error('Failed to fetch campaigns:', error)
@@ -83,13 +127,16 @@ export default function CampaignsPage() {
     
     load()
     
-    // Auto refresh every 10 seconds to update progress
-    timer = setInterval(fetchCampaigns, 10000)
+    // Auto refresh every 5 seconds if there are active campaigns, otherwise every 30 seconds
+    const hasActiveCampaigns = items.some(c => c.status === 'in_progress' || c.status === 'pending')
+    const interval = hasActiveCampaigns ? 5000 : 30000
+    
+    timer = setInterval(fetchCampaigns, interval)
     
     return () => { 
       if (timer) clearInterval(timer) 
     }
-  }, [authenticatedFetch, fetchCampaigns, loading])
+  }, [authenticatedFetch, fetchCampaigns, loading, items])
 
   // Fetch VO report per campaign (avoids heavy grouped query that may 500)
   useEffect(() => {
