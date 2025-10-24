@@ -494,13 +494,17 @@ export default function CallsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calls, pagination.page])
 
-  // Realtime subscription to calls (workspace-scoped)
+  // Realtime subscription to calls (workspace-scoped) with fallback polling
   useEffect(() => {
     // Only subscribe if we have supabase client and workspaceId
     if (!supabase || !workspaceId) return
 
     console.log('🔌 Setting up realtime subscription for calls in workspace:', workspaceId);
     console.log('🔌 Current time:', new Date().toISOString());
+    
+    let lastEventTime = Date.now()
+    let healthCheckInterval: NodeJS.Timeout | null = null
+    let fallbackPollingInterval: NodeJS.Timeout | null = null
     
     const channel = supabase
       .channel(`workspace:${workspaceId}:calls`)
@@ -510,6 +514,8 @@ export default function CallsPage() {
         table: 'calls',
         filter: `workspace_id=eq.${workspaceId}` // Filter by workspace_id at database level
       }, async (payload: any) => {
+        // Update last event time (connection is alive)
+        lastEventTime = Date.now()
         console.log('📡 Realtime payload received (full):', payload);
         
         // Supabase realtime uses 'eventType' not 'event'
@@ -611,24 +617,46 @@ export default function CallsPage() {
         console.log('📡 Realtime subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Successfully subscribed to realtime updates');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel error - check Supabase configuration');
-        } else if (status === 'TIMED_OUT') {
-          console.error('❌ Subscription timed out');
+          lastEventTime = Date.now()
+          
+          // Start health check: if no events for 60 seconds, do a refresh
+          healthCheckInterval = setInterval(() => {
+            const timeSinceLastEvent = Date.now() - lastEventTime
+            if (timeSinceLastEvent > 60000) { // 60 seconds without events
+              console.log('⚠️ No realtime events for 60s, refreshing calls...')
+              fetchCalls(pagination.page, false)
+              lastEventTime = Date.now() // Reset timer
+            }
+          }, 30000) // Check every 30 seconds
+          
+          // Start fallback polling every 2 minutes (safety net)
+          fallbackPollingInterval = setInterval(() => {
+            console.log('🔄 Fallback polling: refreshing calls...')
+            fetchCalls(pagination.page, false)
+          }, 120000) // 2 minutes
+          
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('❌ Realtime connection lost, fetching latest data...');
+          // Immediately fetch to recover from connection loss
+          fetchCalls(pagination.page, false)
         } else if (status === 'CLOSED') {
-          console.warn('⚠️ Channel closed');
+          console.warn('⚠️ Channel closed, cleaning up intervals');
+          if (healthCheckInterval) clearInterval(healthCheckInterval)
+          if (fallbackPollingInterval) clearInterval(fallbackPollingInterval)
         }
       })
 
     return () => { 
-      console.log('🔌 Cleaning up realtime subscription');
+      console.log('🔌 Cleaning up realtime subscription and intervals');
+      if (healthCheckInterval) clearInterval(healthCheckInterval)
+      if (fallbackPollingInterval) clearInterval(fallbackPollingInterval)
       try { 
         supabase?.removeChannel(channel) 
       } catch (e) {
         console.warn('⚠️ Error cleaning up realtime:', e);
       }
     }
-  }, [supabase, workspaceId, authenticatedFetch, celebrateEnabled]) // Re-subscribe when workspace changes
+  }, [supabase, workspaceId, authenticatedFetch, celebrateEnabled, pagination.page, fetchCalls]) // Added missing dependencies
 
   const formatDueDate = (s?: string | null) => {
     if (!s) return '-'
