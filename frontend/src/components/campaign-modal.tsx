@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Phone, User, Clock, Calendar, XCircle, CheckCircle2, Loader2, AlertCircle, Download } from 'lucide-react'
+import { Phone, User, Clock, Calendar, XCircle, CheckCircle2, Loader2, AlertCircle, Download, RefreshCw } from 'lucide-react'
 import { CallManagerBatchResponse } from '@/services/call-manager'
+import { useRouter } from 'next/navigation'
 
 type CampaignDetail = {
   id: number
@@ -32,11 +33,13 @@ interface CampaignModalProps {
 
 export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalProps) {
   const authenticatedFetch = useAuthenticatedFetch()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [callManagerData, setCallManagerData] = useState<CallManagerBatchResponse | null>(null)
   const [canceling, setCanceling] = useState(false)
   const [cancelError, setCancelError] = useState<string>("")
   const [metadata, setMetadata] = useState<any>(null)
+  const [retrying, setRetrying] = useState(false)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
   // Function to download recipients as CSV
@@ -225,6 +228,75 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
     }
   }
 
+  async function handleRetry() {
+    if (!campaign || !callManagerData?.recipients) return
+    
+    setRetrying(true)
+    
+    try {
+      // Filter out completed recipients
+      const failedOrPendingRecipients = callManagerData.recipients.filter(
+        r => r.status !== 'completed'
+      )
+      
+      if (failedOrPendingRecipients.length === 0) {
+        alert('All recipients were completed successfully. Nothing to retry.')
+        setRetrying(false)
+        return
+      }
+      
+      // Get original recipients with dynamic_variables from metadata
+      const originalRecipients = metadata?.original_recipients || []
+      
+      // Create a map of phone_number -> original recipient data
+      const originalRecipientsMap = new Map(
+        originalRecipients.map((r: any) => [r.phone_number, r])
+      )
+      
+      // Combine failed/pending recipients with their original dynamic_variables
+      const recipientsWithVariables = failedOrPendingRecipients.map(r => {
+        const original: any = originalRecipientsMap.get(r.phone_number)
+        
+        return {
+          phone_number: r.phone_number,
+          conversation_initiation_client_data: original?.conversation_initiation_client_data || {
+            dynamic_variables: {}
+          }
+        }
+      })
+      
+      // Build retry data object to pass to create campaign page
+      const retryData = {
+        campaignName: `${campaign.name} (Retry)`,
+        agentId: callManagerData.agent_id || metadata?.agent_id,
+        phoneNumberId: callManagerData.phone_number_id || metadata?.agent_phone_number_id,
+        phoneProvider: callManagerData.phone_provider || metadata?.phone_provider,
+        recipients: recipientsWithVariables,
+        scheduledTime: null, // Immediate by default
+      }
+      
+      console.log('🔄 Retry data prepared:', {
+        total: recipientsWithVariables.length,
+        withVariables: recipientsWithVariables.filter(r => 
+          Object.keys(r.conversation_initiation_client_data?.dynamic_variables || {}).length > 0
+        ).length
+      })
+      
+      // Store in sessionStorage to pass to create page
+      sessionStorage.setItem('retryCampaignData', JSON.stringify(retryData))
+      
+      // Close modal and navigate to create page
+      onOpenChange(false)
+      router.push('/calls/campaigns/create?retry=true')
+      
+    } catch (error) {
+      console.error('Error preparing retry:', error)
+      alert('Failed to prepare retry campaign. Please try again.')
+    } finally {
+      setRetrying(false)
+    }
+  }
+
   if (!campaign) return null
 
   const hasCallManagerData = !!callManagerData
@@ -303,6 +375,12 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                       <span>Pending</span>
                       <span className="font-medium">
                         {callManagerData.recipients.filter(r => r.status === 'pending').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-cyan-50 rounded">
+                      <span>Initiated</span>
+                      <span className="font-medium">
+                        {callManagerData.recipients.filter(r => r.status === 'initiated').length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
@@ -419,7 +497,7 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                         Download CSV
                       </Button>
                     </div>
-                    <div className="flex gap-2 text-xs mt-3">
+                    <div className="flex gap-2 text-xs mt-3 flex-wrap">
                       <Badge variant="outline" className="bg-green-50 text-green-700">
                         ✓ {callManagerData.recipients.filter(r => r.status === 'completed').length} Completed
                       </Badge>
@@ -428,6 +506,9 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                       </Badge>
                       <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
                         ⏳ {callManagerData.recipients.filter(r => r.status === 'pending').length} Pending
+                      </Badge>
+                      <Badge variant="outline" className="bg-cyan-50 text-cyan-700">
+                        🔄 {callManagerData.recipients.filter(r => r.status === 'initiated').length} Initiated
                       </Badge>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700">
                         ↻ {callManagerData.recipients.filter(r => r.status === 'in_progress').length} In Progress
@@ -457,6 +538,7 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
                               <Badge className={`
                                 ${recipient.status === 'completed' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
                                   recipient.status === 'in_progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                  recipient.status === 'initiated' ? 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200' :
                                   recipient.status === 'failed' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
                                   'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                 }
@@ -525,14 +607,51 @@ export function CampaignModal({ campaign, open, onOpenChange }: CampaignModalPro
             </Card>
           )}
           
-          {/* Info for completed/cancelled campaigns */}
-          {isCallManagerCampaign && (isCompleted || isCancelled) && (
-            <Alert>
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
-                This campaign is {status} and cannot be cancelled.
-              </AlertDescription>
-            </Alert>
+          {/* Info and Retry button for completed/cancelled campaigns */}
+          {isCallManagerCampaign && (isCompleted || isCancelled) && callManagerData?.recipients && (
+            <>
+              <Alert>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>
+                  This campaign is {status} and cannot be cancelled.
+                </AlertDescription>
+              </Alert>
+              
+              {/* Retry button - only show if there are non-completed recipients */}
+              {callManagerData.recipients.filter(r => r.status !== 'completed').length > 0 && (
+                <Card className="border-blue-200">
+                  <CardContent className="pt-6 space-y-3">
+                    <div className="text-sm text-muted-foreground text-center mb-2">
+                      <strong>{callManagerData.recipients.filter(r => r.status !== 'completed').length}</strong> recipient(s) 
+                      were not completed successfully. You can retry calling them.
+                    </div>
+                    
+                    <Button 
+                      variant="default" 
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={handleRetry}
+                      disabled={retrying}
+                    >
+                      {retrying ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Preparing...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Retry Failed/Pending Calls
+                        </>
+                      )}
+                    </Button>
+                    
+                    <p className="text-xs text-muted-foreground text-center">
+                      This will create a new campaign excluding completed calls
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
         

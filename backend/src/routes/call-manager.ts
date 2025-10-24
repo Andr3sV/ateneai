@@ -78,7 +78,7 @@ router.post('/submit', requireWorkspaceContext, async (req, res): Promise<void> 
 
     const batchData = callManagerResponse.data.data;
 
-    // Save to database
+    // Save to database (including original recipients with dynamic_variables for retry)
     const batchRecord = await db.createBatchCall(req.workspaceContext.workspaceId, {
       name: call_name,
       phone_external_id: agent_phone_number_id,
@@ -91,7 +91,8 @@ router.post('/submit', requireWorkspaceContext, async (req, res): Promise<void> 
         external_batch_id: batchData.id,
         phone_provider: batchData.phone_provider,
         scheduled_time: batchData.scheduled_time_unix,
-        agent_name: batchData.agent_name
+        agent_name: batchData.agent_name,
+        original_recipients: recipients // Save for retry functionality
       }
     });
 
@@ -339,122 +340,6 @@ router.get('/:batchId/status', requireWorkspaceContext, async (req, res): Promis
         error: error.message || 'Internal server error'
       });
     }
-  }
-});
-
-// Get aggregated campaign recipients statistics
-router.get('/dashboard/recipients-stats', requireWorkspaceContext, async (req, res): Promise<void> => {
-  try {
-    if (!req.workspaceContext) {
-      res.status(401).json({ success: false, error: 'No workspace context available' });
-      return;
-    }
-
-    const { start_date, end_date } = req.query as { start_date?: string; end_date?: string };
-
-    // Get all batch calls from the workspace within the date range
-    const batches = await db.listBatchCalls(req.workspaceContext.workspaceId, { limit: 1000 });
-    
-    // Filter by date range if provided
-    let filteredBatches = batches;
-    if (start_date && end_date) {
-      const startDateTime = new Date(start_date).getTime();
-      const endDateTime = new Date(end_date).getTime();
-      filteredBatches = batches.filter(b => {
-        const createdAt = new Date(b.created_at).getTime();
-        return createdAt >= startDateTime && createdAt <= endDateTime;
-      });
-    }
-
-    // Only process Call-Manager campaigns (those with external_batch_id)
-    const callManagerBatches = filteredBatches.filter(batch => {
-      if (!batch.file_url || !batch.file_url.includes('metadata:')) return false;
-      try {
-        const metadataStr = batch.file_url.split('metadata:')[1];
-        const metadata = JSON.parse(metadataStr);
-        return !!metadata.external_batch_id;
-      } catch {
-        return false;
-      }
-    });
-
-    console.log(`📊 Processing ${callManagerBatches.length} Call-Manager campaigns for recipient stats`);
-
-    // Aggregate statistics from all campaigns
-    let totalCompleted = 0;
-    let totalFailed = 0;
-    let totalPending = 0;
-    let totalInProgress = 0;
-    let totalVoicemail = 0;
-    let totalRecipients = 0;
-
-    // Fetch detailed status from Call-Manager for each batch
-    for (const batch of callManagerBatches) {
-      try {
-        const metadataStr = batch.file_url!.split('metadata:')[1];
-        const metadata = JSON.parse(metadataStr);
-        const externalBatchId = metadata.external_batch_id;
-
-        if (!externalBatchId) continue;
-
-        // Get batch details from Call-Manager
-        const callManagerResponse = await axios.get(`${CALL_MANAGER_BASE_URL}/${externalBatchId}`);
-        
-        if (callManagerResponse.data?.success && callManagerResponse.data?.data?.recipients) {
-          const recipients = callManagerResponse.data.data.recipients;
-          totalRecipients += recipients.length;
-
-          // Count by status
-          for (const recipient of recipients) {
-            switch (recipient.status) {
-              case 'completed':
-                totalCompleted++;
-                break;
-              case 'failed':
-                totalFailed++;
-                break;
-              case 'pending':
-                totalPending++;
-                break;
-              case 'in_progress':
-                totalInProgress++;
-                break;
-              case 'voicemail':
-                totalVoicemail++;
-                break;
-            }
-          }
-        }
-      } catch (error: any) {
-        console.warn(`⚠️ Could not fetch recipients for batch ${batch.id}:`, error.message);
-        // Continue with other batches
-      }
-    }
-
-    const stats = {
-      total_recipients: totalRecipients,
-      completed: totalCompleted,
-      failed: totalFailed,
-      pending: totalPending,
-      in_progress: totalInProgress,
-      voicemail: totalVoicemail,
-      success_rate: totalRecipients > 0 ? Math.round((totalCompleted / totalRecipients) * 100) : 0,
-      failure_rate: totalRecipients > 0 ? Math.round((totalFailed / totalRecipients) * 100) : 0
-    };
-
-    console.log(`✅ Campaign recipients stats:`, stats);
-
-    res.json({
-      success: true,
-      data: stats
-    });
-
-  } catch (error: any) {
-    console.error('❌ Error in GET /call-manager/dashboard/recipients-stats:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Internal server error'
-    });
   }
 });
 

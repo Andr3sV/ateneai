@@ -80,18 +80,6 @@ export default function CallsDashboardPage() {
   const [servicesEvolution, setServicesEvolution] = useState<EvolutionData[]>([])
   const [voAgentStats, setVoAgentStats] = useState<Array<{ agent: string; total: number; failed: number; failure_rate: number }>>([])
   const [voCampaignStats, setVoCampaignStats] = useState<Array<{ campaign: string; total: number; completed: number; failed: number }>>([])
-  
-  // Campaign recipients metrics (from Call-Manager)
-  const [recipientsStats, setRecipientsStats] = useState<{
-    total_recipients: number
-    completed: number
-    failed: number
-    pending: number
-    in_progress: number
-    voicemail: number
-    success_rate: number
-    failure_rate: number
-  } | null>(null)
 
   const formattedRange = useMemo(() => {
     return `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`
@@ -118,7 +106,7 @@ export default function CallsDashboardPage() {
       const reportAgentParams = new URLSearchParams({ from, to, groupBy: 'agent' })
       const reportCampaignParams = new URLSearchParams({ from, to, groupBy: 'campaign' })
 
-      const [evoRes, mqlEvoRes, clientsEvoRes, leadEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes, batchTotalsRes, topCampaignsRes, recipientsStatsRes] = await Promise.all([
+      const [evoRes, mqlEvoRes, clientsEvoRes, leadEvoRes, statsRes, agentsRes, cityRes, repRes, voDayRes, voAgentRes, voCampaignRes, batchTotalsRes, topCampaignsRes] = await Promise.all([
         authenticatedFetch(getApiUrl(`calls/dashboard/batch-evolution?${evoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${mqlEvoParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/evolution?${clientsEvoParams}`)),
@@ -132,7 +120,6 @@ export default function CallsDashboardPage() {
         authenticatedFetch(`/api/calls/vo/report?${reportCampaignParams.toString()}`),
         authenticatedFetch(getApiUrl(`calls/dashboard/batch-totals?${statsParams}`)),
         authenticatedFetch(getApiUrl(`calls/dashboard/top-campaigns-by-mql?${statsParams}&limit=5`)),
-        authenticatedFetch(`/api/call-manager/dashboard/recipients-stats?${statsParams.toString()}`),
       ])
       // Services evolution
       try {
@@ -151,7 +138,6 @@ export default function CallsDashboardPage() {
       if (repRes.success) setContactRep(repRes.data)
       if (topCampaignsRes?.success) setTopCampaignsByMql(Array.isArray(topCampaignsRes.data) ? topCampaignsRes.data : [])
       if (batchTotalsRes?.success) setBatchTotalCalls(Number(batchTotalsRes?.data?.total_recipients || 0))
-      if (recipientsStatsRes?.success) setRecipientsStats(recipientsStatsRes.data)
 
       // Process VO: totals and status breakdown (aggregate by campaign groups)
       if (voCampaignRes?.success && Array.isArray(voCampaignRes?.data?.groups)) {
@@ -677,60 +663,6 @@ export default function CallsDashboardPage() {
           </div>
         </div>
       ) : null}
-
-      {/* Campaign Recipients Status (Call-Manager) */}
-      {recipientsStats && recipientsStats.total_recipients > 0 && (
-        <>
-          <div className="bg-white shadow rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-2">Campaign Recipients Status</h3>
-            <p className="text-sm text-gray-600 mb-4">Estado en tiempo real de todas las llamadas de campañas</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {loading ? (
-              <>
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-                <StatCardSkeleton />
-              </>
-            ) : (
-              <>
-                <StatCard 
-                  title="Total Recipients" 
-                  value={recipientsStats.total_recipients} 
-                  description="Llamadas lanzadas"
-                />
-                <StatCard 
-                  title="✓ Completed" 
-                  value={recipientsStats.completed} 
-                  description={`${recipientsStats.success_rate}% éxito`}
-                  className="bg-green-50 border-green-200"
-                />
-                <StatCard 
-                  title="✗ Failed" 
-                  value={recipientsStats.failed} 
-                  description={`${recipientsStats.failure_rate}% fallos`}
-                  className="bg-red-50 border-red-200"
-                />
-                <StatCard 
-                  title="📧 Voicemail" 
-                  value={recipientsStats.voicemail} 
-                  description="Buzón de voz"
-                  className="bg-yellow-50 border-yellow-200"
-                />
-                <StatCard 
-                  title="⏳ Pending" 
-                  value={recipientsStats.pending + recipientsStats.in_progress} 
-                  description={`${recipientsStats.pending} pending, ${recipientsStats.in_progress} in progress`}
-                  className="bg-blue-50 border-blue-200"
-                />
-              </>
-            )}
-          </div>
-        </>
-      )}
     </div>
   )
 }

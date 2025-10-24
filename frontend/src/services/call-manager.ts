@@ -27,7 +27,7 @@ export type CallManagerBatchStatus = 'pending' | 'in_progress' | 'completed' | '
 export type CallManagerRecipientStatus = {
   id: string
   phone_number: string
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  status: 'pending' | 'initiated' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
   conversation_id?: string
 }
 

@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CalendarIcon, Upload, AlertCircle, CheckCircle2, Loader2, Phone, Users, Clock, Zap } from "lucide-react"
+import { CalendarIcon, Upload, AlertCircle, CheckCircle2, Loader2, Phone, Users, Clock, Zap, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +49,7 @@ export default function CreateBatchCallPage() {
   const [scheduledDate, setScheduledDate] = useState<Date>()
   const [scheduledTime, setScheduledTime] = useState<string>("09:00")
   const [timezone, setTimezone] = useState<string>("Europe/Madrid")
+  const [isRetry, setIsRetry] = useState(false)
   
   // Data
   const [agents, setAgents] = useState<Agent[]>([])
@@ -58,6 +59,7 @@ export default function CreateBatchCallPage() {
   const [headers, setHeaders] = useState<string[]>([])
   const [phoneHeader, setPhoneHeader] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [retryRecipients, setRetryRecipients] = useState<any[]>([])
   
   // UI state
   const [uploadError, setUploadError] = useState<string>("")
@@ -91,6 +93,63 @@ export default function CreateBatchCallPage() {
       setPhoneNumbers([])
     })
   }, [authenticatedFetch])
+
+  // Check if this is a retry campaign and load data from sessionStorage
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const isRetryParam = urlParams.get('retry') === 'true'
+    
+    if (isRetryParam) {
+      const retryDataStr = sessionStorage.getItem('retryCampaignData')
+      
+      if (retryDataStr) {
+        try {
+          const retryData = JSON.parse(retryDataStr)
+          
+          // Set form fields
+          setCallName(retryData.campaignName || '')
+          setSelectedAgentId(retryData.agentId || '')
+          setSelectedPhoneNumberId(retryData.phoneNumberId || '')
+          setScheduleType('immediate')
+          setIsRetry(true)
+          
+          // Store retry recipients for submission
+          if (retryData.recipients && retryData.recipients.length > 0) {
+            setRetryRecipients(retryData.recipients)
+            
+            // Extract all dynamic_variables keys to use as headers
+            const allVariableKeys = new Set<string>()
+            retryData.recipients.forEach((r: any) => {
+              const vars = r.conversation_initiation_client_data?.dynamic_variables || {}
+              Object.keys(vars).forEach(key => allVariableKeys.add(key))
+            })
+            
+            // Convert recipients to CSV-like format for preview (with dynamic_variables)
+            const recipientsData = retryData.recipients.map((r: any) => {
+              const vars = r.conversation_initiation_client_data?.dynamic_variables || {}
+              return {
+                phone_number: r.phone_number,
+                ...vars
+              }
+            })
+            
+            const headers = ['phone_number', ...Array.from(allVariableKeys)]
+            
+            setRowsPreview(recipientsData.slice(0, 10))
+            setRowCount(recipientsData.length)
+            setHeaders(headers)
+            setPhoneHeader('phone_number')
+          }
+          
+          // Clear sessionStorage after loading
+          sessionStorage.removeItem('retryCampaignData')
+          
+        } catch (error) {
+          console.error('Error loading retry data:', error)
+        }
+      }
+    }
+  }, [])
 
   function detectPhoneHeader(hs: string[]): string | null {
     const candidates = [
@@ -214,12 +273,12 @@ export default function CreateBatchCallPage() {
     return json.map((row) => toPayload(row))
   }
 
-  const hasData = rowsPreview.length > 0
+  const hasData = rowsPreview.length > 0 || (isRetry && retryRecipients.length > 0)
   const canSubmit = hasData && 
     callName.trim() !== '' &&
     selectedAgentId !== '' &&
     selectedPhoneNumberId !== '' &&
-    !!phoneHeader &&
+    (isRetry || !!phoneHeader) &&
     (scheduleType === 'immediate' || (scheduledDate && scheduledTime)) &&
     !submitting
 
@@ -243,20 +302,42 @@ export default function CreateBatchCallPage() {
     setUploadError("")
     
     try {
-      const rows = await buildAllRows()
-      const valid = rows.filter(r => r.phone_number && r.phone_number.length > 0)
+      let recipients: any[] = []
       
-      if (valid.length === 0) {
-        throw new Error('No valid phone numbers found in the file')
-      }
-
-      // Prepare recipients for call-manager API (normalize phone numbers to E.164)
-      const recipients = valid.map(row => ({
-        phone_number: normalizePhoneNumber(row.phone_number),
-        conversation_initiation_client_data: {
-          dynamic_variables: row.dynamic_variables
+      // If this is a retry, use the pre-loaded retry recipients (with their original dynamic_variables)
+      if (isRetry && retryRecipients.length > 0) {
+        recipients = retryRecipients.map(r => ({
+          phone_number: normalizePhoneNumber(r.phone_number),
+          conversation_initiation_client_data: r.conversation_initiation_client_data || {
+            dynamic_variables: {}
+          }
+        }))
+        
+        console.log('🔄 Using retry recipients with dynamic_variables:', {
+          total: recipients.length,
+          sample: recipients[0]
+        })
+      } else {
+        // Normal flow: build from uploaded file
+        const rows = await buildAllRows()
+        const valid = rows.filter(r => r.phone_number && r.phone_number.length > 0)
+        
+        if (valid.length === 0) {
+          throw new Error('No valid phone numbers found in the file')
         }
-      }))
+
+        // Prepare recipients for call-manager API (normalize phone numbers to E.164)
+        recipients = valid.map(row => ({
+          phone_number: normalizePhoneNumber(row.phone_number),
+          conversation_initiation_client_data: {
+            dynamic_variables: row.dynamic_variables
+          }
+        }))
+      }
+      
+      if (recipients.length === 0) {
+        throw new Error('No valid recipients to call')
+      }
 
       // Get phone provider from selected phone number
       const selectedPhone = phoneNumbers.find(p => p.external_id === selectedPhoneNumberId)
@@ -366,6 +447,15 @@ export default function CreateBatchCallPage() {
           </AlertDescription>
         </Alert>
       ) : null}
+      
+      {isRetry && !success && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <RefreshCw className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>Retry Mode:</strong> Launching campaign with {retryRecipients.length} recipient(s) who were not completed successfully in the previous campaign.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Form */}
