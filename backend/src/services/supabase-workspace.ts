@@ -655,6 +655,17 @@ export const db = {
     return data || [];
   },
 
+  async getAgent(agentId: number, workspaceId: number) {
+    const { data, error } = await supabase
+      .from(TABLES.AGENTS)
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .eq('id', agentId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error; // not found is okay
+    return data || null;
+  },
+
   async getAgentByKey(key: string, workspaceId: number) {
     const { data, error } = await supabase
       .from(TABLES.AGENTS)
