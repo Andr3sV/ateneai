@@ -694,6 +694,7 @@ export const db = {
       end_date?: string
       assigned_user_id?: number
       unassigned?: boolean
+      agent_id?: number
       limit?: number
       offset?: number
     } = {}
@@ -712,6 +713,7 @@ export const db = {
     if (filters.contact_id) countQuery = countQuery.eq('contact_id', filters.contact_id)
     if (typeof filters.assigned_user_id === 'number') countQuery = countQuery.eq('assigned_user_id', filters.assigned_user_id)
     if (filters.unassigned) countQuery = countQuery.is('assigned_user_id', null)
+    if (typeof filters.agent_id === 'number') countQuery = countQuery.eq('agent_id', filters.agent_id)
     if (filters.start_date && filters.end_date) {
       countQuery = countQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
     }
@@ -740,6 +742,7 @@ export const db = {
     if (filters.to) dataQuery = dataQuery.ilike('phone_to', `%${filters.to}%`);
     if (typeof filters.assigned_user_id === 'number') dataQuery = dataQuery.eq('assigned_user_id', filters.assigned_user_id);
     if (filters.unassigned) dataQuery = dataQuery.is('assigned_user_id', null);
+    if (typeof filters.agent_id === 'number') dataQuery = dataQuery.eq('agent_id', filters.agent_id);
     if (filters.start_date && filters.end_date) {
       dataQuery = dataQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
     }

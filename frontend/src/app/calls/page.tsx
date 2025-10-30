@@ -173,7 +173,9 @@ export default function CallsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [interestFilter, setInterestFilter] = useState<string>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
+  const [agentFilter, setAgentFilter] = useState<string>('all')
   const [members, setMembers] = useState<{ id: number; name: string }[]>([])
+  const [agents, setAgents] = useState<{ id: number; name: string }[]>([])
   const [dateStart, setDateStart] = useState<Date | undefined>()
   const [dateEnd, setDateEnd] = useState<Date | undefined>()
 
@@ -263,6 +265,7 @@ export default function CallsPage() {
       if (interestFilter !== 'all') params.append('interest', interestFilter)
       if (assigneeFilter === 'unassigned') params.append('unassigned', 'true')
       else if (assigneeFilter !== 'all') params.append('assigned_user_id', assigneeFilter)
+      if (agentFilter !== 'all') params.append('agent_id', agentFilter)
       if (dateStart && dateEnd) {
         params.append('start_date', dateStart.toISOString())
         params.append('end_date', dateEnd.toISOString())
@@ -342,7 +345,7 @@ export default function CallsPage() {
 
   // Consolidated useEffect for initial load and filter changes
   useEffect(() => {
-    console.log('🔍 useEffect triggered with filters:', { fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd });
+    console.log('🔍 useEffect triggered with filters:', { fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, agentFilter, dateStart, dateEnd });
     
     // Use a ref to prevent duplicate calls
     const controller = new AbortController();
@@ -374,7 +377,7 @@ export default function CallsPage() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, dateStart, dateEnd])
+  }, [fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, agentFilter, dateStart, dateEnd])
 
   // After calls load or page changes, fetch scheduled dates for visible calls
   useEffect(() => {
@@ -685,6 +688,21 @@ export default function CallsPage() {
     return () => { cancelled = true }
   }, [authenticatedFetch])
 
+  // Load agents for agent filter
+  useEffect(() => {
+    let cancelled = false
+    async function loadAgents() {
+      try {
+        const res = await authenticatedFetch(getApiUrl('agents?type=call'), { muteErrors: true } as any)
+        if (!cancelled && res?.success && Array.isArray(res.data)) {
+          setAgents(res.data)
+        }
+      } catch {}
+    }
+    loadAgents()
+    return () => { cancelled = true }
+  }, [authenticatedFetch])
+
   // Auto-open CallModal when URL has ?open=<id>
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -858,6 +876,8 @@ export default function CallsPage() {
                   <SelectItem value="mql">MQL</SelectItem>
                   <SelectItem value="client">Client</SelectItem>
                   <SelectItem value="agendado">Agendado</SelectItem>
+                  <SelectItem value="no contesta">No contesta</SelectItem>
+                  <SelectItem value="no interesado">No interesado</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -870,6 +890,17 @@ export default function CallsPage() {
                   <SelectItem value="telco">Telco</SelectItem>
                   <SelectItem value="insurance">Insurance</SelectItem>
                   <SelectItem value="investment">Investment</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Agent filter */}
+              <Select value={agentFilter} onValueChange={setAgentFilter}>
+                <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All agents" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All agents</SelectItem>
+                  {agents.map(a => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
