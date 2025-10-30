@@ -51,13 +51,13 @@ Este script agrega las columnas necesarias:
 ID, Workspace ID, Created At, Updated At, Phone From, Phone To, Status, Interest, Type,
 Duration (seconds), Services Count, Agent ID, Agent Name, Contact ID, Contact Name,
 Contact Phone, Assigned User ID, Assigned User Name, City, Postal Code,
-Batch Call ID, Conversation ID, Dynamic Variables
+Batch Call ID, Dynamic Variables
 ```
 
 #### **Total de Columnas:**
 
 - **Antes:** 16 columnas
-- **Ahora:** 23 columnas ✅
+- **Ahora:** 22 columnas ✅
 
 ---
 
@@ -115,10 +115,9 @@ Batch Call ID, Conversation ID, Dynamic Variables
 
 ### **Columnas de Campaña:**
 
-| Columna           | Descripción            | Fuente                             |
-| ----------------- | ---------------------- | ---------------------------------- |
-| `Batch Call ID`   | ID de la campaña/batch | `calls.batch_call_id` ⬅️ **NUEVO** |
-| `Conversation ID` | ID de conversación     | `calls.conversation_id`            |
+| Columna         | Descripción            | Fuente                             |
+| --------------- | ---------------------- | ---------------------------------- |
+| `Batch Call ID` | ID de la campaña/batch | `calls.batch_call_id` ⬅️ **NUEVO** |
 
 ### **Columnas de Datos Dinámicos:**
 
@@ -213,7 +212,7 @@ Dynamic Variables: budget; callback; priority
 
 ### **3. Verificar Columnas**
 
-Deberías ver **23 columnas** en este orden:
+Deberías ver **22 columnas** en este orden:
 
 ```
 1.  ID
@@ -237,8 +236,7 @@ Deberías ver **23 columnas** en este orden:
 19. City
 20. Postal Code
 21. Batch Call ID ⬅️ NUEVO
-22. Conversation ID
-23. Dynamic Variables ⬅️ NUEVO
+22. Dynamic Variables ⬅️ NUEVO
 ```
 
 ---
@@ -248,15 +246,15 @@ Deberías ver **23 columnas** en este orden:
 **Antes:**
 
 ```csv
-ID,Created At,Phone From,Phone To,Status,Interest,Type,Duration (seconds),Agent Name,Contact Name,Contact Phone,Assigned User,City,Postal Code,Campaign ID,Conversation ID
-123,2024-10-30T10:00:00Z,+34911677200,+34631021622,client,alarm,outbound,180,Sales Agent 1,Juan Pérez,+34631021622,María García,Madrid,28001,,conv_abc123
+ID,Created At,Phone From,Phone To,Status,Interest,Type,Duration (seconds),Agent Name,Contact Name,Contact Phone,Assigned User,City,Postal Code
+123,2024-10-30T10:00:00Z,+34911677200,+34631021622,client,alarm,outbound,180,Sales Agent 1,Juan Pérez,+34631021622,María García,Madrid,28001
 ```
 
 **Ahora:**
 
 ```csv
-ID,Workspace ID,Created At,Updated At,Phone From,Phone To,Status,Interest,Type,Duration (seconds),Services Count,Agent ID,Agent Name,Contact ID,Contact Name,Contact Phone,Assigned User ID,Assigned User Name,City,Postal Code,Batch Call ID,Conversation ID,Dynamic Variables
-123,1,2024-10-30T10:00:00Z,2024-10-30T10:15:00Z,+34911677200,+34631021622,client,alarm,outbound,180,3,5,Sales Agent 1,789,Juan Pérez,+34631021622,10,María García,Madrid,28001,42,conv_abc123,budget; callback; priority
+ID,Workspace ID,Created At,Updated At,Phone From,Phone To,Status,Interest,Type,Duration (seconds),Services Count,Agent ID,Agent Name,Contact ID,Contact Name,Contact Phone,Assigned User ID,Assigned User Name,City,Postal Code,Batch Call ID,Dynamic Variables
+123,1,2024-10-30T10:00:00Z,2024-10-30T10:15:00Z,+34911677200,+34631021622,client,alarm,outbound,180,3,5,Sales Agent 1,789,Juan Pérez,+34631021622,10,María García,Madrid,28001,42,budget; callback; priority
 ```
 
 ---
@@ -292,7 +290,6 @@ const headers = [
   "City",
   "Postal Code",
   "Batch Call ID", // NUEVO
-  "Conversation ID",
   "Dynamic Variables", // NUEVO
 ];
 ```
