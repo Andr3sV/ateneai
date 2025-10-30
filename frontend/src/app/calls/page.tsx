@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileSpreadsheet } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Phone, User, Calendar as CalendarIcon, Tag as TagIcon } from 'lucide-react'
@@ -744,6 +744,133 @@ export default function CallsPage() {
     setDateEnd(new Date())
   }
 
+  // Download all filtered data as Excel
+  const [downloading, setDownloading] = useState(false)
+  
+  const downloadExcel = async () => {
+    try {
+      setDownloading(true)
+      
+      // Build the same query params but without pagination
+      const params = new URLSearchParams()
+      if (fromFilter) params.append('from', fromFilter)
+      if (toFilter) params.append('to', toFilter)
+      if (statusFilter !== 'all') params.append('status', statusFilter)
+      if (interestFilter !== 'all') params.append('interest', interestFilter)
+      if (assigneeFilter === 'unassigned') params.append('unassigned', 'true')
+      else if (assigneeFilter !== 'all') params.append('assigned_user_id', assigneeFilter)
+      if (agentFilter !== 'all') params.append('agent_id', agentFilter)
+      if (dateStart && dateEnd) {
+        params.append('start_date', dateStart.toISOString())
+        params.append('end_date', dateEnd.toISOString())
+      }
+      // Request ALL data (no limit)
+      params.append('limit', '10000')
+      params.append('page', '1')
+
+      console.log('📥 Downloading Excel with filters:', params.toString())
+      
+      const response = await authenticatedFetch(getApiUrl(`calls?${params.toString()}`))
+      
+      if (!response?.success || !response.data) {
+        throw new Error('Failed to fetch data')
+      }
+
+      const calls = response.data
+
+      if (calls.length === 0) {
+        alert('No data to download with current filters')
+        return
+      }
+
+      // Prepare CSV content with ALL columns from the calls table
+      const headers = [
+        'ID',
+        'Workspace ID',
+        'Created At',
+        'Updated At',
+        'Phone From',
+        'Phone To',
+        'Status',
+        'Interest',
+        'Type',
+        'Duration (seconds)',
+        'Services Count',
+        'Agent ID',
+        'Agent Name',
+        'Contact ID',
+        'Contact Name',
+        'Contact Phone',
+        'Assigned User ID',
+        'Assigned User Name',
+        'City',
+        'Postal Code',
+        'Batch Call ID',
+        'Dynamic Variables'
+      ]
+
+      const rows = calls.map((call: any) => [
+        call.id || '',
+        call.workspace_id || '',
+        call.created_at || '',
+        call.updated_at || '',
+        call.phone_from || '',
+        call.phone_to || '',
+        call.status || '',
+        call.interest || '',
+        call.type || '',
+        call.duration || '',
+        call.services_count || 0,
+        call.agent_id || '',
+        call.agent?.name || '',
+        call.contact_id || '',
+        call.contact?.name || '',
+        call.contact?.phone || '',
+        call.assigned_user_id || '',
+        call.assigned_user ? `${call.assigned_user.first_name || ''} ${call.assigned_user.last_name || ''}`.trim() : '',
+        call.city || '',
+        call.postal_code || '',
+        call.batch_call_id || '',
+        Array.isArray(call.dinamic_variables) ? call.dinamic_variables.join('; ') : ''
+      ])
+
+      // Build CSV string
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((row: any[]) => row.map((cell: any) => {
+          // Escape quotes and wrap in quotes if contains comma, quote, or newline
+          const cellStr = String(cell).replace(/"/g, '""')
+          return cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n') 
+            ? `"${cellStr}"` 
+            : cellStr
+        }).join(','))
+      ].join('\n')
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      
+      link.setAttribute('href', url)
+      const timestamp = new Date().toISOString().split('T')[0]
+      link.setAttribute('download', `calls_export_${timestamp}.csv`)
+      link.style.visibility = 'hidden'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      URL.revokeObjectURL(url)
+      
+      console.log(`✅ Downloaded ${calls.length} calls`)
+    } catch (error) {
+      console.error('❌ Error downloading Excel:', error)
+      alert('Error downloading data. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   const canPrev = pagination.page > 1
   const canNext = pagination.page < pagination.totalPages
 
@@ -866,10 +993,10 @@ export default function CallsPage() {
             <>
               {/* Removed From filter per request */}
               {/* <Input placeholder="From" value={fromFilter} onChange={(e) => setFromFilter(e.target.value)} className="w-40" /> */}
-              <Input placeholder="To" value={toFilter} onChange={(e) => setToFilter(e.target.value)} className="w-40" />
+              <Input placeholder="To" value={toFilter} onChange={(e) => setToFilter(e.target.value)} className="w-32" />
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectTrigger className="w-36 truncate"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All status</SelectItem>
                   <SelectItem value="lead">Lead</SelectItem>
@@ -882,7 +1009,7 @@ export default function CallsPage() {
               </Select>
 
               <Select value={interestFilter} onValueChange={setInterestFilter}>
-                <SelectTrigger className="w-44"><SelectValue placeholder="Interest" /></SelectTrigger>
+                <SelectTrigger className="w-36 truncate"><SelectValue placeholder="Interest" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All interests</SelectItem>
                   <SelectItem value="energy">Energy</SelectItem>
@@ -895,7 +1022,7 @@ export default function CallsPage() {
 
               {/* Agent filter */}
               <Select value={agentFilter} onValueChange={setAgentFilter}>
-                <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All agents" /></SelectTrigger>
+                <SelectTrigger className="w-36 truncate"><SelectValue placeholder="All agents" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All agents</SelectItem>
                   {agents.map(a => (
@@ -907,7 +1034,7 @@ export default function CallsPage() {
               {/* Assignee filter only for admin/owner */}
               {(role !== 'member' && role !== 'viewer') && (
                 <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-                  <SelectTrigger className="w-44 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
+                  <SelectTrigger className="w-36 truncate"><SelectValue placeholder="All assigned" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All assigned</SelectItem>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -942,6 +1069,19 @@ export default function CallsPage() {
                   <Button variant="ghost" size="sm" onClick={() => { setDateStart(undefined); setDateEnd(undefined) }}>Clear</Button>
                 )}
               </div>
+              
+              {/* Excel Download Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadExcel}
+                disabled={downloading}
+                className="gap-2"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                {downloading ? 'Downloading...' : 'Export'}
+              </Button>
+
               <div className="ml-auto flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">🎉</span>
