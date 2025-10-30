@@ -751,32 +751,60 @@ export default function CallsPage() {
     try {
       setDownloading(true)
       
-      // Build the same query params but without pagination
-      const params = new URLSearchParams()
-      if (fromFilter) params.append('from', fromFilter)
-      if (toFilter) params.append('to', toFilter)
-      if (statusFilter !== 'all') params.append('status', statusFilter)
-      if (interestFilter !== 'all') params.append('interest', interestFilter)
-      if (assigneeFilter === 'unassigned') params.append('unassigned', 'true')
-      else if (assigneeFilter !== 'all') params.append('assigned_user_id', assigneeFilter)
-      if (agentFilter !== 'all') params.append('agent_id', agentFilter)
-      if (dateStart && dateEnd) {
-        params.append('start_date', dateStart.toISOString())
-        params.append('end_date', dateEnd.toISOString())
-      }
-      // Request ALL data (no limit)
-      params.append('limit', '10000')
-      params.append('page', '1')
-
-      console.log('📥 Downloading Excel with filters:', params.toString())
-      
-      const response = await authenticatedFetch(getApiUrl(`calls?${params.toString()}`))
-      
-      if (!response?.success || !response.data) {
-        throw new Error('Failed to fetch data')
+      // Build base query params
+      const buildParams = (page: number, limit: number) => {
+        const params = new URLSearchParams()
+        if (fromFilter) params.append('from', fromFilter)
+        if (toFilter) params.append('to', toFilter)
+        if (statusFilter !== 'all') params.append('status', statusFilter)
+        if (interestFilter !== 'all') params.append('interest', interestFilter)
+        if (assigneeFilter === 'unassigned') params.append('unassigned', 'true')
+        else if (assigneeFilter !== 'all') params.append('assigned_user_id', assigneeFilter)
+        if (agentFilter !== 'all') params.append('agent_id', agentFilter)
+        if (dateStart && dateEnd) {
+          params.append('start_date', dateStart.toISOString())
+          params.append('end_date', dateEnd.toISOString())
+        }
+        params.append('limit', String(limit))
+        params.append('page', String(page))
+        return params
       }
 
-      const calls = response.data
+      // Fetch all data with pagination
+      let allCalls: any[] = []
+      let currentPage = 1
+      const pageSize = 1000 // Fetch 1000 records per request
+      let hasMore = true
+
+      console.log('📥 Starting Excel download with pagination...')
+
+      while (hasMore) {
+        const params = buildParams(currentPage, pageSize)
+        console.log(`📄 Fetching page ${currentPage} (${allCalls.length} records so far)...`)
+        
+        const response = await authenticatedFetch(getApiUrl(`calls?${params.toString()}`))
+        
+        if (!response?.success || !response.data) {
+          throw new Error('Failed to fetch data')
+        }
+
+        const pageData = response.data
+        allCalls = allCalls.concat(pageData)
+
+        // Check if there are more pages
+        hasMore = pageData.length === pageSize
+        currentPage++
+
+        // Safety limit: max 50 pages (50,000 records)
+        if (currentPage > 50) {
+          console.warn('⚠️ Reached maximum of 50,000 records')
+          break
+        }
+      }
+
+      console.log(`✅ Fetched total of ${allCalls.length} records`)
+
+      const calls = allCalls
 
       if (calls.length === 0) {
         alert('No data to download with current filters')
