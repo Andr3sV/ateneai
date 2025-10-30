@@ -67,12 +67,16 @@ export default function CreateBatchCallPage() {
   const [success, setSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Load agents
+  // Load agents (only active ones)
   useEffect(() => {
     authenticatedFetch(`/api/v2/agents?type=call`).then((res) => {
       if (res?.success) {
         const apiAgents = Array.isArray(res.data) ? res.data : []
-        setAgents(apiAgents)
+        // Filter only active agents
+        const activeAgents = apiAgents.filter((agent: any) => 
+          agent.status === 'active' || agent.status === null || agent.status === undefined
+        )
+        setAgents(activeAgents)
       } else {
         setAgents([])
       }

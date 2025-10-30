@@ -59,6 +59,38 @@ router.put('/:id', requireWorkspaceContext, async (req, res): Promise<void> => {
   }
 });
 
+// Update agent status
+router.put('/:id/status', requireWorkspaceContext, async (req, res): Promise<void> => {
+  try {
+    if (!req.workspaceContext) {
+      res.status(401).json({ success: false, error: 'No workspace context available' });
+      return;
+    }
+
+    const agentId = parseInt(req.params.id);
+    if (isNaN(agentId)) {
+      res.status(400).json({ success: false, error: 'Invalid agent ID' });
+      return;
+    }
+
+    const { status } = req.body;
+    if (!status || !['active', 'inactive'].includes(status)) {
+      res.status(400).json({ success: false, error: 'Invalid status. Must be "active" or "inactive"' });
+      return;
+    }
+
+    console.log(`📝 Updating agent ${agentId} status to: ${status}`);
+    
+    const agent = await db.updateAgent(agentId, { status }, req.workspaceContext.workspaceId);
+    
+    console.log(`✅ Agent ${agentId} status updated successfully`);
+    res.json({ success: true, data: agent });
+  } catch (error: any) {
+    console.error('❌ Error updating agent status:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get ElevenLabs agent configuration
 router.get('/:id/elevenlabs', requireWorkspaceContext, async (req, res): Promise<void> => {
   try {

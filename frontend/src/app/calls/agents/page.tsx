@@ -7,7 +7,8 @@ import { getApiUrl } from '@/config/features'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { User, Tag as TagIcon, Calendar as CalendarIcon } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { User, Tag as TagIcon, Calendar as CalendarIcon, Activity } from 'lucide-react'
 import { AgentModal } from '@/components/agent-modal'
 
 // Skeleton Component for loading state
@@ -15,6 +16,9 @@ const TableRowSkeleton = () => (
   <TableRow className="animate-pulse">
     <TableCell className="py-4">
       <div className="h-4 bg-gray-200 rounded w-32"></div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="h-6 bg-gray-200 rounded w-20"></div>
     </TableCell>
     <TableCell className="py-4">
       <div className="h-6 bg-gray-200 rounded w-20"></div>
@@ -29,6 +33,7 @@ interface Agent {
   id: number
   name: string
   type?: string | null
+  status?: 'active' | 'inactive' | null
   key?: string | null
   created_at?: string
 }
@@ -70,6 +75,40 @@ export default function CallsAgentsPage() {
     return <Badge className={styles}>{text}</Badge>
   }
 
+  const StatusDropdown = ({ 
+    agentId, 
+    value, 
+    onChange 
+  }: { 
+    agentId: number
+    value: Agent['status']
+    onChange: (v: 'active' | 'inactive') => void 
+  }) => {
+    const status = (value || 'active').toLowerCase()
+    const badgeColor = status === 'active' 
+      ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    const label = status === 'active' ? 'Active' : 'Inactive'
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Badge className={`${badgeColor} cursor-pointer`}>{label}</Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onClick={() => onChange('active')}>
+            <span className="text-green-600">●</span>
+            <span className="ml-2 text-green-700 font-medium">Active</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange('inactive')}>
+            <span className="text-gray-600">●</span>
+            <span className="ml-2 text-gray-700 font-medium">Inactive</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   return (
     <div className="p-6 space-y-4">
       <Card>
@@ -91,6 +130,12 @@ export default function CallsAgentsPage() {
                 </TableHead>
                 <TableHead className="text-left font-semibold text-gray-900">
                   <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Status
+                  </div>
+                </TableHead>
+                <TableHead className="text-left font-semibold text-gray-900">
+                  <div className="flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4" />
                     Created
                   </div>
@@ -108,7 +153,7 @@ export default function CallsAgentsPage() {
                 </>
               ) : agents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">No agents</TableCell>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">No agents</TableCell>
                 </TableRow>
               ) : (
                 agents.map(a => (
@@ -122,6 +167,27 @@ export default function CallsAgentsPage() {
                     </TableCell>
                     <TableCell className="py-4">
                       {renderTypeBadge(a.type)}
+                    </TableCell>
+                    <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                      <StatusDropdown
+                        agentId={a.id}
+                        value={a.status}
+                        onChange={async (nextStatus) => {
+                          try {
+                            await authenticatedFetch(getApiUrl(`agents/${a.id}/status`), {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: nextStatus }),
+                            })
+                            // Update locally without refetch
+                            setAgents((prev) => prev.map((agent) => 
+                              agent.id === a.id ? { ...agent, status: nextStatus } : agent
+                            ))
+                          } catch (e) {
+                            console.error('Failed updating agent status', e)
+                          }
+                        }}
+                      />
                     </TableCell>
                     <TableCell className="py-4">
                       {a.created_at ? new Date(a.created_at).toLocaleString() : '-'}
