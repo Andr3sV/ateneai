@@ -1027,12 +1027,11 @@ export default function CallsPage() {
                 <SelectTrigger className="w-36 truncate"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All status</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
                   <SelectItem value="mql">MQL</SelectItem>
                   <SelectItem value="client">Client</SelectItem>
                   <SelectItem value="agendado">Agendado</SelectItem>
-                  <SelectItem value="no contesta">No contesta</SelectItem>
-                  <SelectItem value="no interesado">No interesado</SelectItem>
+                  <SelectItem value="no_contesta">No contesta</SelectItem>
+                  <SelectItem value="lead">No interesado</SelectItem>
                 </SelectContent>
               </Select>
 
