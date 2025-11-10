@@ -68,10 +68,12 @@ export default function CampaignsPage() {
       if (res?.success && Array.isArray(res.data)) {
         setItems(res.data)
         
-        // Update progress for active campaigns from call-manager
-        const activeCampaigns = res.data.filter((c: BatchRow) => 
-          c.status === 'in_progress' || c.status === 'pending'
-        )
+        // Update progress for ONLY call-manager campaigns (with metadata.external_batch_id)
+        const activeCampaigns = res.data.filter((c: BatchRow) => {
+          const hasExternalId = c.metadata && typeof c.metadata === 'object' && 'external_batch_id' in c.metadata
+          const isActive = c.status === 'in_progress' || c.status === 'pending'
+          return hasExternalId && isActive
+        })
         
         // Limit to maximum 20 active campaigns to avoid performance issues
         const campaignsToUpdate = activeCampaigns.slice(0, 20)
@@ -83,7 +85,7 @@ export default function CampaignsPage() {
           authenticatedFetch(`/api/call-manager/${campaign.id}/status`, { muteErrors: true })
             .then(statusRes => ({ campaign, statusRes }))
             .catch(err => {
-              console.debug(`Could not fetch status for campaign ${campaign.id}`)
+              console.debug(`Could not fetch status for campaign ${campaign.id}:`, err)
               return null
             })
         )
@@ -119,24 +121,31 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null
+    let isMounted = true
     
     const load = async () => {
       await fetchCampaigns()
-      if (loading) setLoading(false)
+      if (isMounted && loading) setLoading(false)
+      
+      // Set up polling based on whether there are active campaigns
+      // Check AFTER initial fetch to avoid stale data
+      if (isMounted) {
+        const hasActiveCampaigns = items.some(c => c.status === 'in_progress' || c.status === 'pending')
+        const interval = hasActiveCampaigns ? 5000 : 30000
+        
+        timer = setInterval(() => {
+          if (isMounted) fetchCampaigns()
+        }, interval)
+      }
     }
     
     load()
     
-    // Auto refresh every 5 seconds if there are active campaigns, otherwise every 30 seconds
-    const hasActiveCampaigns = items.some(c => c.status === 'in_progress' || c.status === 'pending')
-    const interval = hasActiveCampaigns ? 5000 : 30000
-    
-    timer = setInterval(fetchCampaigns, interval)
-    
     return () => { 
+      isMounted = false
       if (timer) clearInterval(timer) 
     }
-  }, [authenticatedFetch, fetchCampaigns, loading, items])
+  }, [authenticatedFetch, fetchCampaigns, loading])
 
   // Fetch VO report per campaign (avoids heavy grouped query that may 500)
   useEffect(() => {
