@@ -337,17 +337,12 @@ export default function CallsPage() {
     }
   }
 
-  // Initial load effect - runs only once
-  useEffect(() => {
-    console.log('🚀 Initial load effect triggered');
-    fetchCalls(1, false);
-  }, []); // Empty dependency array - runs only once
-
   // Consolidated useEffect for initial load and filter changes
+  // Note: This runs on mount (empty deps evaluating to their initial values) AND when filters change
   useEffect(() => {
-    console.log('🔍 useEffect triggered with filters:', { fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, agentFilter, dateStart, dateEnd });
+    console.log('🔍 Fetching calls with filters:', { fromFilter, toFilter, statusFilter, interestFilter, assigneeFilter, agentFilter, dateStart, dateEnd });
     
-    // Use a ref to prevent duplicate calls
+    // Use AbortController to handle cleanup
     const controller = new AbortController();
     
     // Force clear any existing request to ensure fresh start
@@ -364,9 +359,10 @@ export default function CallsPage() {
     // Reset loading state to ensure we can make new requests
     setLoading(false);
     
-    // Always fetch on filter changes
-    console.log('🚀 Starting fetchCalls...');
-    fetchCalls(1, true, controller.signal);
+    // Fetch calls (silent=false on initial load, silent=true on filter changes for better UX)
+    const isInitialLoad = !fromFilter && !toFilter && statusFilter === 'all' && interestFilter === 'all' && assigneeFilter === 'all' && agentFilter === 'all' && !dateStart && !dateEnd;
+    console.log('🚀 Starting fetchCalls...', isInitialLoad ? '(initial load)' : '(filter change)');
+    fetchCalls(1, !isInitialLoad, controller.signal);
     
     return () => {
       try {
@@ -396,94 +392,38 @@ export default function CallsPage() {
       const contactIds = Array.from(new Set(visible.map(c => c.contact?.id).filter(Boolean))) as number[]
       const current: Record<number, string | null> = { ...scheduledByCall }
 
-      // Try to use the minimap endpoint first for better performance
+      // OPTIMIZED: Only use minimap endpoint - single request, no cascading fallbacks
+      // This reduces from potentially 5+ requests to just 1 request per page change
       if (contactIds.length > 0) {
         try {
           const params = new URLSearchParams();
           contactIds.forEach(id => params.append('contactIds[]', id.toString()));
-          const response = await authenticatedFetch(`/api/v2/tasks/minimap?${params.toString()}`);
+          const response = await authenticatedFetch(`/api/v2/tasks/minimap?${params.toString()}`, {
+            muteErrors: true,
+            timeout: 5000 // 5 second timeout for fast failure
+          } as any);
           
           if (response?.success && response.data) {
-            console.log('✅ Minimap endpoint success:', Object.keys(response.data).length, 'scheduled dates found');
+            console.log('✅ Minimap success:', Object.keys(response.data).length, 'scheduled dates found');
             
             // Map the response to our format
             for (const call of visible) {
-              if (call.contact?.id && response.data[call.contact.id]) {
-                current[call.id] = response.data[call.contact.id];
+              if (call.contact?.id) {
+                // Set scheduled date if found, otherwise mark as null (no date)
+                current[call.id] = response.data[call.contact.id] || null;
               }
-            }
-            
-            // If we got all the data we need, return early
-            const hasAllData = visible.every(call => 
-              !call.contact?.id || current[call.id] !== undefined
-            );
-            if (hasAllData && !cancelled) {
-              setScheduledByCall(current);
-              setScheduledLoadedSignature(sig);
-              console.log('✅ All scheduled dates loaded via minimap');
-              return;
             }
           }
         } catch (error) {
-          console.warn('⚠️ Minimap endpoint failed, falling back to individual requests:', error);
-        }
-      }
-
-      // Fallback: Try a single show_all tasks fetch to map all in one request
-      let mappedAny = false
-      try {
-        const params = new URLSearchParams({ page: '1', limit: '1000', show_all: 'true' })
-        const all = await authenticatedFetch(getApiUrl(`tasks?${params.toString()}`), { muteErrors: true } as any)
-        const list: any[] = Array.isArray(all?.data) ? all.data : []
-        if (list.length > 0) {
-          console.log('🔄 Fallback: Processing', list.length, 'tasks for scheduled dates');
-          
-          // Map earliest due_date per contact id
-          const bestByContact = new Map<string, string>()
-          for (const t of list) {
-            const due = t?.due_date || null
-            const arr = Array.isArray(t?.contacts) ? t.contacts : []
-            for (const ct of arr) {
-              const key = String(ct?.id)
-              if (!due) continue
-              const prev = bestByContact.get(key)
-              if (!prev || new Date(due) < new Date(prev)) {
-                bestByContact.set(key, due)
-              }
-            }
-          }
-          for (const c of visible) {
-            const key = c.contact?.id != null ? String(c.contact.id) : ''
-            if (!key) continue
-            if (bestByContact.has(key)) {
-              current[c.id] = bestByContact.get(key) || null
-              mappedAny = true
+          console.warn('⚠️ Minimap failed, showing calls without scheduled dates:', error);
+          // Don't throw - just show calls without scheduled dates (better UX than loading forever)
+          // Set all remaining calls to null to mark them as "loaded but no date"
+          for (const call of visible) {
+            if (call.contact?.id && current[call.id] === undefined) {
+              current[call.id] = null;
             }
           }
         }
-      } catch (error) { 
-        console.warn('⚠️ Fallback tasks fetch failed:', error);
-      }
-
-      // For any missing, try lightweight by-contact but capped to avoid bursts (max 3 instead of 5)
-      const missing = visible.filter(c => current[c.id] === undefined || current[c.id] === null).slice(0, 3)
-      if (missing.length > 0) {
-        console.log('🔄 Individual fallback: Fetching scheduled dates for', missing.length, 'missing calls');
-        
-        const results = await Promise.all(missing.map(async (c) => {
-          if (!c.contact?.id) return [c.id, null] as const
-          try {
-            const t = await authenticatedFetch(getApiUrl(`tasks/by-contact/${c.contact.id}`), { muteErrors: true } as any)
-            if (t?.success && Array.isArray(t.data) && t.data.length > 0) {
-              return [c.id, t.data[0]?.due_date || null] as const
-            }
-            return [c.id, null] as const
-          } catch (error) { 
-            console.warn('⚠️ Individual contact fetch failed for contact', c.contact.id, ':', error);
-            return [c.id, null] as const 
-          }
-        }))
-        for (const [id, due] of results) current[id] = due
       }
 
       if (!cancelled) {
@@ -507,7 +447,7 @@ export default function CallsPage() {
     
     let lastEventTime = Date.now()
     let healthCheckInterval: NodeJS.Timeout | null = null
-    let fallbackPollingInterval: NodeJS.Timeout | null = null
+    // Removed fallbackPollingInterval - health check is sufficient
     
     const channel = supabase
       .channel(`workspace:${workspaceId}:calls`)
@@ -622,37 +562,30 @@ export default function CallsPage() {
           console.log('✅ Successfully subscribed to realtime updates');
           lastEventTime = Date.now()
           
-          // Start health check: if no events for 60 seconds, do a refresh
+          // Start health check: if no events for 90 seconds, do a refresh
+          // This is our only safety net - if Realtime stops working, we recover
           healthCheckInterval = setInterval(() => {
             const timeSinceLastEvent = Date.now() - lastEventTime
-            if (timeSinceLastEvent > 60000) { // 60 seconds without events
-              console.log('⚠️ No realtime events for 60s, refreshing calls...')
-              fetchCalls(pagination.page, false)
+            if (timeSinceLastEvent > 90000) { // 90 seconds without events
+              console.log('⚠️ No realtime events for 90s, refreshing calls as safety check...')
+              fetchCalls(pagination.page, true) // Silent refresh
               lastEventTime = Date.now() // Reset timer
             }
-          }, 30000) // Check every 30 seconds
-          
-          // Start fallback polling every 2 minutes (safety net)
-          fallbackPollingInterval = setInterval(() => {
-            console.log('🔄 Fallback polling: refreshing calls...')
-            fetchCalls(pagination.page, false)
-          }, 120000) // 2 minutes
+          }, 45000) // Check every 45 seconds
           
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.error('❌ Realtime connection lost, fetching latest data...');
           // Immediately fetch to recover from connection loss
           fetchCalls(pagination.page, false)
         } else if (status === 'CLOSED') {
-          console.warn('⚠️ Channel closed, cleaning up intervals');
+          console.warn('⚠️ Channel closed, cleaning up health check');
           if (healthCheckInterval) clearInterval(healthCheckInterval)
-          if (fallbackPollingInterval) clearInterval(fallbackPollingInterval)
         }
       })
 
     return () => { 
-      console.log('🔌 Cleaning up realtime subscription and intervals');
+      console.log('🔌 Cleaning up realtime subscription and health check');
       if (healthCheckInterval) clearInterval(healthCheckInterval)
-      if (fallbackPollingInterval) clearInterval(fallbackPollingInterval)
       try { 
         supabase?.removeChannel(channel) 
       } catch (e) {

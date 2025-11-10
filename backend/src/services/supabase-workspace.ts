@@ -699,30 +699,9 @@ export const db = {
       offset?: number
     } = {}
   ) {
-    // Count query first
-    let countQuery = supabase
-      .from(TABLES.CALLS)
-      .select('id', { count: 'exact', head: true })
-      .eq('workspace_id', workspaceId);
-
-    if (filters.status) countQuery = countQuery.eq('status', filters.status);
-    if (filters.interest) countQuery = countQuery.eq('interest', filters.interest);
-    if (filters.type) countQuery = countQuery.eq('type', filters.type);
-    if (filters.from) countQuery = countQuery.ilike('phone_from', `%${filters.from}%`);
-    if (filters.to) countQuery = countQuery.ilike('phone_to', `%${filters.to}%`);
-    if (filters.contact_id) countQuery = countQuery.eq('contact_id', filters.contact_id)
-    if (typeof filters.assigned_user_id === 'number') countQuery = countQuery.eq('assigned_user_id', filters.assigned_user_id)
-    if (filters.unassigned) countQuery = countQuery.is('assigned_user_id', null)
-    if (typeof filters.agent_id === 'number') countQuery = countQuery.eq('agent_id', filters.agent_id)
-    if (filters.start_date && filters.end_date) {
-      countQuery = countQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
-    }
-
-    const { count, error: countError } = await countQuery;
-    if (countError) throw countError;
-
-    // Data query with joins and pagination
-    let dataQuery = supabase
+    // Combined query: get data AND count in a single request for better performance
+    // Supabase returns count in response headers when count: 'exact' is set
+    let query = supabase
       .from(TABLES.CALLS)
       .select(
         `
@@ -730,31 +709,37 @@ export const db = {
         contact:contacts_new(id, name, phone),
         agent:agents(id, name),
         assigned_user:users_new(id, first_name, last_name, email)
-        `
+        `,
+        { count: 'exact' } // This enables count in the same query
       )
       .eq('workspace_id', workspaceId);
 
-    if (filters.status) dataQuery = dataQuery.eq('status', filters.status);
-    if (filters.interest) dataQuery = dataQuery.eq('interest', filters.interest);
-    if (filters.type) dataQuery = dataQuery.eq('type', filters.type);
-    if (filters.contact_id) dataQuery = dataQuery.eq('contact_id', filters.contact_id);
-    if (filters.from) dataQuery = dataQuery.ilike('phone_from', `%${filters.from}%`);
-    if (filters.to) dataQuery = dataQuery.ilike('phone_to', `%${filters.to}%`);
-    if (typeof filters.assigned_user_id === 'number') dataQuery = dataQuery.eq('assigned_user_id', filters.assigned_user_id);
-    if (filters.unassigned) dataQuery = dataQuery.is('assigned_user_id', null);
-    if (typeof filters.agent_id === 'number') dataQuery = dataQuery.eq('agent_id', filters.agent_id);
+    // Apply all filters once (instead of duplicating for count and data)
+    if (filters.status) query = query.eq('status', filters.status);
+    if (filters.interest) query = query.eq('interest', filters.interest);
+    if (filters.type) query = query.eq('type', filters.type);
+    if (filters.contact_id) query = query.eq('contact_id', filters.contact_id);
+    if (filters.from) query = query.ilike('phone_from', `%${filters.from}%`);
+    if (filters.to) query = query.ilike('phone_to', `%${filters.to}%`);
+    if (typeof filters.assigned_user_id === 'number') query = query.eq('assigned_user_id', filters.assigned_user_id);
+    if (filters.unassigned) query = query.is('assigned_user_id', null);
+    if (typeof filters.agent_id === 'number') query = query.eq('agent_id', filters.agent_id);
     if (filters.start_date && filters.end_date) {
-      dataQuery = dataQuery.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
+      query = query.gte('created_at', filters.start_date).lte('created_at', filters.end_date);
     }
 
     // Pagination
     if (filters.offset !== undefined && filters.limit) {
-      dataQuery = dataQuery.range(filters.offset, filters.offset + filters.limit - 1);
+      query = query.range(filters.offset, filters.offset + filters.limit - 1);
     } else if (filters.limit) {
-      dataQuery = dataQuery.limit(filters.limit);
+      query = query.limit(filters.limit);
     }
 
-    const { data, error } = await dataQuery.order('created_at', { ascending: false });
+    // Order by created_at descending
+    query = query.order('created_at', { ascending: false });
+
+    // Execute the single combined query
+    const { data, count, error } = await query;
     if (error) throw error;
 
     return {
